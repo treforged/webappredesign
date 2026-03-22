@@ -12,7 +12,7 @@ import { useTransactions, useDebts, useSavingsGoals, useCarFunds, useAccounts, u
 import { generateScheduledEvents, getUpcomingEvents, formatDateShort } from '@/lib/scheduling';
 import { useSubscription } from '@/hooks/useSubscription';
   import { buildPayConfig, getRemainingIncomeThisMonth, getMonthlyNetIncome, getRemainingPaychecksThisMonth, getNextPaycheckDate, getPaycheckNet, getMinSafeCash, getPrePaycheckNextMonthBills, getRemainingTransactionIncomeThisMonth, getRemainingTransactionExpensesThisMonth, getRemainingTransactionDebtPaymentsThisMonth, mergeWithGeneratedTransactions, generateCurrentMonthTransactionsFromRules, createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, getPaychecksInMonth } from '@/lib/pay-schedule';
-import { getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
+// import { getCurrentMonthDebtRecommendations } from "@/lib/credit-card-engine";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
   Line, CartesianGrid, ComposedChart,
