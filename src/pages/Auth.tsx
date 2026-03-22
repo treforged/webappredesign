@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -8,19 +7,6 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  // Handle email confirmation redirect
-  useEffect(() => {
-    // Check if user just confirmed their email
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        toast.success('Email confirmed! You can now sign in.');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +16,7 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success('Signed in successfully');
-        navigate('/dashboard');
+        // AuthProvider will handle navigation
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -40,7 +26,7 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success('Account created. Check your email to confirm.');
+        toast.success('Account created! Check your email to confirm.');
       }
     } catch (err: any) {
       toast.error(err.message || 'Authentication failed');
