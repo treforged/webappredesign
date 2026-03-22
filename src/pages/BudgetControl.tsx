@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { getDayName } from '@/lib/scheduling';
 import { CATEGORIES } from '@/lib/types';
-import { buildCardData, generateRecommendations, getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
+import { generateRecommendations } from '@/lib/credit-card-engine';
 import { buildPayConfig, getPaycheckNet, getRemainingIncomeThisMonth, getRemainingPaychecksThisMonth, getNextPaycheckDate, getPaychecksInMonth, getPrePaycheckNextMonthBills, getRemainingTransactionIncomeThisMonth, getRemainingTransactionExpensesThisMonth, getRemainingTransactionDebtPaymentsThisMonth, mergeWithGeneratedTransactions, createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, type PayFrequency } from '@/lib/pay-schedule';
 import { useTransactions } from '@/hooks/useSupabaseData';
 
