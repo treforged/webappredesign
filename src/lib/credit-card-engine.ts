@@ -139,3 +139,26 @@ export function simulateVariablePayoff(
     cashFloorBreaches 
   };
 }
+
+// Assuming these functions are defined in the same file or imported from other files
+export function buildCardData(accounts: any[], transactions: any[], rules: any[], debts: any[]): CardData[] {
+  // Implementation of buildCardData
+}
+
+export function projectCard(card: CardData, months: number): CardProjection {
+  // Implementation of projectCard
+}
+
+export function projectCardVariable(card: CardData, payments: number[], months: number): CardProjection {
+  // Implementation of projectCardVariable
+}
+
+export function generateRecommendations(
+  cards: CardData[], liquidCash: number, cashFloor: number, strategy: 'avalanche' | 'snowball',
+  monthlyTakeHome: number, monthlyExpenses: number,
+  paymentMode: 'variable' | 'consistent', payConfig: any, rules: any[], fundingAccountId: string,
+  prePaycheckBillsTotal: number, fundingBalance: number,
+  overrides?: Record<string, Record<number, number>>, allTransactions?: any[], primaryDueDay?: number
+): RecommendationSummary {
+  // Implementation of generateRecommendations
+}
