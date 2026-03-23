@@ -162,3 +162,7 @@ export function generateRecommendations(
 ): RecommendationSummary {
   // Implementation of generateRecommendations
 }
+
+export function getCurrentMonthDebtRecommendations(): any[] {
+  return [];
+}
