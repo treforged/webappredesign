@@ -41,41 +41,8 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub;
     const userEmail = claimsData.claims.email;
 
-    const { return_url, coupon_code } = await req.json();
+    const { return_url } = await req.json();
     const origin = return_url || req.headers.get("origin") || "https://app.treforged.com";
-
-    // Coupon validation — runs before Stripe, bypasses payment if valid
-    if (coupon_code) {
-      const validCodes = (Deno.env.get("VALID_COUPON_CODES") || "")
-        .split(",")
-        .map((c: string) => c.trim())
-        .filter(Boolean);
-
-      if (!validCodes.includes(coupon_code.trim())) {
-        return new Response(JSON.stringify({ error: "Invalid coupon code" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Valid coupon: grant premium directly, no Stripe session needed
-      const serviceClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-      const { error: upsertError } = await serviceClient
-        .from("user_subscriptions")
-        .upsert(
-          { user_id: userId, plan: "premium", subscription_status: "active" },
-          { onConflict: "user_id" }
-        );
-      if (upsertError) throw upsertError;
-
-      return new Response(JSON.stringify({ granted: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Check if user already has a stripe customer
     const { data: existingSub } = await supabase

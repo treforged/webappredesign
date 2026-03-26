@@ -11,35 +11,21 @@ export default function Premium() {
   const { isPremium, hasStripeCustomer, isLoading } = useSubscription();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
-  const [couponError, setCouponError] = useState('');
 
   const handleCheckout = async () => {
-    setCouponError('');
     setCheckoutLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error('Please sign in first'); return; }
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { return_url: window.location.origin, coupon_code: couponCode || undefined },
+        body: { return_url: window.location.origin },
       });
 
       if (error) throw error;
-
-      if (data?.granted) {
-        toast.success('Coupon applied! Full access granted.');
-        window.location.href = '/premium/success?coupon=1';
-        return;
-      }
-
       if (data?.url) window.location.href = data.url;
     } catch (e: any) {
-      if (couponCode && e.message?.includes('Invalid coupon')) {
-        setCouponError('Invalid coupon code. Please check and try again.');
-      } else {
-        toast.error(e.message || 'Failed to start checkout');
-      }
+      toast.error(e.message || 'Failed to start checkout');
     } finally {
       setCheckoutLoading(false);
     }
@@ -117,22 +103,6 @@ export default function Premium() {
               </li>
             ))}
           </ul>
-
-          {!isPremium && (
-            <div className="space-y-1">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={e => { setCouponCode(e.target.value); setCouponError(''); }}
-                placeholder="Coupon code (optional)"
-                className="w-full border border-border bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                style={{ borderRadius: 'var(--radius)' }}
-              />
-              {couponError && (
-                <p className="text-[10px] text-destructive">{couponError}</p>
-              )}
-            </div>
-          )}
 
           {isPremium ? (
             <button
