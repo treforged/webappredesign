@@ -417,23 +417,23 @@ export default function Dashboard() {
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
       <AccountUpdateReminder />
-      <div className="flex items-start sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div>
             <h1 className="font-display font-bold text-2xl lg:text-3xl tracking-tight">Command Center</h1>
-            <InstructionsModal pageTitle="Dashboard Guide" sections={[
-              { title: 'What is this page?', body: 'The Command Center gives you a real-time snapshot of your financial health — income, expenses, net worth, savings, debt, and upcoming bills for the current month.' },
-              { title: 'KPI Cards', body: 'Click any metric card to see exactly how it is calculated, including which accounts and transactions are included.' },
-              { title: 'Projected Month-End Cash', body: 'Shows your expected cash position at month end: current liquid cash + remaining paychecks − remaining expenses − debt payments. Must stay above your cash floor.' },
-              { title: 'Cash Flow Chart', body: 'Displays the last 6 months of income vs expenses with net cash flow trend line.' },
-              { title: 'How edits affect this page', body: 'Changes to Accounts, Budget Control rules, or Debt Payoff recommendations instantly update all dashboard metrics.' },
-            ]} />
+            <p className="text-sm text-muted-foreground mt-1">
+              Your financial control system &bull; {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your financial control system &bull; {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </p>
+          <InstructionsModal pageTitle="Dashboard Guide" sections={[
+            { title: 'What is this page?', body: 'The Command Center gives you a real-time snapshot of your financial health — income, expenses, net worth, savings, debt, and upcoming bills for the current month.' },
+            { title: 'KPI Cards', body: 'Click any metric card to see exactly how it is calculated, including which accounts and transactions are included.' },
+            { title: 'Projected Month-End Cash', body: 'Shows your expected cash position at month end: current liquid cash + remaining paychecks − remaining expenses − debt payments. Must stay above your cash floor.' },
+            { title: 'Cash Flow Chart', body: 'Displays the last 6 months of income vs expenses with net cash flow trend line.' },
+            { title: 'How edits affect this page', body: 'Changes to Accounts, Budget Control rules, or Debt Payoff recommendations instantly update all dashboard metrics.' },
+          ]} />
         </div>
-        <Link to="/transactions" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press hover:bg-primary/90 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
+        <Link to="/transactions" className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press hover:bg-primary/90 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
           <Plus size={14} /> Add Transaction
         </Link>
       </div>

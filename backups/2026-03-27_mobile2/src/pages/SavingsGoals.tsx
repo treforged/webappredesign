@@ -258,23 +258,20 @@ export default function SavingsGoals() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-xl tracking-tight">Savings Goals</h1>
-            <InstructionsModal pageTitle="Savings Goals Guide" sections={[
-              { title: 'What is this page?', body: 'Track progress toward your financial goals — emergency fund, vacation, down payment, or car purchase. Link goals to real accounts for automatic balance sync.' },
-              { title: 'Linked Accounts', body: 'When linked to an account, the goal\'s "current saved" automatically reflects that account balance. "Available after bills" shows the realistic amount after subtracting scheduled outflows.' },
-              { title: 'Car Fund', body: 'The Car Fund mode adds vehicle-specific fields like price, APR, loan term, and insurance to give you a complete affordability picture.' },
-              { title: 'Target Date', body: 'Set a target date to see estimated completion. The chart projects growth based on your monthly contribution.' },
-            ]} />
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">Build your financial runway</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div><h1 className="font-display font-bold text-xl tracking-tight">Savings Goals</h1><p className="text-xs text-muted-foreground mt-0.5">Build your financial runway</p></div>
+          <InstructionsModal pageTitle="Savings Goals Guide" sections={[
+            { title: 'What is this page?', body: 'Track progress toward your financial goals — emergency fund, vacation, down payment, or car purchase. Link goals to real accounts for automatic balance sync.' },
+            { title: 'Linked Accounts', body: 'When linked to an account, the goal\'s "current saved" automatically reflects that account balance. "Available after bills" shows the realistic amount after subtracting scheduled outflows.' },
+            { title: 'Car Fund', body: 'The Car Fund mode adds vehicle-specific fields like price, APR, loan term, and insurance to give you a complete affordability picture.' },
+            { title: 'Target Date', body: 'Set a target date to see estimated completion. The chart projects growth based on your monthly contribution.' },
+          ]} />
         </div>
         <PremiumGate
           isPremium={isPremium || isDemo || (goals.length + carFunds.length) < 3}
           message="Upgrade to add unlimited savings goals"
-          className="shrink-0 flex gap-2"
+          className="flex gap-2"
         >
           <div className="flex gap-2">
             <button onClick={() => openAdd('Custom')} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}><Plus size={12} /> Add Goal</button>
