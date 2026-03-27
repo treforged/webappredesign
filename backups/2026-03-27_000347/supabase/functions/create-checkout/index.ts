@@ -41,8 +41,58 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub;
     const userEmail = claimsData.claims.email;
 
-    const { return_url } = await req.json();
+    const { return_url, coupon_code } = await req.json();
     const origin = return_url || req.headers.get("origin") || "https://app.treforged.com";
+
+    // Coupon validation — runs before Stripe, bypasses payment if valid
+    if (coupon_code) {
+      const validCodes = (Deno.env.get("VALID_COUPON_CODES") || "")
+        .split(",")
+        .map((c: string) => c.trim())
+        .filter(Boolean);
+
+      if (!validCodes.includes(coupon_code.trim())) {
+        return new Response(JSON.stringify({ error: "Invalid coupon code" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Valid coupon: grant premium directly, no Stripe session needed.
+      // Fix 7: use UPDATE if row exists, INSERT if not — never overwrite
+      // stripe_customer_id or stripe_subscription_id so existing Stripe
+      // linkage is preserved if the user has ever started a checkout.
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const { data: existingRow } = await serviceClient
+        .from("user_subscriptions")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingRow) {
+        // Row exists — update only plan and status, leave all Stripe IDs untouched
+        const { error: updateError } = await serviceClient
+          .from("user_subscriptions")
+          .update({ plan: "premium", subscription_status: "active" })
+          .eq("user_id", userId);
+        if (updateError) throw updateError;
+      } else {
+        // New user — insert minimal record (no Stripe IDs; none exist yet)
+        const { error: insertError } = await serviceClient
+          .from("user_subscriptions")
+          .insert({ user_id: userId, plan: "premium", subscription_status: "active" });
+        if (insertError) throw insertError;
+      }
+
+      return new Response(JSON.stringify({ granted: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Check if user already has a stripe customer
     const { data: existingSub } = await supabase
@@ -93,7 +143,6 @@ Deno.serve(async (req) => {
         "line_items[0][price]": "price_1TCZWP2cDVgFonAbtUAJHskT",
         "line_items[0][quantity]": "1",
         mode: "subscription",
-        allow_promotion_codes: "true",
         success_url: `${origin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/premium/cancel`,
         "metadata[supabase_user_id]": userId,

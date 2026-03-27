@@ -10,8 +10,15 @@ export default function PremiumSuccess() {
   const [verified, setVerified] = useState(false);
 
   const sessionId = searchParams.get('session_id');
+  const isCoupon = searchParams.get('coupon') === '1';
 
   useEffect(() => {
+    // Coupon grants are written synchronously before the redirect — one refetch is enough
+    if (isCoupon) {
+      refetch().then(() => { setPolling(false); setVerified(true); });
+      return;
+    }
+
     // No session_id means the user navigated here directly — show confirmation without polling
     if (!sessionId) {
       setPolling(false);
