@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { formatCurrency, calculatePayoffMonths, calculateTotalInterest, simulateDebtPayoff } from '@/lib/calculations';
+import { formatCurrency } from '@/lib/calculations';
 import { useDebts, useAccounts, useTransactions, useRecurringRules, useProfile } from '@/hooks/useSupabaseData';
+import { calculatePayoffMonths, calculateTotalInterest } from '@/lib/calculations';
 import FormModal from '@/components/shared/FormModal';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import CreditCardEngine from '@/components/debt/CreditCardEngine';
@@ -34,29 +35,6 @@ export default function DebtPayoff() {
 
   const snowballOrder = [...otherDebts].sort((a, b) => Number(a.balance) - Number(b.balance));
   const avalancheOrder = [...otherDebts].sort((a, b) => Number(b.apr) - Number(a.apr));
-
-  const debtInputs = useMemo(() => otherDebts.map(d => ({
-    id: d.id,
-    name: d.name,
-    balance: Number(d.balance),
-    apr: Number(d.apr),
-    min_payment: Number(d.min_payment),
-  })), [otherDebts]);
-
-  const snowballSim = useMemo(
-    () => simulateDebtPayoff(debtInputs, 'snowball', totalTargetPayment),
-    [debtInputs, totalTargetPayment],
-  );
-  const avalancheSim = useMemo(
-    () => simulateDebtPayoff(debtInputs, 'avalanche', totalTargetPayment),
-    [debtInputs, totalTargetPayment],
-  );
-
-  const debtFreeDate = (months: number) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + months);
-    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  };
 
   const openAdd = () => { setForm(emptyForm); setEditId(null); setShowForm(true); };
   const openEdit = (d: any) => {
@@ -166,52 +144,29 @@ export default function DebtPayoff() {
             {otherDebts.length === 0 && <div className="card-forged p-12 text-center"><p className="text-sm text-muted-foreground">No other debts tracked yet.</p></div>}
           </div>
 
-          {/* Strategy simulation */}
+          {/* Strategy */}
           {otherDebts.length > 1 && (
             <div className="grid md:grid-cols-2 gap-4">
-              {([
-                { label: 'Snowball', desc: 'Smallest balance first', sim: snowballSim, order: snowballOrder, orderLabel: (d: any) => formatCurrency(Number(d.balance), false) },
-                { label: 'Avalanche', desc: 'Highest APR first — minimizes total interest', sim: avalancheSim, order: avalancheOrder, orderLabel: (d: any) => `${Number(d.apr)}% APR` },
-              ] as const).map(({ label, desc, sim, order, orderLabel }) => (
-                <div key={label} className="card-forged p-4 space-y-3">
-                  <div>
-                    <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{desc}</p>
+              <div className="card-forged p-4">
+                <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Snowball Order</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">Smallest balance first.</p>
+                {snowballOrder.map((d, i) => (
+                  <div key={d.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                    <span className="text-xs"><span className="text-primary font-semibold mr-2">#{i + 1}</span>{d.name}</span>
+                    <span className="text-xs text-muted-foreground">{formatCurrency(Number(d.balance), false)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-muted/20 rounded p-2 text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase">Debt-Free</p>
-                      <p className="text-xs font-display font-bold text-primary">{debtFreeDate(sim.totalMonths)}</p>
-                      <p className="text-[9px] text-muted-foreground">month {sim.totalMonths}</p>
-                    </div>
-                    <div className="bg-muted/20 rounded p-2 text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase">Total Interest</p>
-                      <p className="text-xs font-display font-bold text-destructive">{formatCurrency(sim.totalInterest, false)}</p>
-                    </div>
+                ))}
+              </div>
+              <div className="card-forged p-4">
+                <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Avalanche Order</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">Highest interest first.</p>
+                {avalancheOrder.map((d, i) => (
+                  <div key={d.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                    <span className="text-xs"><span className="text-primary font-semibold mr-2">#{i + 1}</span>{d.name}</span>
+                    <span className="text-xs text-muted-foreground">{Number(d.apr)}% APR</span>
                   </div>
-                  <div className="space-y-1">
-                    {order.map((d, i) => {
-                      const result = sim.schedule.find(r => r.debtId === d.id);
-                      return (
-                        <div key={d.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                          <div>
-                            <span className="text-xs">
-                              <span className="text-primary font-semibold mr-1.5">#{i + 1}</span>{d.name}
-                            </span>
-                            <p className="text-[9px] text-muted-foreground ml-4">{orderLabel(d)}</p>
-                          </div>
-                          {result && (
-                            <div className="text-right">
-                              <p className="text-[10px] font-medium">Month {result.paidOffMonth}</p>
-                              <p className="text-[9px] text-muted-foreground">{formatCurrency(result.totalInterest, false)} interest</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </>

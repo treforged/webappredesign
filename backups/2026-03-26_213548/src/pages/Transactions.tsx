@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
 import { useTransactions, useAccounts, useRecurringRules, useDebts, useProfile } from '@/hooks/useSupabaseData';
-import { usePersistedState } from '@/hooks/usePersistedState';
 import { CATEGORIES } from '@/lib/types';
 import { getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
 import { createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
@@ -27,12 +26,6 @@ export default function Transactions() {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
-
-  // Month filter: 'YYYY-MM' | 'all' | 'forecast'
-  const currentMonthStr = new Date().toISOString().slice(0, 7);
-  const [filterMonth, setFilterMonth] = useState<string>(currentMonthStr);
-  // Read forecast's persisted year filter to support forecast-range mode
-  const [forecastYear] = usePersistedState<'all' | '1' | '2' | '3'>('tre:forecast:filterYear', 'all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editChoiceId, setEditChoiceId] = useState<string | null>(null);
   const [editChoiceRule, setEditChoiceRule] = useState<any>(null);
@@ -121,56 +114,14 @@ export default function Transactions() {
     return !accountMap[id] && !accountMap[`account:${id}`];
   }, [accountMap]);
 
-  // Compute forecast date range for 'forecast' filter mode
-  const forecastRange = useMemo((): [string, string] | null => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const toYYYYMM = (d: Date) => d.toISOString().slice(0, 7);
-    if (forecastYear === '1') {
-      return [toYYYYMM(start), toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 11, 1))];
-    }
-    if (forecastYear === '2') {
-      return [toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 12, 1)), toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 23, 1))];
-    }
-    if (forecastYear === '3') {
-      return [toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 24, 1)), toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 35, 1))];
-    }
-    // 'all' = full 36-month window
-    return [toYYYYMM(start), toYYYYMM(new Date(start.getFullYear(), start.getMonth() + 35, 1))];
-  }, [forecastYear]);
-
   const filtered = useMemo(() => {
     return allTransactions.filter(t => {
-      // Date filter
-      if (filterMonth !== 'all') {
-        const txMonth = t.date.slice(0, 7);
-        if (filterMonth === 'forecast') {
-          if (!forecastRange || txMonth < forecastRange[0] || txMonth > forecastRange[1]) return false;
-        } else {
-          if (txMonth !== filterMonth) return false;
-        }
-      }
       if (filterType !== 'all' && t.type !== filterType) return false;
       if (filterCategory !== 'all' && t.category !== filterCategory) return false;
       if (filterSource !== 'all' && t.payment_source !== filterSource) return false;
       return true;
     });
-  }, [allTransactions, filterMonth, forecastRange, filterType, filterCategory, filterSource]);
-
-  // Build month options from distinct months in allTransactions (up to 24), plus forecast option
-  const monthOptions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const t of allTransactions) {
-      const m = t.date.slice(0, 7);
-      seen.add(m);
-      if (seen.size >= 24) break;
-    }
-    return [...seen].sort((a, b) => b.localeCompare(a)).map(m => {
-      const [y, mo] = m.split('-');
-      const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      return { value: m, label };
-    });
-  }, [allTransactions]);
+  }, [allTransactions, filterType, filterCategory, filterSource]);
 
   const totals = useMemo(() => {
     const income = filtered.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
@@ -180,12 +131,12 @@ export default function Transactions() {
 
   const spendBySource = useMemo(() => {
     const acc: Record<string, number> = {};
-    filtered.filter(t => t.type === 'expense').forEach(t => {
+    allTransactions.filter(t => t.type === 'expense').forEach(t => {
       const src = getSourceLabel(t.payment_source || '');
       acc[src] = (acc[src] || 0) + Number(t.amount);
     });
     return acc;
-  }, [filtered, getSourceLabel]);
+  }, [allTransactions, getSourceLabel]);
 
   const openAdd = () => { setForm(emptyForm); setEditId(null); setShowForm(true); };
 
@@ -316,11 +267,6 @@ export default function Transactions() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-[11px] text-foreground font-medium" style={{ borderRadius: 'var(--radius)' }}>
-          {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          <option value="forecast">Forecast Range</option>
-          <option value="all">All Time</option>
-        </select>
         {(['all', 'income', 'expense'] as const).map(t => (
           <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1 text-[11px] font-medium border btn-press ${filterType === t ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
             {t.charAt(0).toUpperCase() + t.slice(1)}

@@ -8,7 +8,6 @@ export type PayScheduleConfig = {
   taxRate: number;
   paycheckDay: number; // 0=Sun..6=Sat for weekly/biweekly, 1-31 for monthly
   frequency: PayFrequency;
-  paycheckStartDate?: string; // 'YYYY-MM-DD' — biweekly phase anchor (any known paycheck date)
 };
 
 export type PaycheckInfo = {
@@ -43,23 +42,8 @@ export function getPaychecksInMonth(config: PayScheduleConfig, year: number, mon
     const day = Math.min(config.paycheckDay || 1, monthEnd.getDate());
     const d = new Date(year, month, day);
     paychecks.push({ date: d, gross, net });
-  } else if (config.frequency === 'biweekly' && config.paycheckStartDate) {
-    // Phase-anchored biweekly: find all dates D in the month where (D - anchor) % 14 === 0
-    const anchorMs = new Date(config.paycheckStartDate + 'T00:00:00').getTime();
-    const DAY_MS = 86400000;
-    const startMs = monthStart.getTime();
-    const endMs = monthEnd.getTime();
-    // Find the first biweekly date on or after monthStart
-    const diffDays = Math.floor((startMs - anchorMs) / DAY_MS);
-    const remainder = ((diffDays % 14) + 14) % 14;
-    const firstOffset = remainder === 0 ? 0 : 14 - remainder;
-    let ms = startMs + firstOffset * DAY_MS;
-    while (ms <= endMs) {
-      paychecks.push({ date: new Date(ms), gross, net });
-      ms += 14 * DAY_MS;
-    }
   } else {
-    // weekly or biweekly (no anchor) — find occurrences of paycheckDay (day of week) in the month
+    // weekly or biweekly — find occurrences of paycheckDay (day of week) in the month
     const dayOfWeek = config.paycheckDay;
     const d = new Date(monthStart);
     while (d.getDay() !== dayOfWeek) d.setDate(d.getDate() + 1);
@@ -105,7 +89,6 @@ export function buildPayConfig(profile: any): PayScheduleConfig {
     taxRate: Number(profile?.tax_rate) || 22,
     paycheckDay: Number(profile?.paycheck_day) ?? 5,
     frequency: (profile?.paycheck_frequency as PayFrequency) || 'weekly',
-    paycheckStartDate: profile?.paycheck_start_date || undefined,
   };
 }
 

@@ -25,7 +25,6 @@ export default function SettingsPage() {
   const [cashFloor, setCashFloor] = useState('1000');
   const [paycheckFrequency, setPaycheckFrequency] = useState('weekly');
   const [paycheckDay, setPaycheckDay] = useState('5');
-  const [paycheckStartDate, setPaycheckStartDate] = useState('');
   const [defaultDepositAccount, setDefaultDepositAccount] = useState('');
   const [autoGenerateRecurring, setAutoGenerateRecurring] = useState(true);
   const [dirty, setDirty] = useState(false);
@@ -42,7 +41,6 @@ export default function SettingsPage() {
       setCashFloor(String((profile as any).cash_floor || 1000));
       setPaycheckFrequency((profile as any).paycheck_frequency || 'weekly');
       setPaycheckDay(String((profile as any).paycheck_day ?? 5));
-      setPaycheckStartDate((profile as any).paycheck_start_date || '');
       setDefaultDepositAccount((profile as any).default_deposit_account || '');
       setAutoGenerateRecurring((profile as any).auto_generate_recurring ?? true);
       setDirty(false);
@@ -77,7 +75,6 @@ export default function SettingsPage() {
       cash_floor: cf,
       paycheck_frequency: paycheckFrequency,
       paycheck_day: pd,
-      paycheck_start_date: paycheckStartDate || null,
       default_deposit_account: defaultDepositAccount || null,
       auto_generate_recurring: autoGenerateRecurring,
     } as any);
@@ -170,14 +167,6 @@ export default function SettingsPage() {
               </select>
             )}
           </div>
-          {paycheckFrequency === 'biweekly' && (
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase">Pay Cycle Anchor Date</label>
-              <p className="text-[9px] text-muted-foreground mt-0.5 mb-1">Any past paycheck date — used to determine which biweekly Fridays are pay days.</p>
-              <input type="date" value={paycheckStartDate} onChange={e => { setPaycheckStartDate(e.target.value); markDirty(); }}
-                className="w-full bg-secondary border border-border px-2 py-1.5 text-xs text-foreground" style={{ borderRadius: 'var(--radius)' }} />
-            </div>
-          )}
         </div>
         <div>
           <label className="text-[10px] text-muted-foreground uppercase">Default Deposit Account</label>

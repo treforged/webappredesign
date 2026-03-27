@@ -21,7 +21,7 @@ function SavingsGrowthChart({ goals }: { goals: any[] }) {
   const chartData = useMemo(() => {
     const months: Record<string, any>[] = [];
     for (let i = 0; i < 12; i++) {
-      const entry: Record<string, any> = { month: new Date(new Date().getFullYear(), new Date().getMonth() + i).toLocaleString('en', { month: 'short', year: '2-digit' }) };
+      const entry: Record<string, any> = { month: new Date(2026, new Date().getMonth() + i).toLocaleString('en', { month: 'short', year: '2-digit' }) };
       goals.forEach(g => { entry[g.name] = Math.min(Number(g.current_amount) + Number(g.monthly_contribution) * i, Number(g.target_amount)); });
       months.push(entry);
     }
