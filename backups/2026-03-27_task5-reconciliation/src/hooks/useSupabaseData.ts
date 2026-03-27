@@ -267,39 +267,6 @@ export function useDebts() {
   return { data: query.data ?? [], loading: query.isLoading, error: query.error, add, update, remove };
 }
 
-// ─── Account Reconciliations ──────────────────────────────
-export function useAccountReconciliations() {
-  const { user, isDemo } = useAuth();
-  const qc = useQueryClient();
-  const query = useQuery({
-    queryKey: ['account_reconciliations', isDemo ? 'demo' : user?.id],
-    enabled: !isDemo && !!user,
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase.from('account_reconciliations' as any).select('*').eq('user_id', user.id).order('effective_date', { ascending: false });
-      if (error) throw error;
-      return (data as any[]) ?? [];
-    },
-  });
-  const add = useMutation({
-    mutationFn: async (item: {
-      account_id: string;
-      source_table: 'accounts' | 'liabilities' | 'debts';
-      effective_date: string;
-      delta: number;
-      actual_balance: number;
-      projected_balance: number;
-    }) => {
-      if (isDemo || !user) throw new Error('Demo mode');
-      const { error } = await supabase.from('account_reconciliations' as any).insert({ ...item, user_id: user.id });
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['account_reconciliations'] }); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  return { data: query.data ?? [], loading: query.isLoading, add };
-}
-
 // ─── Savings Goals ────────────────────────────────────────
 export function useSavingsGoals() {
   const { user, isDemo } = useAuth();

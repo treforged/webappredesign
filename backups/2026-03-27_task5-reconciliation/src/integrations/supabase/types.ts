@@ -2,7 +2,7 @@
 // Run: npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/integrations/supabase/types.ts
 //
 // The schema includes these tables:
-// account_reconciliations, accounts, assets, budget_items, car_funds, debts, liabilities,
+// accounts, assets, budget_items, car_funds, debts, liabilities,
 // profiles, recurring_rules, savings_goals, subscription_tiers,
 // subscriptions, transactions, user_subscriptions
 
@@ -20,42 +20,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      account_reconciliations: {
-        Row: {
-          id: string
-          user_id: string
-          account_id: string
-          source_table: 'accounts' | 'liabilities' | 'debts'
-          effective_date: string
-          delta: number
-          actual_balance: number
-          projected_balance: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          account_id: string
-          source_table: 'accounts' | 'liabilities' | 'debts'
-          effective_date: string
-          delta: number
-          actual_balance: number
-          projected_balance: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          account_id?: string
-          source_table?: 'accounts' | 'liabilities' | 'debts'
-          effective_date?: string
-          delta?: number
-          actual_balance?: number
-          projected_balance?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
       accounts: {
         Row: {
           account_type: string

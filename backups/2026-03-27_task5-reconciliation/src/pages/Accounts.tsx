@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
-import { useAccounts, useDebts, useAccountReconciliations } from '@/hooks/useSupabaseData';
+import { useAccounts, useDebts } from '@/hooks/useSupabaseData';
 import MetricCard from '@/components/shared/MetricCard';
 import FormModal from '@/components/shared/FormModal';
 import {
@@ -47,7 +47,6 @@ const emptyForm = { name: '', account_type: 'checking', institution: '', balance
 export default function Accounts() {
   const { data: accounts, add, update, remove, loading } = useAccounts();
   const { data: debts, update: updateDebt, add: addDebt } = useDebts();
-  const { add: addReconciliation } = useAccountReconciliations();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -93,24 +92,8 @@ export default function Accounts() {
       balance, credit_limit: parseFloat(form.credit_limit) || null, apr: parseFloat(form.apr) || null,
       notes: form.notes, active: true,
     };
-    if (editId) {
-      const existingAccount = accounts.find((a: any) => a.id === editId);
-      const projectedBalance = existingAccount ? Number(existingAccount.balance) : balance;
-      const delta = balance - projectedBalance;
-      update.mutate({ id: editId, ...payload });
-      if (delta !== 0) {
-        addReconciliation.mutate({
-          account_id: editId,
-          source_table: 'accounts',
-          effective_date: new Date().toISOString().split('T')[0],
-          delta,
-          actual_balance: balance,
-          projected_balance: projectedBalance,
-        });
-      }
-    } else {
-      add.mutate(payload);
-    }
+    if (editId) update.mutate({ id: editId, ...payload });
+    else add.mutate(payload);
     
     // Sync min_payment to debts table for credit card / debt accounts
     if (isLiability(form.account_type) && form.min_payment) {
