@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -39,14 +38,6 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-6">
-          <Link
-            to="/"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Back to home
-          </Link>
-        </div>
         <div className="text-center mb-8">
           <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -75,11 +66,6 @@ export default function Auth() {
             </button>
           </p>
         </form>
-        <p className="text-[10px] text-muted-foreground text-center mt-4">
-          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-          {' · '}
-          <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-        </p>
       </div>
     </div>
   );

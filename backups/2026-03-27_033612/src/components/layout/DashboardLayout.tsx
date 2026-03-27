@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 
@@ -11,11 +11,9 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
         <footer className="hidden lg:block border-t border-border py-4 px-6">
-          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
-            <span>&copy; {new Date().getFullYear()} TRE Forged LLC. All rights reserved.</span>
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-          </div>
+          <p className="text-[10px] text-muted-foreground text-center">
+            &copy; {new Date().getFullYear()} TRE Forged LLC. All rights reserved.
+          </p>
         </footer>
       </div>
       <MobileNav />

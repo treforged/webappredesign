@@ -21,7 +21,6 @@ const PremiumCancel = lazy(() => import("@/pages/PremiumCancel"));
 const BudgetControl = lazy(() => import("@/pages/BudgetControl"));
 const Forecast = lazy(() => import("@/pages/Forecast"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
-const Legal = lazy(() => import("@/pages/Legal"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,8 +66,6 @@ function AppRoutes() {
         <Route path="/premium/success" element={<Suspense fallback={<PageLoader />}><PremiumSuccess /></Suspense>} />
         <Route path="/premium/cancel" element={<Suspense fallback={<PageLoader />}><PremiumCancel /></Suspense>} />
       </Route>
-      <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
-      <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
       <Route path="/subscriptions" element={<Navigate to="/budget" replace />} />
       <Route path="/car-fund" element={<Navigate to="/savings" replace />} />
       <Route path="*" element={<NotFound />} />
