@@ -90,9 +90,7 @@ export default function SettingsPage() {
     if (!hasStripeCustomer) return;
     setPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-portal-session', {
-        body: { return_url: window.location.origin },
-      });
+      const { data, error } = await supabase.functions.invoke('create-portal-link');
       if (error) throw error;
       if (data?.url) window.location.href = data.url;
     } catch (err: any) {

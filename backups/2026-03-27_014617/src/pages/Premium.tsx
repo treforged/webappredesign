@@ -23,6 +23,9 @@ export default function Premium() {
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { return_url: window.location.origin },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -50,6 +53,9 @@ export default function Premium() {
 
       const { data, error } = await supabase.functions.invoke('create-portal-session', {
         body: { return_url: window.location.origin },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
