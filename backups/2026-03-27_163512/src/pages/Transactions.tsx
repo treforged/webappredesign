@@ -4,9 +4,8 @@ import { formatCurrency } from '@/lib/calculations';
 import { useTransactions, useAccounts, useRecurringRules, useDebts, useProfile, useAccountReconciliations } from '@/hooks/useSupabaseData';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { CATEGORIES } from '@/lib/types';
-import { getCurrentMonthDebtRecommendations, buildCardData, simulateVariablePayoff } from '@/lib/credit-card-engine';
+import { getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
 import { createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
-import { generateScheduledEvents } from '@/lib/scheduling';
 import FormModal from '@/components/shared/FormModal';
 import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Copy, Repeat, AlertTriangle, Landmark, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
@@ -96,65 +95,11 @@ export default function Transactions() {
     }));
   }, [reconciliations]);
 
-  // Projected debt payment transactions from the simulation engine — only for forecast view
-  const projectedDebtPaymentTxns = useMemo(() => {
-    if (filterMonth !== 'forecast') return [];
-    const cards = buildCardData(accounts, baseTxns, rules, debts);
-    if (cards.length === 0) return [];
-
-    const liquidTypes = ['checking', 'business_checking', 'cash'];
-    const liquidCash = accounts.filter((a: any) => a.active && liquidTypes.includes(a.account_type))
-      .reduce((s: number, a: any) => s + Number(a.balance), 0);
-    const cashFloor = Number(profile?.cash_floor) || 1000;
-    const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
-    const taxRate = Number(profile?.tax_rate) || 22;
-    const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
-    const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
-      .reduce((s: number, r: any) => {
-        const amt = Number(r.amount);
-        if (r.frequency === 'weekly') return s + amt * 4.33;
-        if (r.frequency === 'yearly') return s + amt / 12;
-        return s + amt;
-      }, 0);
-
-    const schedEvts = generateScheduledEvents(rules, accounts, 36);
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const monthEvts: { income: number; expenses: number }[] = Array.from({ length: 36 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const evts = schedEvts
-        .filter(e => e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr))
-        .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.type === 'expense' ? -1 : 1));
-      return {
-        income: evts.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0),
-        expenses: evts.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0),
-      };
-    });
-
-    const sim = simulateVariablePayoff(cards, liquidCash, cashFloor, 'avalanche', monthlyTakeHome, monthlyExpenses, 36, monthEvts, fundingAccountId || undefined);
-
-    return sim.debtPaymentTransactions.map(p => ({
-      id: `proj:${p.card}:${p.date}`,
-      date: p.date,
-      type: 'expense' as const,
-      amount: p.amount,
-      category: p.category,
-      note: p.description,
-      payment_source: p.account ? `account:${p.account}` : '',
-      isGenerated: true,
-      isDebtPayment: true,
-      projected: true,
-      debtCardId: p.card,
-      debtCardName: p.description.replace(' Payment', ''),
-    }));
-  }, [filterMonth, accounts, baseTxns, rules, debts, profile, fundingAccountId]);
-
   // Merge real + generated recurring + debt payments + reconciliations
   const allTransactions = useMemo(() => {
     const merged = mergeDebtPaymentsIntoStream(baseTxns, debtPaymentTransactions);
-    return [...merged, ...reconciliationTxns, ...projectedDebtPaymentTxns].sort((a, b) => b.date.localeCompare(a.date));
-  }, [baseTxns, debtPaymentTransactions, reconciliationTxns, projectedDebtPaymentTxns]);
+    return [...merged, ...reconciliationTxns].sort((a, b) => b.date.localeCompare(a.date));
+  }, [baseTxns, debtPaymentTransactions, reconciliationTxns]);
 
   const paymentSourceOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [{ value: 'cash', label: 'Cash' }];
@@ -215,8 +160,6 @@ export default function Transactions() {
 
   const filtered = useMemo(() => {
     return allTransactions.filter(t => {
-      // Projected transactions only appear in forecast mode
-      if ((t as any).projected && filterMonth !== 'forecast') return false;
       // Date filter
       if (filterMonth !== 'all') {
         const txMonth = t.date.slice(0, 7);
@@ -439,17 +382,15 @@ export default function Transactions() {
           const isRecon = (t as any).isReconciliation;
           const sourceMissing = !isRecon && isSourceMissing(t.payment_source);
           const reconDelta = (t as any).reconciliationDelta as number | undefined;
-          const isProjected = (t as any).projected === true;
           return (
-            <div key={t.id} className={`flex items-center justify-between px-4 py-3 ${isProjected ? 'opacity-50' : t.isGenerated ? 'bg-muted/5' : ''} ${(t as any).isDebtPayment ? 'border-l-2 border-l-primary/40' : ''} ${isRecon ? 'border-l-2 border-l-amber-500/40' : ''}`}>
+            <div key={t.id} className={`flex items-center justify-between px-4 py-3 ${t.isGenerated ? 'bg-muted/5' : ''} ${(t as any).isDebtPayment ? 'border-l-2 border-l-primary/40' : ''} ${isRecon ? 'border-l-2 border-l-amber-500/40' : ''}`}>
               <div className="flex items-center gap-3">
                 {isRecon ? <SlidersHorizontal size={14} className="text-amber-500" /> : (t as any).isDebtPayment ? <Landmark size={14} className="text-primary" /> : t.type === 'income' ? <ArrowUpRight size={14} className="text-success" /> : <ArrowDownRight size={14} className="text-destructive" />}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="text-xs font-medium">{t.note || '—'}</p>
-                    {t.isGenerated && !(t as any).isDebtPayment && !isProjected && <Repeat size={10} className="text-primary" />}
-                    {(t as any).isDebtPayment && !isProjected && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }}>debt payoff</span>}
-                    {isProjected && <span className="text-[9px] text-muted-foreground bg-muted/30 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }}>projected</span>}
+                    {t.isGenerated && !(t as any).isDebtPayment && <Repeat size={10} className="text-primary" />}
+                    {(t as any).isDebtPayment && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }}>debt payoff</span>}
                     {isRecon && <span className="text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }} title="Manual balance correction">reconciled</span>}
                     {sourceMissing && <span className="text-destructive" aria-label="Linked account not found"><AlertTriangle size={10} /></span>}
                   </div>
@@ -462,9 +403,9 @@ export default function Transactions() {
                 <span className={`text-xs font-semibold font-display whitespace-nowrap ${isRecon ? (reconDelta !== undefined && reconDelta >= 0 ? 'text-success' : 'text-destructive') : t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                   {isRecon ? (reconDelta !== undefined && reconDelta >= 0 ? '+' : '') : (t.type === 'income' ? '+' : '-')}{isRecon && reconDelta !== undefined ? formatCurrency(reconDelta, false) : formatCurrency(Number(t.amount), false)}
                 </span>
-                {!isRecon && !isProjected && <button onClick={() => duplicateTransaction(t)} className="text-muted-foreground hover:text-foreground" title="Duplicate"><Copy size={12} /></button>}
-                {!isRecon && !isProjected && <button onClick={() => handleEditClick(t)} className="text-muted-foreground hover:text-foreground" title="Edit"><Edit2 size={12} /></button>}
-                {!isRecon && !isProjected && !t.isGenerated && (
+                {!isRecon && <button onClick={() => duplicateTransaction(t)} className="text-muted-foreground hover:text-foreground" title="Duplicate"><Copy size={12} /></button>}
+                {!isRecon && <button onClick={() => handleEditClick(t)} className="text-muted-foreground hover:text-foreground" title="Edit"><Edit2 size={12} /></button>}
+                {!isRecon && !t.isGenerated && (
                   <button onClick={() => handleDelete(t.id)} className={`${deleteConfirm === t.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={12} /></button>
                 )}
               </div>

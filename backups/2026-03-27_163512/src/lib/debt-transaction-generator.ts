@@ -97,7 +97,7 @@ export function generateDebtPaymentTransactions(
     }
   }
 
-  return result.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  return result;
 }
 
 function getCardProjections(

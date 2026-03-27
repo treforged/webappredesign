@@ -122,9 +122,6 @@ export default function Forecast() {
       const liquidTypes = ['checking', 'business_checking', 'cash'];
       const liquidCash = accounts.filter((a: any) => a.active && liquidTypes.includes(a.account_type))
         .reduce((s: number, a: any) => s + Number(a.balance), 0);
-      const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
-      const taxRate = Number(profile?.tax_rate) || 22;
-      const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
       const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
         .reduce((s: number, r: any) => {
           const amt = Number(r.amount);
@@ -132,24 +129,12 @@ export default function Forecast() {
           if (r.frequency === 'yearly') return s + amt / 12;
           return s + amt;
         }, 0);
-
-      // Build per-month event arrays (C1 / C5): month 0 = today→EOM, months 1+ = full month
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const monthEvents: { income: number; expenses: number }[] = Array.from({ length: 36 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const eventsInMonth = scheduledEvents
-          .filter(e => e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr))
-          .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.type === 'expense' ? -1 : 1));
-        return {
-          income: eventsInMonth.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0),
-          expenses: eventsInMonth.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0),
-        };
-      });
+      const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
+      const taxRate = Number(profile?.tax_rate) || 22;
+      const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
 
       const projs = (() => {
-        const sim = simulateVariablePayoff(cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche', monthlyTakeHome, monthlyExpenses, 36, monthEvents);
+        const sim = simulateVariablePayoff(cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche', monthlyTakeHome, monthlyExpenses, 36);
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];
           return projectCardVariable(c, pays, 36);
@@ -176,7 +161,7 @@ export default function Forecast() {
       });
       return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })) };
     } catch { return null; }
-  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents]);
+  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig]);
 
   // One-time manual transactions for forecast
   const oneTimeByMonth = useMemo(() => {
