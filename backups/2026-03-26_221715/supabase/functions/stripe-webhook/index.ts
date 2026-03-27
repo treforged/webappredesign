@@ -53,8 +53,11 @@ Deno.serve(async (req) => {
       const subscriptionId = session.subscription;
 
       if (userId && subscriptionId) {
-        // Fix 9: use Stripe SDK instead of raw fetch
-        const sub = await stripe.subscriptions.retrieve(subscriptionId as string);
+        // Fetch subscription details
+        const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
+          headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+        });
+        const sub = await subRes.json();
 
         await supabase.from("user_subscriptions").upsert({
           user_id: userId,
@@ -62,10 +65,11 @@ Deno.serve(async (req) => {
           stripe_subscription_id: subscriptionId,
           plan: "premium",
           subscription_status: sub.status,
-          current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
         }, { onConflict: "user_id" });
 
-        // Fix 6: profiles.is_premium removed — user_subscriptions is the only authority
+        // Also update profiles.is_premium
+        await supabase.from("profiles").update({ is_premium: true }).eq("user_id", userId);
       }
     }
 
@@ -73,6 +77,7 @@ Deno.serve(async (req) => {
       const sub = event.data.object;
       const customerId = sub.customer;
 
+      // Look up user by stripe_customer_id
       const { data: userSub } = await supabase
         .from("user_subscriptions")
         .select("user_id")
@@ -84,45 +89,17 @@ Deno.serve(async (req) => {
         await supabase.from("user_subscriptions").update({
           subscription_status: sub.status,
           plan: isActive ? "premium" : "free",
-          current_period_end: (sub as any).current_period_end
-            ? new Date((sub as any).current_period_end * 1000).toISOString()
+          current_period_end: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000).toISOString()
             : null,
         }).eq("user_id", userSub.user_id);
 
-        // Fix 6: profiles.is_premium removed — user_subscriptions is the only authority
-      }
-    }
-
-    // Fix 4: handle invoice.payment_succeeded to re-activate past_due subscriptions
-    if (event.type === "invoice.payment_succeeded") {
-      const invoice = event.data.object as any;
-      const customerId = invoice.customer;
-      const subscriptionId = invoice.subscription;
-
-      // Only act on subscription invoices (not one-time charges)
-      if (!subscriptionId) {
-        return new Response(JSON.stringify({ received: true }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: userSub } = await supabase
-        .from("user_subscriptions")
-        .select("user_id")
-        .eq("stripe_customer_id", customerId)
-        .maybeSingle();
-
-      if (userSub) {
-        await supabase.from("user_subscriptions").update({
-          subscription_status: "active",
-          stripe_subscription_id: subscriptionId,
-        }).eq("user_id", userSub.user_id);
+        await supabase.from("profiles").update({ is_premium: isActive }).eq("user_id", userSub.user_id);
       }
     }
 
     if (event.type === "invoice.payment_failed") {
-      const invoice = event.data.object as any;
+      const invoice = event.data.object;
       const customerId = invoice.customer;
 
       const { data: userSub } = await supabase

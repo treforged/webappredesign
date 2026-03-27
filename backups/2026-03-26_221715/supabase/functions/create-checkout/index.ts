@@ -58,35 +58,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Valid coupon: grant premium directly, no Stripe session needed.
-      // Fix 7: use UPDATE if row exists, INSERT if not — never overwrite
-      // stripe_customer_id or stripe_subscription_id so existing Stripe
-      // linkage is preserved if the user has ever started a checkout.
+      // Valid coupon: grant premium directly, no Stripe session needed
       const serviceClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
-
-      const { data: existingRow } = await serviceClient
+      const { error: upsertError } = await serviceClient
         .from("user_subscriptions")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existingRow) {
-        // Row exists — update only plan and status, leave all Stripe IDs untouched
-        const { error: updateError } = await serviceClient
-          .from("user_subscriptions")
-          .update({ plan: "premium", subscription_status: "active" })
-          .eq("user_id", userId);
-        if (updateError) throw updateError;
-      } else {
-        // New user — insert minimal record (no Stripe IDs; none exist yet)
-        const { error: insertError } = await serviceClient
-          .from("user_subscriptions")
-          .insert({ user_id: userId, plan: "premium", subscription_status: "active" });
-        if (insertError) throw insertError;
-      }
+        .upsert(
+          { user_id: userId, plan: "premium", subscription_status: "active" },
+          { onConflict: "user_id" }
+        );
+      if (upsertError) throw upsertError;
 
       return new Response(JSON.stringify({ granted: true }), {
         status: 200,

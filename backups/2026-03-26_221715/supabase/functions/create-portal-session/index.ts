@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fix 5: ignore client-provided return_url — use trusted Origin header only
-    const origin = req.headers.get("origin") || "https://app.treforged.com";
+    const { return_url } = await req.json();
+    const origin = return_url || req.headers.get("origin") || "https://app.treforged.com";
 
     const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
       method: "POST",
