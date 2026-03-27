@@ -1,13 +1,13 @@
 import { useState, useMemo, useCallback } from 'react';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
-import { useTransactions, useAccounts, useRecurringRules, useDebts, useProfile, useAccountReconciliations } from '@/hooks/useSupabaseData';
+import { useTransactions, useAccounts, useRecurringRules, useDebts, useProfile } from '@/hooks/useSupabaseData';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { CATEGORIES } from '@/lib/types';
 import { getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
 import { createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
 import FormModal from '@/components/shared/FormModal';
-import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Copy, Repeat, AlertTriangle, Landmark, SlidersHorizontal } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Copy, Repeat, AlertTriangle, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ALL_CATEGORIES = ['Income', ...CATEGORIES];
@@ -20,7 +20,6 @@ export default function Transactions() {
   const { data: rules, update: updateRule } = useRecurringRules();
   const { data: debts } = useDebts();
   const { data: profile } = useProfile();
-  const { data: reconciliations } = useAccountReconciliations();
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -77,29 +76,11 @@ export default function Transactions() {
     return createDebtPaymentTransactions(recs, fundingAccountId || null);
   }, [accounts, baseTxns, rules, debts, profile, fundingAccountId]);
 
-  // Map reconciliation records to transaction-like shape for rendering
-  const reconciliationTxns = useMemo(() => {
-    return (reconciliations || []).map((r: any) => ({
-      id: `recon:${r.id}`,
-      date: r.effective_date,
-      type: r.delta >= 0 ? 'income' : 'expense',
-      amount: Math.abs(r.delta),
-      category: 'Balance Adjustment',
-      note: 'Balance Adjustment',
-      payment_source: '',
-      account: '',
-      isGenerated: false,
-      isDebtPayment: false,
-      isReconciliation: true,
-      reconciliationDelta: r.delta,
-    }));
-  }, [reconciliations]);
-
-  // Merge real + generated recurring + debt payments + reconciliations
+  // Merge real + generated recurring + debt payments with shared dedup helper
   const allTransactions = useMemo(() => {
     const merged = mergeDebtPaymentsIntoStream(baseTxns, debtPaymentTransactions);
-    return [...merged, ...reconciliationTxns].sort((a, b) => b.date.localeCompare(a.date));
-  }, [baseTxns, debtPaymentTransactions, reconciliationTxns]);
+    return merged.sort((a, b) => b.date.localeCompare(a.date));
+  }, [baseTxns, debtPaymentTransactions]);
 
   const paymentSourceOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [{ value: 'cash', label: 'Cash' }];
@@ -379,33 +360,30 @@ export default function Transactions() {
         {filtered.length === 0 ? (
           <div className="p-8 text-center"><p className="text-sm text-muted-foreground">No transactions found.</p></div>
         ) : filtered.map(t => {
-          const isRecon = (t as any).isReconciliation;
-          const sourceMissing = !isRecon && isSourceMissing(t.payment_source);
-          const reconDelta = (t as any).reconciliationDelta as number | undefined;
+          const sourceMissing = isSourceMissing(t.payment_source);
           return (
-            <div key={t.id} className={`flex items-center justify-between px-4 py-3 ${t.isGenerated ? 'bg-muted/5' : ''} ${(t as any).isDebtPayment ? 'border-l-2 border-l-primary/40' : ''} ${isRecon ? 'border-l-2 border-l-amber-500/40' : ''}`}>
+            <div key={t.id} className={`flex items-center justify-between px-4 py-3 ${t.isGenerated ? 'bg-muted/5' : ''} ${(t as any).isDebtPayment ? 'border-l-2 border-l-primary/40' : ''}`}>
               <div className="flex items-center gap-3">
-                {isRecon ? <SlidersHorizontal size={14} className="text-amber-500" /> : (t as any).isDebtPayment ? <Landmark size={14} className="text-primary" /> : t.type === 'income' ? <ArrowUpRight size={14} className="text-success" /> : <ArrowDownRight size={14} className="text-destructive" />}
+                {(t as any).isDebtPayment ? <Landmark size={14} className="text-primary" /> : t.type === 'income' ? <ArrowUpRight size={14} className="text-success" /> : <ArrowDownRight size={14} className="text-destructive" />}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="text-xs font-medium">{t.note || '—'}</p>
                     {t.isGenerated && !(t as any).isDebtPayment && <Repeat size={10} className="text-primary" />}
                     {(t as any).isDebtPayment && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }}>debt payoff</span>}
-                    {isRecon && <span className="text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }} title="Manual balance correction">reconciled</span>}
                     {sourceMissing && <span className="text-destructive" aria-label="Linked account not found"><AlertTriangle size={10} /></span>}
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    {t.date} · {t.category}{!isRecon && <> · {sourceMissing ? <span className="text-destructive">⚠ Missing account</span> : getSourceLabel(t.payment_source)}</>}
+                    {t.date} · {t.category} · {sourceMissing ? <span className="text-destructive">⚠ Missing account</span> : getSourceLabel(t.payment_source)}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-xs font-semibold font-display whitespace-nowrap ${isRecon ? (reconDelta !== undefined && reconDelta >= 0 ? 'text-success' : 'text-destructive') : t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
-                  {isRecon ? (reconDelta !== undefined && reconDelta >= 0 ? '+' : '') : (t.type === 'income' ? '+' : '-')}{isRecon && reconDelta !== undefined ? formatCurrency(reconDelta, false) : formatCurrency(Number(t.amount), false)}
+                <span className={`text-xs font-semibold font-display ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                  {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount), false)}
                 </span>
-                {!isRecon && <button onClick={() => duplicateTransaction(t)} className="text-muted-foreground hover:text-foreground" title="Duplicate"><Copy size={12} /></button>}
-                {!isRecon && <button onClick={() => handleEditClick(t)} className="text-muted-foreground hover:text-foreground" title="Edit"><Edit2 size={12} /></button>}
-                {!isRecon && !t.isGenerated && (
+                <button onClick={() => duplicateTransaction(t)} className="text-muted-foreground hover:text-foreground" title="Duplicate"><Copy size={12} /></button>
+                <button onClick={() => handleEditClick(t)} className="text-muted-foreground hover:text-foreground" title="Edit"><Edit2 size={12} /></button>
+                {!t.isGenerated && (
                   <button onClick={() => handleDelete(t.id)} className={`${deleteConfirm === t.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={12} /></button>
                 )}
               </div>

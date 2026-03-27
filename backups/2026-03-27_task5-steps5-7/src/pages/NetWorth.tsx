@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
-import { useAccounts, useAssets, useLiabilities, useAccountReconciliations } from '@/hooks/useSupabaseData';
+import { useAccounts, useAssets, useLiabilities } from '@/hooks/useSupabaseData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import MetricCard from '@/components/shared/MetricCard';
@@ -48,7 +48,6 @@ export default function NetWorth() {
   const { data: accounts } = useAccounts();
   const { data: manualAssets, add: addAsset, update: updateAsset, remove: removeAsset } = useAssets();
   const { data: manualLiabilities, add: addLiability, update: updateLiability, remove: removeLiability } = useLiabilities();
-  const { add: addReconciliation } = useAccountReconciliations();
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showLiabilityForm, setShowLiabilityForm] = useState(false);
@@ -145,20 +144,7 @@ export default function NetWorth() {
     const bal = parseFloat(liabilityForm.balance);
     if (!liabilityForm.name || isNaN(bal)) return;
     if (editLiabilityId && !editLiabilityId.startsWith('live:')) {
-      const existingLiability = manualLiabilities.find((l: any) => l.id === editLiabilityId);
-      const projectedBalance = existingLiability ? Number(existingLiability.balance) : bal;
-      const delta = bal - projectedBalance;
       updateLiability.mutate({ id: editLiabilityId, name: liabilityForm.name, type: liabilityForm.type, balance: bal, apr: parseFloat(liabilityForm.apr) || 0, notes: liabilityForm.notes });
-      if (delta !== 0) {
-        addReconciliation.mutate({
-          account_id: editLiabilityId,
-          source_table: 'liabilities',
-          effective_date: new Date().toISOString().split('T')[0],
-          delta,
-          actual_balance: bal,
-          projected_balance: projectedBalance,
-        });
-      }
     } else {
       addLiability.mutate({ name: liabilityForm.name, type: liabilityForm.type, balance: bal, apr: parseFloat(liabilityForm.apr) || 0, notes: liabilityForm.notes });
     }

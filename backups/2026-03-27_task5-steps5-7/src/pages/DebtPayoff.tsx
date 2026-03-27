@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency, calculatePayoffMonths, calculateTotalInterest, simulateDebtPayoff } from '@/lib/calculations';
-import { useDebts, useAccounts, useTransactions, useRecurringRules, useProfile, useAccountReconciliations } from '@/hooks/useSupabaseData';
+import { useDebts, useAccounts, useTransactions, useRecurringRules, useProfile } from '@/hooks/useSupabaseData';
 import FormModal from '@/components/shared/FormModal';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import CreditCardEngine from '@/components/debt/CreditCardEngine';
@@ -13,7 +13,6 @@ const emptyForm = { name: '', balance: '', apr: '', min_payment: '', target_paym
 
 export default function DebtPayoff() {
   const { data: debts, add, update, remove } = useDebts();
-  const { add: addReconciliation } = useAccountReconciliations();
   const { data: accounts } = useAccounts();
   const { data: transactions } = useTransactions();
   const { data: rules } = useRecurringRules();
@@ -77,24 +76,8 @@ export default function DebtPayoff() {
       name: form.name, balance, apr: parseFloat(form.apr) || 0, min_payment: parseFloat(form.min_payment) || 0,
       target_payment: parseFloat(form.target_payment) || parseFloat(form.min_payment) || 0, credit_limit: parseFloat(form.credit_limit) || 0,
     };
-    if (editId) {
-      const existingDebt = debts?.find((d: any) => d.id === editId);
-      const projectedBalance = existingDebt ? Number(existingDebt.balance) : balance;
-      const delta = balance - projectedBalance;
-      update.mutate({ id: editId, ...payload });
-      if (delta !== 0) {
-        addReconciliation.mutate({
-          account_id: editId,
-          source_table: 'debts',
-          effective_date: new Date().toISOString().split('T')[0],
-          delta,
-          actual_balance: balance,
-          projected_balance: projectedBalance,
-        });
-      }
-    } else {
-      add.mutate(payload);
-    }
+    if (editId) update.mutate({ id: editId, ...payload });
+    else add.mutate(payload);
     setShowForm(false);
   };
 
