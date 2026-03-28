@@ -4,7 +4,7 @@ import { usePersistedState } from '@/hooks/usePersistedState';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { useDebts, useSavingsGoals, useCarFunds, useAccounts, useSubscriptions, useBudgetItems, useProfile, useRecurringRules, useTransactions } from '@/hooks/useSupabaseData';
 import { generateScheduledEvents, aggregateByMonth } from '@/lib/scheduling';
-import { simulateVariablePayoff, buildCardData, projectCardVariable, getCurrentMonthDebtRecommendations, CC_DEFAULT_CATEGORIES } from '@/lib/credit-card-engine';
+import { simulateVariablePayoff, buildCardData, projectCardVariable, getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
 import { getDebtPaymentsByMonth, getDebtBalancesByMonth } from '@/lib/debt-transaction-generator';
 import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
 import {
@@ -76,7 +76,6 @@ export default function Forecast() {
   const [viewMode, setViewMode] = usePersistedState<'monthly' | 'detailed'>('tre:forecast:viewMode', 'monthly');
   const [hiddenSeries, setHiddenSeries] = usePersistedState<string[]>('tre:forecast:hidden', []);
   const [calcDrawer, setCalcDrawer] = useState<{ title: string; lines: { label: string; value: string; op?: string }[] } | null>(null);
-  const [pauseSavings] = usePersistedState<boolean>('tre:debtpayoff:pause-savings', false);
 
   const toggleSeries = useCallback((key: string) => {
     setHiddenSeries((prev: string[]) => {
@@ -123,7 +122,6 @@ export default function Forecast() {
       const liquidTypes = ['checking', 'business_checking', 'cash'];
       const liquidCash = accounts.filter((a: any) => a.active && liquidTypes.includes(a.account_type))
         .reduce((s: number, a: any) => s + Number(a.balance), 0);
-      // Scalar fallbacks (used only when monthEvents not provided by legacy callers)
       const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
       const taxRate = Number(profile?.tax_rate) || 22;
       const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
@@ -135,120 +133,23 @@ export default function Forecast() {
           return s + amt;
         }, 0);
 
-      // ── Build event-based monthEvents + cardPurchasesPerMonth (T1/T2/T3/T4/T5) ──
+      // Build per-month event arrays (C1 / C5): month 0 = today→EOM, months 1+ = full month
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-
-      // Liquid account IDs (checking / cash — income landing here is available for debt payoff)
-      const liquidAccountIds = new Set<string>(
-        accounts
-          .filter((a: any) => a.active && ['checking', 'business_checking', 'cash'].includes(a.account_type))
-          .map((a: any) => a.id),
-      );
-
-      // Income rules depositing into a liquid account (no deposit_account = paycheck → liquid)
-      const incomeToLiquidRuleIds = new Set<string>(
-        rules.filter((r: any) =>
-          r.active && r.rule_type === 'income' &&
-          (!r.deposit_account || liquidAccountIds.has(r.deposit_account)),
-        ).map((r: any) => r.id),
-      );
-
-      // CC payment source keys
-      const ccPaymentSources = new Set<string>(
-        cards.flatMap(c => [c.id, `account:${c.id}`]),
-      );
-
-      // Explicitly CC-tagged expense rule IDs
-      const ccExplicitRuleIds = new Set<string>(
-        rules.filter((r: any) =>
-          r.active && r.rule_type === 'expense' &&
-          r.payment_source && ccPaymentSources.has(r.payment_source),
-        ).map((r: any) => r.id),
-      );
-
-      // Default-card rules: no payment_source, category in CC_DEFAULT_CATEGORIES
-      // These go to the highest-APR card by convention
-      const highestAprCardId = cards.length > 0
-        ? [...cards].sort((a, b) => b.apr - a.apr)[0].id : '';
-      const ccDefaultRuleIds = new Set<string>(
-        rules.filter((r: any) =>
-          r.active && r.rule_type === 'expense' &&
-          !r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category),
-        ).map((r: any) => r.id),
-      );
-
-      const allCcRuleIds = new Set<string>([...ccExplicitRuleIds, ...ccDefaultRuleIds]);
-
-      // Per-card rule ID map for purchase tracking
-      const cardRuleIdMap = new Map<string, Set<string>>(
-        cards.map(c => {
-          const cKey = `account:${c.id}`;
-          const ids = new Set<string>(
-            rules.filter((r: any) =>
-              r.active && r.rule_type === 'expense' &&
-              (r.payment_source === c.id || r.payment_source === cKey),
-            ).map((r: any) => r.id),
-          );
-          if (c.id === highestAprCardId) {
-            ccDefaultRuleIds.forEach(id => ids.add(id));
-          }
-          return [c.id, ids];
-        }),
-      );
-
-      // Savings/investing rule IDs (excluded from cash expenses when pauseSavings)
-      const savingsRuleIds = new Set<string>(
-        rules.filter((r: any) =>
-          r.active && r.rule_type === 'expense' &&
-          (r.category === 'Savings' || r.category === 'Investing'),
-        ).map((r: any) => r.id),
-      );
-
-      const monthEvents: { income: number; expenses: number }[] = [];
-      const cardPurchasesPerMonth: { [cardId: string]: number }[] = [];
-
-      for (let i = 0; i < 36; i++) {
+      const monthEvents: { income: number; expenses: number }[] = Array.from({ length: 36 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-        const eventsInMonth = scheduledEvents.filter(e =>
-          e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr),
-        );
-
-        const income = eventsInMonth
-          .filter(e => e.type === 'income' && e.ruleId && incomeToLiquidRuleIds.has(e.ruleId))
-          .reduce((s, e) => s + e.amount, 0);
-
-        const cashExpenses = eventsInMonth
-          .filter(e =>
-            e.type === 'expense' &&
-            !(e.ruleId && allCcRuleIds.has(e.ruleId)) &&
-            !(pauseSavings && e.ruleId && savingsRuleIds.has(e.ruleId)),
-          )
-          .reduce((s, e) => s + e.amount, 0);
-
-        monthEvents.push({ income, expenses: cashExpenses });
-
-        // Per-card purchases: month 0 = 0 (already in live card.balance), months 1+ compute
-        const cardPurchases: { [cardId: string]: number } = {};
-        if (i > 0) {
-          for (const card of cards) {
-            const ruleIds = cardRuleIdMap.get(card.id) ?? new Set<string>();
-            cardPurchases[card.id] = eventsInMonth
-              .filter(e => e.type === 'expense' && e.ruleId && ruleIds.has(e.ruleId))
-              .reduce((s, e) => s + e.amount, 0);
-          }
-        }
-        cardPurchasesPerMonth.push(cardPurchases);
-      }
+        const eventsInMonth = scheduledEvents
+          .filter(e => e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr))
+          .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.type === 'expense' ? -1 : 1));
+        return {
+          income: eventsInMonth.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0),
+          expenses: eventsInMonth.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0),
+        };
+      });
 
       const projs = (() => {
-        const sim = simulateVariablePayoff(
-          cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche',
-          monthlyTakeHome, monthlyExpenses, 36,
-          monthEvents, undefined, cardPurchasesPerMonth,
-        );
+        const sim = simulateVariablePayoff(cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche', monthlyTakeHome, monthlyExpenses, 36, monthEvents);
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];
           return projectCardVariable(c, pays, 36);
@@ -275,7 +176,7 @@ export default function Forecast() {
       });
       return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })) };
     } catch { return null; }
-  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents, pauseSavings]);
+  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents]);
 
   // One-time manual transactions for forecast
   const oneTimeByMonth = useMemo(() => {

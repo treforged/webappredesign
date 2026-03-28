@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { usePersistedState } from '@/hooks/usePersistedState';
 import { formatCurrency, calculatePayoffMonths, calculateTotalInterest, simulateDebtPayoff } from '@/lib/calculations';
 import { useDebts, useAccounts, useTransactions, useRecurringRules, useProfile, useAccountReconciliations } from '@/hooks/useSupabaseData';
 import FormModal from '@/components/shared/FormModal';
@@ -22,7 +21,6 @@ export default function DebtPayoff() {
   const { isPremium } = useSubscription();
   const { isDemo } = useAuth();
 
-  const [pauseSavings, setPauseSavings] = usePersistedState<boolean>('tre:debtpayoff:pause-savings', false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -153,22 +151,6 @@ export default function DebtPayoff() {
           <Landmark size={13} /> Other Debts {otherDebts.length > 0 && <span className="ml-1 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5" style={{ borderRadius: 'var(--radius)' }}>{otherDebts.length}</span>}
         </button>
       </div>
-
-      {activeTab === 'cards' && (
-        <div className="flex items-center justify-between p-3 bg-secondary border border-border" style={{ borderRadius: 'var(--radius)' }}>
-          <div className="min-w-0">
-            <p className="text-xs font-medium">Pause optional savings transfers during payoff</p>
-            <p className="text-[10px] text-muted-foreground">Excludes Savings &amp; Investing transfers from available cash calculation</p>
-          </div>
-          <button
-            onClick={() => setPauseSavings((v: boolean) => !v)}
-            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ml-3 ${pauseSavings ? 'bg-primary' : 'bg-muted'}`}
-            aria-label="Toggle pause savings"
-          >
-            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${pauseSavings ? 'translate-x-5' : 'translate-x-1'}`} />
-          </button>
-        </div>
-      )}
 
       {activeTab === 'cards' ? (
         <CreditCardEngine accounts={accounts} transactions={transactions} rules={rules} debts={debts} profile={profile} />

@@ -308,13 +308,6 @@ export function simulateVariablePayoff(
   monthEvents?: { income: number; expenses: number }[],
   /** Used to populate the `account` field on SimulatedDebtPayment records. */
   fundingAccountId?: string,
-  /**
-   * Optional per-month per-card CC purchase amounts (T1/T3).
-   * cardPurchasesPerMonth[m][cardId] = total CC purchases for that card in month m.
-   * Month 0 should be 0 — the live card.balance already includes today's purchases.
-   * When omitted, falls back to card.monthlyNewPurchases for months 1+ (legacy callers).
-   */
-  cardPurchasesPerMonth?: { [cardId: string]: number }[],
 ): {
   monthlyPayments: Map<string, number[]>;
   projectedPayoffMonths: number;
@@ -359,28 +352,11 @@ export function simulateVariablePayoff(
     const payDate = new Date(now.getFullYear(), now.getMonth() + m + 1, 0);
     const payDateStr = payDate.toISOString().split('T')[0];
 
-    // Helper: monthly CC purchases for a card this month (T1/T3)
-    // Month 0 = 0 because live card.balance already includes today's purchases.
-    const cardPurchasesThisMonth = (c: CardData): number =>
-      cardPurchasesPerMonth?.[m]?.[c.id] ?? (m === 0 ? 0 : c.monthlyNewPurchases);
-
-    // ── Step 2.5 — Add monthly CC purchases to each card's balance (T3) ───────
-    // This lets the engine pay cards to $0 when purchases are fully covered.
-    for (const card of cards) {
-      const purchases = cardPurchasesThisMonth(card);
-      if (purchases > 0) {
-        balances.set(card.id, (balances.get(card.id) ?? 0) + purchases);
-      }
-    }
-
-    // Active = balance > 0 after adding this month's purchases
+    // Active = balance still > 0 after previous month's payments + interest
     const activeCards = cards.filter(c => (balances.get(c.id) ?? 0) > 0);
 
-    // C8 overpayment guard: only exit early if ALL cards have $0 AND no pending purchases
-    const allPaid = cards.every(c =>
-      (balances.get(c.id) ?? 0) === 0 && cardPurchasesThisMonth(c) === 0,
-    );
-    if (allPaid) {
+    if (activeCards.length === 0) {
+      // C8 overpayment guard: all debt cleared — stop allocating, accumulate cash
       for (const card of cards) monthlyPayments.get(card.id)!.push(0);
       currentCash += monthIncome - monthExpenses;
       projectedCashByMonth.push(Math.round(currentCash * 100) / 100);

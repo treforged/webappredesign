@@ -63,21 +63,6 @@ export function generateScheduledEvents(
           ruleId: rule.id,
         });
       }
-    } else if (rule.frequency === 'biweekly') {
-      const dayOfWeek = rule.due_day ?? 5;
-      const d = new Date(Math.max(from.getTime(), startDate.getTime()));
-      while (d.getDay() !== dayOfWeek) d.setDate(d.getDate() + 1);
-      while (d <= effectiveEnd) {
-        events.push({
-          date: d.toISOString().split('T')[0],
-          name: rule.name,
-          amount: Number(rule.amount),
-          type: rule.rule_type,
-          source: accountName,
-          ruleId: rule.id,
-        });
-        d.setDate(d.getDate() + 14);
-      }
     } else if (rule.frequency === 'monthly') {
       const d = new Date(Math.max(from.getTime(), startDate.getTime()));
       d.setDate(rule.due_day || 1);
