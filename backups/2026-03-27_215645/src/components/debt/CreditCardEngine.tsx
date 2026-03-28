@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { formatCurrency } from '@/lib/calculations';
 import {
   buildCardData, projectCard, projectCardVariable, generateRecommendations,
-  simulateVariablePayoff, CardData, CardProjection, RecommendationSummary, CC_DEFAULT_CATEGORIES,
+  simulateVariablePayoff, CardData, CardProjection, RecommendationSummary,
 } from '@/lib/credit-card-engine';
 import {
   buildPayConfig, getPrePaycheckNextMonthBills,
@@ -37,7 +37,6 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
   const { update: updateDebt, add: addDebt } = useDebts();
   const { update: updateAccount } = useAccounts();
   const { update: updateProfile } = useProfile();
-  const [pauseSavings] = usePersistedState<boolean>('tre:debtpayoff:pause-savings', false);
   const [strategy, setStrategy] = usePersistedState<'avalanche' | 'snowball'>('tre:debt:strategy', 'avalanche');
   const [paymentMode, setPaymentMode] = usePersistedState<'variable' | 'consistent'>('tre:debt:paymentMode', 'variable');
   const [cashFloor, setCashFloorLocal] = useState(() => Number(profile?.cash_floor) || 500);
@@ -100,26 +99,16 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     return weeklyGross * (1 - taxRate / 100) * 4.33;
   }, [profile]);
 
-  const cards: CardData[] = useMemo(() => buildCardData(accounts, transactions, rules, debts), [accounts, transactions, rules, debts]);
-
   const monthlyRecurringExpenses = useMemo(() => {
-    // CC-tagged rules are tracked via cardPurchasesPerMonth in the engine (Step 2.5).
-    // Including them here AND there would double-count, draining available cash
-    // and causing UNSTABLE flags every month → no extra payments ever applied.
-    const ccPaymentSources = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
-    return rules.filter((r: any) => {
-      if (!r.active || r.rule_type !== 'expense') return false;
-      if (r.payment_source && ccPaymentSources.has(r.payment_source)) return false; // explicit CC
-      if (!r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category)) return false; // default-card CC
-      if (pauseSavings && (r.category === 'Savings' || r.category === 'Investing')) return false;
-      return true;
-    }).reduce((s: number, r: any) => {
+    return rules.filter((r: any) => r.active && r.rule_type === 'expense').reduce((s: number, r: any) => {
       const amt = Number(r.amount);
       if (r.frequency === 'weekly') return s + amt * 4.33;
       if (r.frequency === 'yearly') return s + amt / 12;
       return s + amt;
     }, 0);
-  }, [rules, cards, pauseSavings]);
+  }, [rules]);
+
+  const cards: CardData[] = useMemo(() => buildCardData(accounts, transactions, rules, debts), [accounts, transactions, rules, debts]);
 
   // Pre-paycheck next-month bills
   const prePaycheckBills = useMemo(() => getPrePaycheckNextMonthBills(rules, payConfig, fundingAccountId || null), [rules, payConfig, fundingAccountId]);

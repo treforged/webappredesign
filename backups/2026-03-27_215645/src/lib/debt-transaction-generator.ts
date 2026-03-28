@@ -1,23 +1,7 @@
 // ─── Debt Payment Transaction Generator ──────────────────
 // Generates monthly debt payment transactions from the Debt Payoff schedule
 
-import { buildCardData, projectCard, projectCardVariable, simulateVariablePayoff, CardData, CC_DEFAULT_CATEGORIES } from './credit-card-engine';
-
-/** Cash-only monthly expense scalar — excludes CC-tagged rules to avoid double-counting with Step 2.5. */
-function calcCashOnlyMonthlyExpenses(rules: any[], cards: CardData[]): number {
-  const ccPaymentSources = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
-  return rules.filter((r: any) => {
-    if (!r.active || r.rule_type !== 'expense') return false;
-    if (r.payment_source && ccPaymentSources.has(r.payment_source)) return false;
-    if (!r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category)) return false;
-    return true;
-  }).reduce((s: number, r: any) => {
-    const amt = Number(r.amount);
-    if (r.frequency === 'weekly') return s + amt * 4.33;
-    if (r.frequency === 'yearly') return s + amt / 12;
-    return s + amt;
-  }, 0);
-}
+import { buildCardData, projectCard, projectCardVariable, simulateVariablePayoff, CardData } from './credit-card-engine';
 
 export type DebtPaymentTransaction = {
   id: string;
@@ -63,7 +47,13 @@ export function generateDebtPaymentTransactions(
   const taxRate = Number(profile?.tax_rate) || 22;
   const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
 
-  const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
+  const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
+    .reduce((s: number, r: any) => {
+      const amt = Number(r.amount);
+      if (r.frequency === 'weekly') return s + amt * 4.33;
+      if (r.frequency === 'yearly') return s + amt / 12;
+      return s + amt;
+    }, 0);
 
   const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, monthsAhead);
 
@@ -168,7 +158,13 @@ export function getDebtPaymentsByMonth(
   const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
   const taxRate = Number(profile?.tax_rate) || 22;
   const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
-  const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
+  const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
+    .reduce((s: number, r: any) => {
+      const amt = Number(r.amount);
+      if (r.frequency === 'weekly') return s + amt * 4.33;
+      if (r.frequency === 'yearly') return s + amt / 12;
+      return s + amt;
+    }, 0);
 
   const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);
   const byMonth: Record<string, number> = {};
@@ -213,7 +209,13 @@ export function getDebtBalancesByMonth(
   const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
   const taxRate = Number(profile?.tax_rate) || 22;
   const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
-  const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
+  const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
+    .reduce((s: number, r: any) => {
+      const amt = Number(r.amount);
+      if (r.frequency === 'weekly') return s + amt * 4.33;
+      if (r.frequency === 'yearly') return s + amt / 12;
+      return s + amt;
+    }, 0);
 
   const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);
   const now = new Date();
