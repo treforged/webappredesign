@@ -17,8 +17,8 @@ const demoAccounts = [
   { id: 'd4', user_id: 'demo', name: 'Fidelity 401k', account_type: '401k', institution: 'Fidelity', balance: 34500, credit_limit: null, apr: null, active: true, notes: 'Employer match 4%', created_at: '', updated_at: '' },
   { id: 'd5', user_id: 'demo', name: 'Roth IRA', account_type: 'roth_ira', institution: 'Fidelity', balance: 15200, credit_limit: null, apr: null, active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'd6', user_id: 'demo', name: 'Robinhood', account_type: 'brokerage', institution: 'Robinhood', balance: 8900, credit_limit: null, apr: null, active: true, notes: 'Index funds', created_at: '', updated_at: '' },
-  { id: 'd7', user_id: 'demo', name: 'Chase Sapphire', account_type: 'credit_card', institution: 'Chase', balance: 7800, credit_limit: 12000, apr: 22.99, active: true, notes: '', created_at: '', updated_at: '' },
-  { id: 'd8', user_id: 'demo', name: 'Discover It', account_type: 'credit_card', institution: 'Discover', balance: 3100, credit_limit: 6000, apr: 18.99, active: true, notes: '', created_at: '', updated_at: '' },
+  { id: 'd7', user_id: 'demo', name: 'Chase Sapphire', account_type: 'credit_card', institution: 'Chase', balance: 3200, credit_limit: 10000, apr: 22.99, active: true, notes: '', created_at: '', updated_at: '' },
+  { id: 'd8', user_id: 'demo', name: 'Discover It', account_type: 'credit_card', institution: 'Discover', balance: 800, credit_limit: 5000, apr: 18.99, active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'd9', user_id: 'demo', name: 'Cash', account_type: 'cash', institution: '', balance: 500, credit_limit: null, apr: null, active: true, notes: '', created_at: '', updated_at: '' },
 ];
 
@@ -491,7 +491,7 @@ const demoBudgetItems = [
   { label: 'Utilities', amount: 120, category: 'fixed' },
   { label: 'Insurance', amount: 250, category: 'fixed' },
   { label: 'Subscriptions', amount: 85, category: 'fixed' },
-  { label: 'Debt Payments', amount: 2250, category: 'fixed' },
+  { label: 'Debt Payments', amount: 850, category: 'fixed' },
   { label: 'Groceries', amount: 320, category: 'variable' },
   { label: 'Dining Out', amount: 110, category: 'variable' },
   { label: 'Gas / Transport', amount: 55, category: 'variable' },
