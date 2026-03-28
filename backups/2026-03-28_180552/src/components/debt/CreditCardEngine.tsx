@@ -272,23 +272,14 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     return { monthEvents: evMonthEvents, cardPurchasesPerMonth: evCardPurchases };
   }, [rules, accounts, cards, pauseSavings]);
 
-  const variableSim = useMemo(() => {
-    // Derive month 0 remaining income/expenses from allTransactions (today → EOM).
-    // allTransactions now contains only future-dated generated transactions (past
-    // events are excluded by generateCurrentMonthTransactionsFromRules) plus all
-    // real DB transactions. getRemainingTransactionIncomeByDay/ExpensesByDay then
-    // filter to txDay >= today, giving the correct month 0 remaining values without
-    // double-counting income already reflected in the live account balance.
-    const month0Income = getRemainingTransactionIncomeByDay(allTransactions, 31);
-    const month0Expenses = getRemainingTransactionExpensesByDay(allTransactions, 31, true);
-    return simulateVariablePayoff(
+  const variableSim = useMemo(() =>
+    simulateVariablePayoff(
       cards, liquidCash, cashFloor, strategy,
       monthlyTakeHome, monthlyRecurringExpenses, 36,
-      undefined, undefined, undefined,
-      month0Income, month0Expenses,
-    );
-  }, [cards, liquidCash, cashFloor, strategy, monthlyTakeHome,
-      monthlyRecurringExpenses, allTransactions]);
+      monthEvents, fundingAccountId || undefined, ccPurchasesPerMonth,
+    ),
+    [cards, liquidCash, cashFloor, strategy, monthlyTakeHome, monthlyRecurringExpenses, monthEvents, fundingAccountId, ccPurchasesPerMonth],
+  );
 
   const recommendations: RecommendationSummary = useMemo(
     () => generateRecommendations(

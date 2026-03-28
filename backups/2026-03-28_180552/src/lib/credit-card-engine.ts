@@ -315,17 +315,6 @@ export function simulateVariablePayoff(
    * When omitted, falls back to card.monthlyNewPurchases for months 1+ (legacy callers).
    */
   cardPurchasesPerMonth?: { [cardId: string]: number }[],
-  /**
-   * Override for month 0 (current month) remaining income from today to month-end.
-   * Takes priority over monthEvents[0].income and the monthlyTakeHome scalar.
-   * Derived from allTransactions so the live account balance is the ground truth.
-   */
-  month0RemainingIncome?: number,
-  /**
-   * Override for month 0 (current month) remaining expenses from today to month-end.
-   * Takes priority over monthEvents[0].expenses and the monthlyExpenses scalar.
-   */
-  month0RemainingExpenses?: number,
 ): {
   monthlyPayments: Map<string, number[]>;
   projectedPayoffMonths: number;
@@ -363,15 +352,8 @@ export function simulateVariablePayoff(
   for (let m = 0; m < months; m++) {
 
     // ── Step 2 — Available Cash ────────────────────────────────
-    // Month 0: prefer explicit remaining-income/expenses derived from allTransactions
-    // (balance is ground truth; only count income/expenses from today forward).
-    // Months 1+: fall back to monthEvents or scalar.
-    const monthIncome = (m === 0 && month0RemainingIncome !== undefined)
-      ? month0RemainingIncome
-      : (monthEvents?.[m]?.income ?? monthlyTakeHome);
-    const monthExpenses = (m === 0 && month0RemainingExpenses !== undefined)
-      ? month0RemainingExpenses
-      : (monthEvents?.[m]?.expenses ?? monthlyExpenses);
+    const monthIncome = monthEvents?.[m]?.income ?? monthlyTakeHome;
+    const monthExpenses = monthEvents?.[m]?.expenses ?? monthlyExpenses;
 
     // End-of-month ISO date used for SimulatedDebtPayment records
     const payDate = new Date(now.getFullYear(), now.getMonth() + m + 1, 0);

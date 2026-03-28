@@ -664,7 +664,6 @@ export function generateCurrentMonthTransactionsFromRules(
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const todayStr = now.toISOString().split('T')[0]; // only generate future transactions
   const generated: any[] = [];
 
   // Build account lookup for source normalization
@@ -698,13 +697,11 @@ export function generateCurrentMonthTransactionsFromRules(
       while (d.getDay() !== dayOfWeek) d.setDate(d.getDate() + 1);
       while (d <= monthEnd) {
         const dateStr = d.toISOString().split('T')[0];
-        if (dateStr >= todayStr) {
-          generated.push({
-            id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
-            amount: Number(r.amount), category: txCategory, note: r.name,
-            payment_source: source, isGenerated: true,
-          });
-        }
+        generated.push({
+          id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
+          amount: Number(r.amount), category: txCategory, note: r.name,
+          payment_source: source, isGenerated: true,
+        });
         d.setDate(d.getDate() + 7);
       }
     } else if (r.frequency === 'biweekly') {
@@ -713,13 +710,11 @@ export function generateCurrentMonthTransactionsFromRules(
       while (d.getDay() !== dayOfWeek) d.setDate(d.getDate() + 1);
       while (d <= monthEnd) {
         const dateStr = d.toISOString().split('T')[0];
-        if (dateStr >= todayStr) {
-          generated.push({
-            id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
-            amount: Number(r.amount), category: txCategory, note: r.name,
-            payment_source: source, isGenerated: true,
-          });
-        }
+        generated.push({
+          id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
+          amount: Number(r.amount), category: txCategory, note: r.name,
+          payment_source: source, isGenerated: true,
+        });
         d.setDate(d.getDate() + 14);
       }
     } else if (r.frequency === 'monthly') {
@@ -727,13 +722,11 @@ export function generateCurrentMonthTransactionsFromRules(
       const d = new Date(now.getFullYear(), now.getMonth(), dueDay);
       if (d >= monthStart && d <= monthEnd) {
         const dateStr = d.toISOString().split('T')[0];
-        if (dateStr >= todayStr) {
-          generated.push({
-            id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
-            amount: Number(r.amount), category: txCategory, note: r.name,
-            payment_source: source, isGenerated: true,
-          });
-        }
+        generated.push({
+          id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
+          amount: Number(r.amount), category: txCategory, note: r.name,
+          payment_source: source, isGenerated: true,
+        });
       }
     } else if (r.frequency === 'yearly') {
       const dueMonth = (r.due_month ?? 1) - 1;
@@ -741,13 +734,11 @@ export function generateCurrentMonthTransactionsFromRules(
         const dueDay = Math.min(r.due_day || 1, monthEnd.getDate());
         const d = new Date(now.getFullYear(), dueMonth, dueDay);
         const dateStr = d.toISOString().split('T')[0];
-        if (dateStr >= todayStr) {
-          generated.push({
-            id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
-            amount: Number(r.amount), category: txCategory, note: r.name,
-            payment_source: source, isGenerated: true,
-          });
-        }
+        generated.push({
+          id: `gen:${r.id}:${dateStr}`, date: dateStr, type: txType,
+          amount: Number(r.amount), category: txCategory, note: r.name,
+          payment_source: source, isGenerated: true,
+        });
       }
     }
   });
