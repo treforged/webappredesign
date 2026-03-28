@@ -11,14 +11,14 @@ import {
 // meaningful forecast projections. Checking balance supports the
 // cash floor while showing debt payoff in action.
 const demoAccounts = [
-  { id: 'd1', user_id: 'demo', name: 'Chase Checking', account_type: 'checking', institution: 'Chase', balance: 5200, credit_limit: null, apr: null, active: true, notes: 'Primary checking', created_at: '', updated_at: '' },
+  { id: 'd1', user_id: 'demo', name: 'Chase Checking', account_type: 'checking', institution: 'Chase', balance: 4200, credit_limit: null, apr: null, active: true, notes: 'Primary checking', created_at: '', updated_at: '' },
   { id: 'd2', user_id: 'demo', name: 'Alliant Checking', account_type: 'checking', institution: 'Alliant', balance: 1800, credit_limit: null, apr: null, active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'd3', user_id: 'demo', name: 'Marcus HYS', account_type: 'high_yield_savings', institution: 'Marcus', balance: 12800, credit_limit: null, apr: 4.5, active: true, notes: 'Emergency fund', created_at: '', updated_at: '' },
   { id: 'd4', user_id: 'demo', name: 'Fidelity 401k', account_type: '401k', institution: 'Fidelity', balance: 34500, credit_limit: null, apr: null, active: true, notes: 'Employer match 4%', created_at: '', updated_at: '' },
   { id: 'd5', user_id: 'demo', name: 'Roth IRA', account_type: 'roth_ira', institution: 'Fidelity', balance: 15200, credit_limit: null, apr: null, active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'd6', user_id: 'demo', name: 'Robinhood', account_type: 'brokerage', institution: 'Robinhood', balance: 8900, credit_limit: null, apr: null, active: true, notes: 'Index funds', created_at: '', updated_at: '' },
-  { id: 'd7', user_id: 'demo', name: 'Chase Sapphire', account_type: 'credit_card', institution: 'Chase', balance: 4200, credit_limit: 10000, apr: 22.99, active: true, notes: '', created_at: '', updated_at: '', payment_due_day: 15 },
-  { id: 'd8', user_id: 'demo', name: 'Discover It', account_type: 'credit_card', institution: 'Discover', balance: 1800, credit_limit: 5000, apr: 18.99, active: true, notes: '', created_at: '', updated_at: '', payment_due_day: 22 },
+  { id: 'd7', user_id: 'demo', name: 'Chase Sapphire', account_type: 'credit_card', institution: 'Chase', balance: 7800, credit_limit: 12000, apr: 22.99, active: true, notes: '', created_at: '', updated_at: '' },
+  { id: 'd8', user_id: 'demo', name: 'Discover It', account_type: 'credit_card', institution: 'Discover', balance: 3100, credit_limit: 6000, apr: 18.99, active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'd9', user_id: 'demo', name: 'Cash', account_type: 'cash', institution: '', balance: 500, credit_limit: null, apr: null, active: true, notes: '', created_at: '', updated_at: '' },
 ];
 
@@ -90,11 +90,6 @@ const demoRecurringRules = [
   { id: 'r7', user_id: 'demo', name: '401k Contribution', amount: 375, rule_type: 'investment', frequency: 'monthly', due_day: 5, due_month: null, start_date: '2026-01-05', end_date: null, category: 'Investing', payment_source: 'd1', deposit_account: 'd4', active: true, notes: 'Pre-tax', created_at: '', updated_at: '' },
   { id: 'r8', user_id: 'demo', name: 'Roth IRA', amount: 250, rule_type: 'investment', frequency: 'monthly', due_day: 10, due_month: null, start_date: '2026-01-10', end_date: null, category: 'Investing', payment_source: 'd1', deposit_account: 'd5', active: true, notes: '', created_at: '', updated_at: '' },
   { id: 'r9', user_id: 'demo', name: 'Brokerage', amount: 200, rule_type: 'investment', frequency: 'monthly', due_day: 10, due_month: null, start_date: '2026-01-10', end_date: null, category: 'Investing', payment_source: 'd1', deposit_account: 'd6', active: true, notes: 'Index funds', created_at: '', updated_at: '' },
-  // Non-paycheck income — demonstrates Bug 2 fix (non-paycheck income included in simulation)
-  { id: 'dr-roommate', user_id: 'demo', name: 'Roommate Contribution', amount: 900, rule_type: 'income', frequency: 'monthly', due_day: 1, due_month: null, start_date: '2026-01-01', end_date: null, category: 'Other', payment_source: null, deposit_account: 'd1', active: true, notes: 'Monthly rent split', created_at: '', updated_at: '' },
-  // Explicit CC purchase rules — ensures monthlyNewPurchases is realistic for each card
-  { id: 'dr-cc1', user_id: 'demo', name: 'Monthly Expenses', amount: 450, rule_type: 'expense', frequency: 'monthly', due_day: 5, due_month: null, start_date: '2026-01-05', end_date: null, category: 'Groceries', payment_source: 'account:d7', deposit_account: null, active: true, notes: 'Groceries & dining on Sapphire', created_at: '', updated_at: '' },
-  { id: 'dr-cc2', user_id: 'demo', name: 'Subscriptions', amount: 85, rule_type: 'expense', frequency: 'monthly', due_day: 4, due_month: null, start_date: '2026-01-04', end_date: null, category: 'Subscriptions', payment_source: 'account:d8', deposit_account: null, active: true, notes: 'Streaming & services on Discover', created_at: '', updated_at: '' },
 ];
 
 export function useRecurringRules() {
@@ -557,7 +552,7 @@ const DEFAULT_PROFILE = {
   is_premium: false,
   gross_income: 8118.75, // 1875 * 4.33
   tax_rate: 22,
-  cash_floor: 1500,
+  cash_floor: 1000,
   weekly_gross_income: 1875,
   paycheck_frequency: 'weekly',
   paycheck_day: 5,

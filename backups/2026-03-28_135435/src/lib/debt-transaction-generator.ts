@@ -61,21 +61,7 @@ export function generateDebtPaymentTransactions(
 
   const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
   const taxRate = Number(profile?.tax_rate) || 22;
-  const paycheckIncome = weeklyGross * (1 - taxRate / 100) * 4.33;
-  const nonPaycheckIncome = rules
-    .filter((r: any) =>
-      r.active &&
-      r.rule_type === 'income' &&
-      !['paycheck', 'salary', 'wages', 'pay'].some((kw: string) => r.name?.toLowerCase().includes(kw))
-    )
-    .reduce((s: number, r: any) => {
-      const amt = Number(r.amount);
-      if (r.frequency === 'weekly') return s + amt * 4.33;
-      if (r.frequency === 'biweekly') return s + amt * 2.167;
-      if (r.frequency === 'yearly') return s + amt / 12;
-      return s + amt;
-    }, 0);
-  const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
+  const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
 
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
@@ -181,21 +167,7 @@ export function getDebtPaymentsByMonth(
     .reduce((s: number, a: any) => s + Number(a.balance), 0);
   const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
   const taxRate = Number(profile?.tax_rate) || 22;
-  const paycheckIncome = weeklyGross * (1 - taxRate / 100) * 4.33;
-  const nonPaycheckIncome = rules
-    .filter((r: any) =>
-      r.active &&
-      r.rule_type === 'income' &&
-      !['paycheck', 'salary', 'wages', 'pay'].some((kw: string) => r.name?.toLowerCase().includes(kw))
-    )
-    .reduce((s: number, r: any) => {
-      const amt = Number(r.amount);
-      if (r.frequency === 'weekly') return s + amt * 4.33;
-      if (r.frequency === 'biweekly') return s + amt * 2.167;
-      if (r.frequency === 'yearly') return s + amt / 12;
-      return s + amt;
-    }, 0);
-  const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
+  const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
   const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);
@@ -240,21 +212,7 @@ export function getDebtBalancesByMonth(
     .reduce((s: number, a: any) => s + Number(a.balance), 0);
   const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
   const taxRate = Number(profile?.tax_rate) || 22;
-  const paycheckIncome = weeklyGross * (1 - taxRate / 100) * 4.33;
-  const nonPaycheckIncome = rules
-    .filter((r: any) =>
-      r.active &&
-      r.rule_type === 'income' &&
-      !['paycheck', 'salary', 'wages', 'pay'].some((kw: string) => r.name?.toLowerCase().includes(kw))
-    )
-    .reduce((s: number, r: any) => {
-      const amt = Number(r.amount);
-      if (r.frequency === 'weekly') return s + amt * 4.33;
-      if (r.frequency === 'biweekly') return s + amt * 2.167;
-      if (r.frequency === 'yearly') return s + amt / 12;
-      return s + amt;
-    }, 0);
-  const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
+  const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
   const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);

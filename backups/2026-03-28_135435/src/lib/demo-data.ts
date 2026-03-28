@@ -32,8 +32,8 @@ export const demoTransactions: Omit<Transaction, 'id' | 'user_id' | 'created_at'
 
 // ── Demo Debts ─────────────────────────────────────────────
 export const demoDebts: (Omit<Debt, 'id' | 'user_id' | 'created_at'> & { credit_limit?: number })[] = [
-  { name: 'Chase Sapphire', balance: 4200, apr: 22.99, min_payment: 105, target_payment: 400, credit_limit: 10000 },
-  { name: 'Discover It', balance: 1800, apr: 18.99, min_payment: 45, target_payment: 200, credit_limit: 5000 },
+  { name: 'Chase Sapphire', balance: 7800, apr: 22.99, min_payment: 175, target_payment: 600, credit_limit: 12000 },
+  { name: 'Discover It', balance: 3100, apr: 18.99, min_payment: 78, target_payment: 200, credit_limit: 6000 },
 ];
 
 // ── Demo Savings Goals ─────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { formatCurrency } from '@/lib/calculations';
 import {
   buildCardData, projectCard, projectCardVariable, generateRecommendations,
@@ -41,10 +41,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
   const [pauseSavings] = usePersistedState<boolean>('tre:debtpayoff:pause-savings', false);
   const [strategy, setStrategy] = usePersistedState<'avalanche' | 'snowball'>('tre:debt:strategy', 'avalanche');
   const [paymentMode, setPaymentMode] = usePersistedState<'variable' | 'consistent'>('tre:debt:paymentMode', 'variable');
-  const [cashFloor, setCashFloorLocal] = useState(() => Number(profile?.cash_floor) ?? 500);
-  useEffect(() => {
-    if (profile?.cash_floor != null) setCashFloorLocal(Number(profile.cash_floor));
-  }, [profile?.cash_floor]);
+  const [cashFloor, setCashFloorLocal] = useState(() => Number(profile?.cash_floor) || 500);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingTarget, setEditingTarget] = useState<string | null>(null);
   const [editingMin, setEditingMin] = useState<string | null>(null);
@@ -101,22 +98,8 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
   const monthlyTakeHome = useMemo(() => {
     const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
     const taxRate = Number(profile?.tax_rate) || 22;
-    const paycheckIncome = weeklyGross * (1 - taxRate / 100) * 4.33;
-    const nonPaycheckIncome = rules
-      .filter((r: any) =>
-        r.active &&
-        r.rule_type === 'income' &&
-        !['paycheck', 'salary', 'wages', 'pay'].some(kw => r.name?.toLowerCase().includes(kw))
-      )
-      .reduce((s: number, r: any) => {
-        const amt = Number(r.amount);
-        if (r.frequency === 'weekly') return s + amt * 4.33;
-        if (r.frequency === 'biweekly') return s + amt * 2.167;
-        if (r.frequency === 'yearly') return s + amt / 12;
-        return s + amt;
-      }, 0);
-    return paycheckIncome + nonPaycheckIncome;
-  }, [profile, rules]);
+    return weeklyGross * (1 - taxRate / 100) * 4.33;
+  }, [profile]);
 
   const cards: CardData[] = useMemo(() => buildCardData(accounts, transactions, rules, debts), [accounts, transactions, rules, debts]);
 

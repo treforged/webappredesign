@@ -160,7 +160,7 @@ export function buildCardData(
     const minPay = matchDebt ? Number(matchDebt.min_payment) : calcMinPayment(balance, apr);
     const targetPay = matchDebt ? Number(matchDebt.target_payment) : minPay;
 
-    const autopayFullBalance = false;
+    const autopayFullBalance = balance <= 0;
 
     return {
       id: acct.id, name: acct.name, balance, apr, creditLimit,
@@ -365,31 +365,11 @@ export function simulateVariablePayoff(
       cardPurchasesPerMonth?.[m]?.[c.id] ?? (m === 0 ? 0 : c.monthlyNewPurchases);
 
     // ── Step 2.5 — Add monthly CC purchases to each card's balance (T3) ───────
-    // Paid-off cards (bal <= 0) immediately pay new purchases in full without
-    // going through the min/extra allocation loop — they stay at $0 and never
-    // re-accumulate interest. Cards still carrying a balance have purchases added
-    // normally and are handled by Steps 3-4.
-    const prePaidThisMonth = new Set<string>();
+    // This lets the engine pay cards to $0 when purchases are fully covered.
     for (const card of cards) {
-      const bal = balances.get(card.id) ?? 0;
       const purchases = cardPurchasesThisMonth(card);
-      if (bal <= 0) {
-        const pay = Math.round(purchases * 100) / 100;
-        monthlyPayments.get(card.id)!.push(pay);
-        currentCash -= pay;
-        prePaidThisMonth.add(card.id);
-        if (pay > 0) {
-          debtPaymentTransactions.push({
-            date: payDateStr, description: `${card.name} Payment`,
-            amount: pay, account: fundingAccountId ?? '',
-            category: 'Debt Payments', card: card.id,
-            type: 'debt_payoff', projected: true,
-          });
-        }
-        continue;
-      }
       if (purchases > 0) {
-        balances.set(card.id, bal + purchases);
+        balances.set(card.id, (balances.get(card.id) ?? 0) + purchases);
       }
     }
 
@@ -499,26 +479,10 @@ export function simulateVariablePayoff(
         const pay = payments.get(card.id) ?? 0;
         if (pay > bal) payments.set(card.id, bal);
       }
-
-      // Final pass: pay off residual balances under $100 if cash remains
-      if (remaining > 0) {
-        for (const card of strategyOrder) {
-          if (remaining <= 0) break;
-          const bal = balances.get(card.id)!;
-          const currentPayment = payments.get(card.id) || 0;
-          const residual = bal - currentPayment;
-          if (residual > 0 && residual < 100) {
-            const extra = Math.min(remaining, residual);
-            payments.set(card.id, currentPayment + extra);
-            remaining -= extra;
-          }
-        }
-      }
     }
 
     // ── Step 5 — Update Balances and Cash ─────────────────────
     for (const card of cards) {
-      if (prePaidThisMonth.has(card.id)) continue; // payment already recorded in Step 2.5
       const payment = Math.round((payments.get(card.id) ?? 0) * 100) / 100;
       monthlyPayments.get(card.id)!.push(payment);
 
