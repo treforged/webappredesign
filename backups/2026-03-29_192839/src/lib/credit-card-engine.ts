@@ -121,11 +121,9 @@ export function buildCardData(
   return ccAccounts.map((acct, i) => {
     const acctKey = `account:${acct.id}`;
     const now = new Date();
-    // Only count CC transactions from TODAY forward — past purchases are already
-    // in the card's live balance and must not be re-added as future new purchases.
-    const todayStr = now.toISOString().split('T')[0];
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const monthPurchases = transactions
-      .filter((t: any) => t.type === 'expense' && (t.payment_source === acctKey || t.payment_source === acct.id) && t.date >= todayStr)
+      .filter((t: any) => t.type === 'expense' && (t.payment_source === acctKey || t.payment_source === acct.id) && t.date >= monthStart)
       .reduce((s: number, t: any) => s + Number(t.amount), 0);
 
     const recurringExplicit = rules
@@ -150,11 +148,6 @@ export function buildCardData(
       }, 0) : 0;
 
     const monthlyNewPurchases = Math.max(monthPurchases, recurringExplicit + recurringDefault);
-    console.log('[buildCardData]', acct.name,
-      'monthPurchases (future only):', monthPurchases,
-      'recurringExplicit:', recurringExplicit,
-      'recurringDefault:', recurringDefault,
-      'monthlyNewPurchases:', monthlyNewPurchases);
 
     const monthRepayments = transactions
       .filter((t: any) => t.type === 'expense' && t.category === 'Debt Payments' && t.note?.toLowerCase().includes(acct.name.toLowerCase()) && t.date >= monthStart)
@@ -333,13 +326,6 @@ export function simulateVariablePayoff(
    * Takes priority over monthEvents[0].expenses and the monthlyExpenses scalar.
    */
   month0RemainingExpenses?: number,
-  /**
-   * Optional one-time (non-recurring) income and expense totals per month.
-   * Applied in Step 7 AFTER debt allocation so they do not reduce availableCash
-   * in prior months (prevents look-ahead cash hoarding for future large purchases).
-   * oneTimeByMonth[0] is unused (month 0 is handled by month0Remaining*).
-   */
-  oneTimeByMonth?: { income: number; expenses: number }[],
 ): {
   monthlyPayments: Map<string, number[]>;
   projectedPayoffMonths: number;
@@ -608,13 +594,6 @@ export function simulateVariablePayoff(
 
     // ── Step 7 — Advance Month ────────────────────────────────
     currentCash += monthIncome - monthExpenses;
-    // Apply one-time income/expenses AFTER debt allocation.
-    // This prevents future large purchases from hoarding cash in prior months —
-    // only the month the event occurs in is affected.
-    const oneTime = oneTimeByMonth?.[m];
-    if (oneTime && (oneTime.income > 0 || oneTime.expenses > 0)) {
-      currentCash += oneTime.income - oneTime.expenses;
-    }
     projectedCashByMonth.push(Math.round(currentCash * 100) / 100);
   }
 

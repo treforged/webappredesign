@@ -282,15 +282,9 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     // real DB transactions. getRemainingTransactionIncomeByDay/ExpensesByDay then
     // filter to txDay >= today, giving the correct month 0 remaining values without
     // double-counting income already reflected in the live account balance.
-    const now = new Date();
-    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const todayStr = now.toISOString().split('T')[0];
-
     const month0Income = getRemainingTransactionIncomeByDay(allTransactions, 31);
-
     // Exclude CC-charged expenses from month0 — they're already in card.balance (monthlyNewPurchases).
-    // Also exclude Debt Payments (what we're computing), Balance Adjustments, and any
-    // future-month transactions (current month ONLY, today forward).
+    // Also exclude Debt Payments (what we're computing) and Balance Adjustments (reconciliation entries).
     const ccIds = new Set(
       accounts
         .filter((a: any) => a.account_type === 'credit_card' && a.active)
@@ -299,39 +293,12 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     const month0Expenses = allTransactions
       .filter((t: any) => {
         if (t.type !== 'expense') return false;
-        if (!t.date || !t.date.startsWith(monthStr)) return false; // current month only
-        if (t.date < todayStr) return false; // today forward only
         if (t.category === 'Debt Payments') return false;
         if (t.category === 'Balance Adjustment') return false;
         if (t.payment_source && ccIds.has(t.payment_source)) return false;
         return true;
       })
       .reduce((s: number, t: any) => s + Number(t.amount), 0);
-
-    // One-time (non-generated) transactions per future month — applied AFTER debt allocation
-    // in simulateVariablePayoff so they don't cause look-ahead cash hoarding in prior months.
-    // Month 0 is handled separately via month0Income/month0Expenses above.
-    const oneTimeByMonth: { income: number; expenses: number }[] = [{ income: 0, expenses: 0 }];
-    for (let i = 1; i < 36; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const txns = (allTransactions as any[]).filter((t: any) =>
-        t.date && t.date.startsWith(mk) && !(t as any).isGenerated,
-      );
-      const inc = txns
-        .filter((t: any) => t.type === 'income' && t.category !== 'Balance Adjustment')
-        .reduce((s: number, t: any) => s + Number(t.amount), 0);
-      const exp = txns
-        .filter((t: any) => {
-          if (t.type !== 'expense') return false;
-          if (t.category === 'Debt Payments' || t.category === 'Balance Adjustment') return false;
-          if (t.payment_source && ccIds.has(t.payment_source)) return false;
-          return true;
-        })
-        .reduce((s: number, t: any) => s + Number(t.amount), 0);
-      oneTimeByMonth.push({ income: inc, expenses: exp });
-    }
-
     const surplus = monthlyTakeHome - monthlyRecurringExpenses - cashFloor;
     console.log('[DebtSim:CCEngine] monthlyTakeHome:', monthlyTakeHome, '| monthlyExpenses (checking only):', monthlyRecurringExpenses, '| cashFloor:', cashFloor, '| liquidCash:', liquidCash, '| surplus:', surplus);
     return simulateVariablePayoff(
@@ -339,10 +306,9 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
       monthlyTakeHome, monthlyRecurringExpenses, 36,
       undefined, undefined, undefined,
       month0Income, month0Expenses,
-      oneTimeByMonth,
     );
   }, [cards, liquidCash, cashFloor, strategy, monthlyTakeHome,
-      monthlyRecurringExpenses, allTransactions, accounts]);
+      monthlyRecurringExpenses, allTransactions]);
 
   const recommendations: RecommendationSummary = useMemo(
     () => generateRecommendations(
