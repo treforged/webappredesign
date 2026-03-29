@@ -480,38 +480,35 @@ export function simulateVariablePayoff(
       // No extra payments in floor-breach mode
 
     } else {
-      // Sort order used throughout minimums, extra allocation, and cleanup passes
+      // Normal path: pay all minimums
+      for (const card of activeCards) {
+        payments.set(card.id, minDueMap.get(card.id) ?? 0);
+      }
+
+      // ── Step 4 — Extra Payment Allocation ──────────────────
+      // C3: balances[card.id] is the PRE-PAYMENT balance here.
+      //     payments[card.id] already contains the minimum committed.
+      //     maxExtra = pre-payment balance − min = remaining balance after minimum.
+      //     Do NOT subtract minDue again — that was C3's double-subtraction bug.
       const strategyOrder = [...activeCards].sort((a, b) =>
         strategy === 'avalanche'
           ? b.apr - a.apr
           : (balances.get(a.id) ?? 0) - (balances.get(b.id) ?? 0),
       );
 
-      // ── Step 3 — Pay Minimums (Bug 4b) ───────────────────────
-      // Cap each minimum against the live balance AND remaining available cash so
-      // nearly-paid cards never receive more than they owe.
-      let remaining = availableCash;
-      for (const card of strategyOrder) {
-        const currentBal = balances.get(card.id)!;
-        const min = Math.min(card.minPayment, currentBal, remaining);
-        payments.set(card.id, min);
-        remaining -= min;
-      }
+      let remaining = availableCash - totalMins;
 
-      // ── Step 4 — Extra Payment Allocation (Bug 1) ─────────────
-      // remaining = availableCash − Σ(minimums actually paid).
-      // Use live balances from the Map (not stale card.balance) so purchases and
-      // interest added earlier this month are correctly accounted for.
       for (const card of strategyOrder) {
         if (remaining <= 0) break;
-        const currentBal = balances.get(card.id)!;
-        const currentPayment = payments.get(card.id) || 0;
-        const maxExtra = Math.max(0, currentBal - currentPayment);
+
+        const bal = balances.get(card.id) ?? 0;
+        const alreadyPaid = payments.get(card.id) ?? 0;
+        const maxExtra = bal - alreadyPaid; // remaining balance after min
+        if (maxExtra <= 0) continue;
+
         const extra = Math.min(remaining, maxExtra);
-        if (extra > 0) {
-          payments.set(card.id, currentPayment + extra);
-          remaining -= extra;
-        }
+        payments.set(card.id, alreadyPaid + extra);
+        remaining -= extra;
       }
 
       // C8 overpayment guard: clamp each payment to the card's current balance
@@ -521,7 +518,7 @@ export function simulateVariablePayoff(
         if (pay > bal) payments.set(card.id, bal);
       }
 
-      // Residual sweep: clear balances under $100 if cash remains
+      // Final pass: pay off residual balances under $100 if cash remains
       if (remaining > 0) {
         for (const card of strategyOrder) {
           if (remaining <= 0) break;
@@ -533,17 +530,6 @@ export function simulateVariablePayoff(
             payments.set(card.id, currentPayment + extra);
             remaining -= extra;
           }
-        }
-      }
-
-      // Final cleanup (Bug 4a): explicitly zero near-zero residuals < $5
-      for (const card of strategyOrder) {
-        const currentBal = balances.get(card.id)!;
-        const currentPayment = payments.get(card.id) || 0;
-        const residual = currentBal - currentPayment;
-        if (residual > 0 && residual < 5 && remaining >= residual) {
-          payments.set(card.id, currentPayment + residual);
-          remaining -= residual;
         }
       }
     }
@@ -575,15 +561,11 @@ export function simulateVariablePayoff(
     // ── Step 6 — Interest AFTER All Payments (C4) ─────────────
     // Interest is never applied mid-month. It is always added to the
     // NEXT month's starting balance only.
-    // Sub-dollar residuals are rounded to $0 (rounding dust — no interest charged).
     for (const card of cards) {
       const bal = balances.get(card.id) ?? 0;
-      const effectiveBal = bal < 1 ? 0 : bal;
-      if (effectiveBal === 0 && bal > 0) {
-        balances.set(card.id, 0); // clear sub-dollar dust
-      } else if (effectiveBal > 0 && card.apr > 0) {
-        const interest = (card.apr / 100 / 12) * effectiveBal;
-        balances.set(card.id, effectiveBal + interest);
+      if (bal > 0 && card.apr > 0) {
+        const interest = (card.apr / 100 / 12) * bal;
+        balances.set(card.id, bal + interest);
       }
     }
 
@@ -761,11 +743,8 @@ export function generateRecommendations(
       simB = simB.map((bal, i) => {
         if (bal <= 0 || cards[i].autopayFullBalance) return 0;
         const card = cards[i];
-        const effectiveBal = bal < 1 ? 0 : bal;
-        if (effectiveBal === 0) return Math.max(0, card.monthlyNewPurchases);
         const rec = recs.find(r => r.cardId === card.id);
-        return Math.max(0, effectiveBal + card.monthlyNewPurchases
-          + effectiveBal * (card.apr / 100 / 12) - (rec?.payment || card.minPayment));
+        return Math.max(0, bal + card.monthlyNewPurchases + bal * (card.apr / 100 / 12) - (rec?.payment || card.minPayment));
       });
     }
     return { threshold: t, month: null };
