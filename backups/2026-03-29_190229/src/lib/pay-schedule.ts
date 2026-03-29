@@ -258,7 +258,6 @@ export function getRemainingTransactionIncomeByDay(
   let total = 0;
   for (const t of transactions) {
     if (t.type !== 'income') continue;
-    if (t.category === 'Balance Adjustment') continue;
     if (!t.date || !t.date.startsWith(monthStr)) continue;
     const txDay = parseInt(t.date.split('-')[2]);
     if (txDay >= today && txDay <= effectiveDueDay) {
@@ -288,7 +287,6 @@ export function getRemainingTransactionExpensesByDay(
   for (const t of transactions) {
     if (t.type !== 'expense') continue;
     if (excludeDebtPayments && t.category === 'Debt Payments') continue;
-    if (t.category === 'Balance Adjustment') continue;
     if (!t.date || !t.date.startsWith(monthStr)) continue;
     const txDay = parseInt(t.date.split('-')[2]);
     if (txDay >= today && txDay <= effectiveDueDay) {
@@ -312,7 +310,6 @@ export function getRemainingTransactionIncomeThisMonth(transactions: any[]): num
   let total = 0;
   for (const t of transactions) {
     if (t.type !== 'income') continue;
-    if (t.category === 'Balance Adjustment') continue;
     if (!t.date || !t.date.startsWith(monthStr)) continue;
     const txDay = parseInt(t.date.split('-')[2]);
     if (txDay >= today) {
@@ -337,7 +334,6 @@ export function getRemainingTransactionExpensesThisMonth(transactions: any[], ex
   for (const t of transactions) {
     if (t.type !== 'expense') continue;
     if (excludeDebtPayments && t.category === 'Debt Payments') continue;
-    if (t.category === 'Balance Adjustment') continue;
     if (!t.date || !t.date.startsWith(monthStr)) continue;
     const txDay = parseInt(t.date.split('-')[2]);
     if (txDay >= today) {

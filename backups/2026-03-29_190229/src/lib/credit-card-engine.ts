@@ -366,11 +366,6 @@ export function simulateVariablePayoff(
     // Month 0: prefer explicit remaining-income/expenses derived from allTransactions
     // (balance is ground truth; only count income/expenses from today forward).
     // Months 1+: fall back to monthEvents or scalar.
-    // NOTE: these two ternaries are mutually exclusive — month0Remaining* is only used
-    // for m===0, the scalar/monthEvents path is only used for m>0. monthExpenses is
-    // subtracted exactly once per iteration (in availableCash at line 430 for allocation,
-    // then again in Step 7 to advance currentCash — this is intentional: availableCash
-    // derives the debt-payment budget; Step 7 closes out the month's cash flow).
     const monthIncome = (m === 0 && month0RemainingIncome !== undefined)
       ? month0RemainingIncome
       : (monthEvents?.[m]?.income ?? monthlyTakeHome);

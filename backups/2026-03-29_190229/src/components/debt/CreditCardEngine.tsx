@@ -283,22 +283,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     // filter to txDay >= today, giving the correct month 0 remaining values without
     // double-counting income already reflected in the live account balance.
     const month0Income = getRemainingTransactionIncomeByDay(allTransactions, 31);
-    // Exclude CC-charged expenses from month0 — they're already in card.balance (monthlyNewPurchases).
-    // Also exclude Debt Payments (what we're computing) and Balance Adjustments (reconciliation entries).
-    const ccIds = new Set(
-      accounts
-        .filter((a: any) => a.account_type === 'credit_card' && a.active)
-        .flatMap((a: any) => [a.id, `account:${a.id}`])
-    );
-    const month0Expenses = allTransactions
-      .filter((t: any) => {
-        if (t.type !== 'expense') return false;
-        if (t.category === 'Debt Payments') return false;
-        if (t.category === 'Balance Adjustment') return false;
-        if (t.payment_source && ccIds.has(t.payment_source)) return false;
-        return true;
-      })
-      .reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const month0Expenses = getRemainingTransactionExpensesByDay(allTransactions, 31, true);
     const surplus = monthlyTakeHome - monthlyRecurringExpenses - cashFloor;
     console.log('[DebtSim:CCEngine] monthlyTakeHome:', monthlyTakeHome, '| monthlyExpenses (checking only):', monthlyRecurringExpenses, '| cashFloor:', cashFloor, '| liquidCash:', liquidCash, '| surplus:', surplus);
     return simulateVariablePayoff(
