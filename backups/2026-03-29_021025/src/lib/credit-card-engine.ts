@@ -819,18 +819,13 @@ export function getCurrentMonthDebtRecommendations(
   const cashFloor = Number(profile?.cash_floor) || 1000;
   const pc = buildPayConfig(profile);
   const monthlyTakeHome = getMonthNetIncome(pc, new Date().getFullYear(), new Date().getMonth());
-  const ccPaymentSources = new Set(cards.flatMap((c: CardData) => [c.id, `account:${c.id}`]));
-  const monthlyExpenses = rules.filter((r: any) => {
-    if (!r.active || r.rule_type !== 'expense') return false;
-    if (r.payment_source && ccPaymentSources.has(r.payment_source)) return false;
-    if (!r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category)) return false;
-    return true;
-  }).reduce((s: number, r: any) => {
-    const amt = Number(r.amount);
-    if (r.frequency === 'weekly') return s + amt * 4.33;
-    if (r.frequency === 'yearly') return s + amt / 12;
-    return s + amt;
-  }, 0);
+  const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
+    .reduce((s: number, r: any) => {
+      const amt = Number(r.amount);
+      if (r.frequency === 'weekly') return s + amt * 4.33;
+      if (r.frequency === 'yearly') return s + amt / 12;
+      return s + amt;
+    }, 0);
 
   const defaultId = profile?.default_deposit_account || null;
   let fundingAccountId: string | null = null;

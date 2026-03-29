@@ -281,8 +281,6 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     // double-counting income already reflected in the live account balance.
     const month0Income = getRemainingTransactionIncomeByDay(allTransactions, 31);
     const month0Expenses = getRemainingTransactionExpensesByDay(allTransactions, 31, true);
-    const surplus = liquidCash - cashFloor - monthlyRecurringExpenses;
-    console.log('[DebtSim] monthlyTakeHome:', monthlyTakeHome, '| monthlyExpenses (checking only):', monthlyRecurringExpenses, '| cashFloor:', cashFloor, '| liquidCash:', liquidCash, '| surplus:', surplus);
     return simulateVariablePayoff(
       cards, liquidCash, cashFloor, strategy,
       monthlyTakeHome, monthlyRecurringExpenses, 36,
