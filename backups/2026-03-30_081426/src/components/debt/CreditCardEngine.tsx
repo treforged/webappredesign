@@ -359,7 +359,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
       if (paymentMode === 'variable') {
         const basePays = variableSim.monthlyPayments.get(c.id) || [];
         const payments = basePays.map((p, i) => cardOverrides[i] !== undefined ? cardOverrides[i] : p);
-        return projectCardVariable(c, payments, 36, true);
+        return projectCardVariable(c, payments, 36);
       }
       if (Object.keys(cardOverrides).length > 0) {
         const payments = Array.from({ length: 36 }, (_, i) => cardOverrides[i] !== undefined ? cardOverrides[i] : c.targetPayment);

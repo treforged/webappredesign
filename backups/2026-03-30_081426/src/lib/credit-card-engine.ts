@@ -219,20 +219,7 @@ export function projectCard(card: CardData, months = 36): CardProjection {
   };
 }
 
-export function projectCardVariable(
-  card: CardData,
-  monthlyPayments: number[],
-  months = 36,
-  /**
-   * When true, month 1 uses 0 purchases instead of card.monthlyNewPurchases.
-   * Set this when monthlyPayments comes from simulateVariablePayoff, whose month 0
-   * (= rest of current month) uses 0 purchases because the live card balance already
-   * includes current-month spending. Without this flag the running balance diverges
-   * from the sim by exactly one month of purchases, causing cards to appear to never
-   * reach $0 in the projection table.
-   */
-  skipFirstMonthPurchases = false,
-): CardProjection {
+export function projectCardVariable(card: CardData, monthlyPayments: number[], months = 36): CardProjection {
   const rows: CardMonthRow[] = [];
   let bal = card.balance;
   let totalInterest = 0;
@@ -244,7 +231,7 @@ export function projectCardVariable(
     d.setMonth(d.getMonth() + m - 1);
     const label = d.toLocaleString('en', { month: 'short', year: '2-digit' });
     const startBal = bal;
-    const newPurchases = (m === 1 && skipFirstMonthPurchases) ? 0 : card.monthlyNewPurchases;
+    const newPurchases = card.monthlyNewPurchases;
 
     if (card.autopayFullBalance || (bal <= 0 && payoffMonth !== null)) {
       const payment = newPurchases;
@@ -562,6 +549,8 @@ export function simulateVariablePayoff(
       const bbp = balBeforePayment.get(card.id) ?? 0; // startBal + interest + purchases
       const endBal = Math.max(0, bbp - pay);
       balances.set(card.id, endBal < 1 ? 0 : endBal); // clear sub-dollar dust
+
+      console.log(`[DebtSim] Month ${m + 1}: Card "${card.name}" | start: ${startBal.toFixed(2)} | purchases: ${purchases.toFixed(2)} | interest: ${interest.toFixed(2)} | payment: ${pay.toFixed(2)} | end: ${(endBal < 1 ? 0 : endBal).toFixed(2)} | paidOff: ${endBal < 1}`);
 
       if (pay > 0) {
         debtPaymentTransactions.push({
