@@ -491,21 +491,18 @@ export function simulateVariablePayoff(
       return s + Math.min(c.minPayment, bbp);
     }, 0);
 
-    // One-time net for this month: windfall income increases available surplus,
-    // one-time expenses reduce it — factored in BEFORE debt allocation so the sim
-    // throttles payments to protect the cash floor rather than letting end-cash
-    // drop below it after one-time expenses are applied in Step 7.
-    // Month 0 one-time items are already baked into month0RemainingIncome/Expenses.
-    const oneTimeNet = m === 0 ? 0
-      : (oneTimeByMonth?.[m]?.income ?? 0) - (oneTimeByMonth?.[m]?.expenses ?? 0);
-
-    // availableCash = what's left above the floor after income, expenses, paid-off costs,
-    // and one-time items for this month.
-    let availableCash = currentCash + monthIncome - monthExpenses - cashFloor - paidOffCashCost + oneTimeNet;
+    // availableCash = what's left above the floor after income, expenses, and paid-off costs
+    let availableCash = currentCash + monthIncome - monthExpenses - cashFloor - paidOffCashCost;
     if (availableCash < 0) {
       flags.push({ month: m + 1, flag: 'UNSTABLE' });
       availableCash = 0;
     }
+
+    // Debug: log card states and cash position each month
+    for (const card of debtCards) {
+      console.log(`[DEBUG-MIN] Month ${m+1} "${card.name}": bal=${(balances.get(card.id)??0).toFixed(2)}, min=${card.minPayment}, paidOff=${paidOffCards.has(card.id)}`);
+    }
+    console.log(`[DEBUG-MIN] Month ${m+1}: currentCash=${currentCash.toFixed(2)}, paidOffCashCost=${paidOffCashCost.toFixed(2)}, availableCash=${availableCash.toFixed(2)}, totalMins=${totalMins.toFixed(2)}, debtCards=${debtCards.length}`);
 
     const payments = new Map<string, number>(cards.map(c => [c.id, 0]));
 
@@ -582,6 +579,7 @@ export function simulateVariablePayoff(
       const minRequired = Math.min(card.minPayment, bbp);
       if (currentPay < minRequired && bbp > 0) {
         payments.set(card.id, minRequired);
+        console.log(`[DEBUG-MIN] Month ${m+1} "${card.name}": enforced minimum ${minRequired.toFixed(2)} (was ${currentPay.toFixed(2)})`);
       }
     }
 
