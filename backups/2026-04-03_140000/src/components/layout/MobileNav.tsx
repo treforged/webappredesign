@@ -16,7 +16,7 @@ const items = [
 
 export default function MobileNav() {
   const { pathname } = useLocation();
-  const { signOut, isDemo } = useAuth();
+  const { signOut } = useAuth();
   const [showMore, setShowMore] = useState(false);
 
   return (
@@ -33,12 +33,10 @@ export default function MobileNav() {
               className="block px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/50 btn-press" style={{ borderRadius: 'var(--radius)' }}>
               Settings
             </Link>
-            {!isDemo && (
-              <Link to="/premium" onClick={() => setShowMore(false)}
-                className="block px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/50 btn-press" style={{ borderRadius: 'var(--radius)' }}>
-                Upgrade
-              </Link>
-            )}
+            <Link to="/premium" onClick={() => setShowMore(false)}
+              className="block px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/50 btn-press" style={{ borderRadius: 'var(--radius)' }}>
+              Upgrade
+            </Link>
             <button onClick={() => { setShowMore(false); signOut(); }}
               className="w-full text-left px-4 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 btn-press flex items-center gap-2" style={{ borderRadius: 'var(--radius)' }}>
               <LogOut size={12} /> Sign Out

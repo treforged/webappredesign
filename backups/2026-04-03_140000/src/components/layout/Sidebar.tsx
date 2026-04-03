@@ -51,7 +51,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-        {navItems.filter(item => !isDemo || item.to !== '/premium').map(item => {
+        {navItems.map(item => {
           const active = pathname === item.to;
           return (
             <Link

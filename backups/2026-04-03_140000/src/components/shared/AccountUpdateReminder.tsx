@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Shows a prominent reminder at the start of each month (1st-7th) 
  * to update account balances for accurate budgeting.
  */
 export default function AccountUpdateReminder() {
-  const { isDemo } = useAuth();
   const [dismissed, setDismissed] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
 
@@ -17,11 +15,11 @@ export default function AccountUpdateReminder() {
     const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
     const dismissedKey = localStorage.getItem('account-update-reminder-dismissed');
 
-    // Show if: (1) not demo, (2) it's 1st-7th of month, (3) not dismissed this month yet
-    if (!isDemo && dayOfMonth >= 1 && dayOfMonth <= 7 && dismissedKey !== monthKey) {
+    // Show if: (1) it's 1st-7th of month AND (2) not dismissed this month yet
+    if (dayOfMonth >= 1 && dayOfMonth <= 7 && dismissedKey !== monthKey) {
       setShouldShow(true);
     }
-  }, [isDemo]);
+  }, []);
 
   const handleDismiss = () => {
     const now = new Date();
