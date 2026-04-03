@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   demoAssets, demoLiabilities, demoDebts, demoSavingsGoals, demoCarFunds, demoTransactions,
-  demoNetWorthSnapshots,
 } from '@/lib/demo-data';
 
 // ─── Accounts (Centralized) ──────────────────────────────
@@ -617,17 +616,8 @@ export function useNetWorthSnapshots() {
 
   const query = useQuery({
     queryKey: ['net_worth_snapshots', isDemo ? 'demo' : user?.id],
-    enabled: isDemo || !!user,
+    enabled: !isDemo && !!user,
     queryFn: async () => {
-      if (isDemo) {
-        // Return demo snapshots pre-shaped to match the DB row structure
-        return demoNetWorthSnapshots.map((s, i) => ({
-          ...s,
-          id: `demo-nw-${i}`,
-          user_id: 'demo',
-          created_at: s.snapshot_date,
-        }));
-      }
       if (!user) return [];
       const { data, error } = await supabase
         .from('net_worth_snapshots' as any)
