@@ -319,25 +319,6 @@ export default function Forecast() {
     return result;
   }, [transactions, accounts]);
 
-  // CC-only one-time purchases per month — display-only, does NOT affect cash floor math.
-  const ccOneTimeByMonth = useMemo(() => {
-    const result: Record<string, number> = {};
-    const ccSources = new Set(
-      accounts
-        .filter((a: any) => a.account_type === 'credit_card' && a.active)
-        .flatMap((a: any) => [a.id, `account:${a.id}`]),
-    );
-    for (const t of transactions) {
-      if ((t as any).isGenerated) continue;
-      if (t.type !== 'expense') continue;
-      if (!t.payment_source || !ccSources.has(t.payment_source)) continue;
-      const monthKey = t.date?.substring(0, 7);
-      if (!monthKey) continue;
-      result[monthKey] = (result[monthKey] || 0) + Number(t.amount);
-    }
-    return result;
-  }, [transactions, accounts]);
-
   const projections = useMemo(() => {
     const taxRate = assumptions.taxOverride || Number((profile as any)?.tax_rate) || 22;
     const cashFloor = Number((profile as any)?.cash_floor) || 1000;
@@ -616,7 +597,6 @@ export default function Forecast() {
         investGrowth: Math.round(investGrowthAmt),
         retireGrowth: Math.round(retireGrowthAmt),
         oneTimeNet: Math.round(b.oneTimeNet),
-        ccOneTime: Math.round(ccOneTimeByMonth[b.monthKey] || 0),
         monthMinSafe: Math.round(b.monthMinSafe),
         floorBreachedByOneTime,
         debtWasReduced,
@@ -624,7 +604,7 @@ export default function Forecast() {
     }
 
     return { data, milestones };
-  }, [debts, goals, carFunds, accounts, subs, budgetItems, profile, assumptions, rules, monthlyAggregates, debtPaymentsByMonth, debtBalancesByMonth, payConfig, oneTimeByMonth, ccOneTimeByMonth, transactions, currentMonthRecommendedDebt, forecastMonthEvents]);
+  }, [debts, goals, carFunds, accounts, subs, budgetItems, profile, assumptions, rules, monthlyAggregates, debtPaymentsByMonth, debtBalancesByMonth, payConfig, oneTimeByMonth, transactions, currentMonthRecommendedDebt, forecastMonthEvents]);
 
   const filteredData = useMemo(() => {
     if (filterYear === 'all') return projections.data;
@@ -800,7 +780,6 @@ export default function Forecast() {
                     <th className="py-1.5 sm:py-2 px-1 sm:px-2 text-left font-medium hidden sm:table-cell">Income</th>
                     <th className="py-1.5 sm:py-2 px-1 sm:px-2 text-left font-medium">Out</th>
                     <th className="py-1.5 sm:py-2 px-1 sm:px-2 text-left font-medium hidden sm:table-cell">One-Time</th>
-                    <th className="py-1.5 sm:py-2 px-1 sm:px-2 text-left font-medium hidden sm:table-cell">CC Purchases</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -811,8 +790,7 @@ export default function Forecast() {
                         { label: 'Starting Cash', value: formatCurrency(row.startingCash, false) },
                         { label: 'Take-Home Income', value: formatCurrency(row.takeHome, false), op: '+' },
                         { label: 'Expenses + Debt + Transfers', value: formatCurrency(row.totalExpenses, false), op: '−' },
-                        { label: 'One-Time Net (Cash)', value: formatCurrency(row.oneTimeNet || 0, false), op: row.oneTimeNet >= 0 ? '+' : '−' },
-                        { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
+                        { label: 'One-Time Net', value: formatCurrency(row.oneTimeNet || 0, false), op: row.oneTimeNet >= 0 ? '+' : '−' },
                         { label: 'Ending Cash', value: formatCurrency(row.endingCash, false), op: '=' },
                         { label: '', value: '' },
                         { label: 'Debt Payment', value: formatCurrency(row.debtPayment, false) },
@@ -835,7 +813,6 @@ export default function Forecast() {
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell">{formatCurrency(row.takeHome, false)}</td>
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2">{formatCurrency(row.totalExpenses, false)}</td>
                       <td className={`py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell ${row.floorBreachedByOneTime ? 'text-amber-400' : (row.oneTimeNet || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>{row.oneTimeNet ? formatCurrency(row.oneTimeNet, false) : '—'}</td>
-                      <td className="py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell text-destructive">{row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
