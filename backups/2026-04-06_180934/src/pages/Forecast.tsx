@@ -267,42 +267,11 @@ export default function Forecast() {
         cardPurchasesPerMonth.push(cardPurchases);
       }
 
-      // Build adjusted month events that include ALL liquid-cash outflows, not just
-      // non-CC expense rules. The three missing categories are:
-      //   1. Savings goal monthly contributions (from goals.monthly_contribution, not rules)
-      //   2. Car fund contributions (from carFunds, not rules)
-      //   3. Transfer/investment rules (produce 'transfer'/'investment' events — not 'expense')
-      // Without these, availableCash is overstated and the chart shows faster payoff than reality.
-      const monthlySavingsContribCC = goals.reduce((s: number, g: any) => s + Number(g.monthly_contribution), 0);
-      const monthlyCarContribCC = carFunds.reduce((s: number, c: any) => {
-        const rem = Number(c.down_payment_goal) - Number(c.current_saved);
-        return s + (rem > 0 ? Math.min(rem / 12, 500) : 0);
-      }, 0);
-      const transferRulesCC = rules.filter((r: any) => r.active && (r.rule_type === 'transfer' || r.rule_type === 'investment'));
-      const nowCC = new Date();
-      const adjustedMonthEvents = forecastMonthEvents.map((me, i) => {
-        const d = new Date(nowCC.getFullYear(), nowCC.getMonth() + i, 1);
-        let monthTransfersCC = 0;
-        for (const tr of transferRulesCC) {
-          if (tr.start_date && new Date(tr.start_date) > d) continue;
-          if (tr.end_date && new Date(tr.end_date) < d) continue;
-          const amt = Number(tr.amount);
-          let monthAmt = amt;
-          if (tr.frequency === 'weekly') monthAmt = amt * 4.33;
-          else if (tr.frequency === 'yearly') monthAmt = amt / 12;
-          monthTransfersCC += monthAmt;
-        }
-        return {
-          income: me.income,
-          expenses: me.expenses + monthlySavingsContribCC + monthlyCarContribCC + monthTransfersCC,
-        };
-      });
-
       const projs = (() => {
         const sim = simulateVariablePayoff(
           cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche',
           monthlyTakeHome, monthlyExpenses, 36,
-          adjustedMonthEvents, undefined, cardPurchasesPerMonth,
+          forecastMonthEvents, undefined, cardPurchasesPerMonth,
         );
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];
@@ -330,7 +299,7 @@ export default function Forecast() {
       });
       return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })) };
     } catch { return null; }
-  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents, pauseSavings, forecastMonthEvents, goals, carFunds]);
+  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents, pauseSavings, forecastMonthEvents]);
 
   // One-time manual transactions for forecast.
   // CC-tagged expenses are excluded — they increase CC balance (tracked by the debt
@@ -498,11 +467,8 @@ export default function Forecast() {
       const oneTime = oneTimeByMonth[monthKey] || { income: 0, expense: 0 };
       const oneTimeNet = oneTime.income - oneTime.expense;
 
-      // Use cardProjectionData (event-based, includes all outflows) as the source of truth
-      // for CC balance — this ensures the chart and monthly table show identical trajectories.
-      // Fallback to debtBalancesByMonth if cardProjectionData isn't available (no CC cards).
-      const ccDebtBalance = cardProjectionData?.data[i]?.totalCCBalance
-        ?? (debtBalancesByMonth[i]?.totalBalance ?? 0);
+      const debtBalanceRow = debtBalancesByMonth[i];
+      const ccDebtBalance = debtBalanceRow ? debtBalanceRow.totalBalance : 0;
 
       const nonCCLiabilities = active
         .filter((a: any) => !['credit_card'].includes(a.account_type) && liabilityTypes.includes(a.account_type))
@@ -676,7 +642,7 @@ export default function Forecast() {
     }
 
     return { data, milestones };
-  }, [debts, goals, carFunds, accounts, subs, budgetItems, profile, assumptions, rules, monthlyAggregates, debtPaymentsByMonth, debtBalancesByMonth, cardProjectionData, payConfig, oneTimeByMonth, ccOneTimeByMonth, transactions, currentMonthRecommendedDebt, forecastMonthEvents]);
+  }, [debts, goals, carFunds, accounts, subs, budgetItems, profile, assumptions, rules, monthlyAggregates, debtPaymentsByMonth, debtBalancesByMonth, payConfig, oneTimeByMonth, ccOneTimeByMonth, transactions, currentMonthRecommendedDebt, forecastMonthEvents]);
 
   const filteredData = useMemo(() => {
     if (filterYear === 'all') return projections.data;
