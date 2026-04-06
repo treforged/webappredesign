@@ -244,23 +244,23 @@ export function getDebtPaymentsByMonth(
   const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
-  // Pass one-time INCOME windfalls to the debt sim so it can accelerate payoff.
-  // One-time CASH EXPENSES are intentionally excluded: the debt sim's running currentCash
-  // is drained by expenses in both Step 5 and Step 7 (double-application), making months
-  // after a large one-time expense appear cash-poor and producing low debt payments in
-  // those months. Forecast PASS 2 already handles floor enforcement for one-time cash
-  // outflows by reducing prior months' debt payments — no need to duplicate that logic here.
+  // Build per-month one-time cash flows from non-generated transactions so the
+  // debt engine knows to drop to minimum payments when a large expense is coming.
+  // CC-tagged transactions are excluded — they increase CC balance (handled by
+  // cardPurchasesPerMonth) and do NOT reduce checking account available cash.
   const now = new Date();
+  const ccSources = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
   const oneTimeByMonth: { income: number; expenses: number }[] = Array.from({ length: months }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    let income = 0;
+    let income = 0, expenses = 0;
     for (const t of transactions) {
       if ((t as any).isGenerated) continue;
       if (!t.date?.startsWith(key)) continue;
       if (t.type === 'income') income += Number(t.amount);
+      else if (!t.payment_source || !ccSources.has(t.payment_source)) expenses += Number(t.amount);
     }
-    return { income, expenses: 0 };
+    return { income, expenses };
   });
 
   // Do NOT pass one-time CC purchases to the payment sim — they just add to the CC balance
