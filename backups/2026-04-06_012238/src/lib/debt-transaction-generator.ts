@@ -273,7 +273,6 @@ export function getDebtPaymentsByMonth(
     for (let i = 0; i < proj.months.length; i++) {
       const row = proj.months[i];
       if (row.payment <= 0) continue;
-      if (row.startBalance <= 0) continue; // autopay mode — card paid off, not actual debt payment
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       byMonth[key] = (byMonth[key] || 0) + row.payment;

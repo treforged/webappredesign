@@ -835,7 +835,7 @@ export default function Forecast() {
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell">{formatCurrency(row.takeHome, false)}</td>
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2">{formatCurrency(row.totalExpenses, false)}</td>
                       <td className={`py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell ${row.floorBreachedByOneTime ? 'text-amber-400' : (row.oneTimeNet || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>{row.oneTimeNet ? formatCurrency(row.oneTimeNet, false) : '—'}</td>
-                      <td className={`py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell ${row.ccOneTime ? 'text-destructive' : 'text-muted-foreground'}`}>{row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—'}</td>
+                      <td className="py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell text-destructive">{row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
