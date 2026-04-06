@@ -270,7 +270,6 @@ export function projectCardVariable(
     const availablePayment = monthlyPayments[m - 1] ?? card.minPayment;
     const payment = bal <= 0 ? 0 : Math.min(availablePayment, bal + newPurchases + interest);
     bal = startBal + newPurchases + interest - payment;
-    if (bal > 0 && bal < 1) bal = 0; // clear sub-dollar dust to match sim behaviour
     totalInterest += interest;
     const utilization = card.creditLimit > 0 ? (Math.max(0, bal) / card.creditLimit) * 100 : 0;
     rows.push({ month: m, label, startBalance: Math.round(startBal * 100) / 100, newPurchases, interest, payment: Math.round(payment * 100) / 100, endBalance: Math.round(bal * 100) / 100, utilization });
