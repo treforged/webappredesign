@@ -68,12 +68,12 @@ export default function Auth() {
             className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50" style={{ borderRadius: 'var(--radius)' }}>
             {loading ? 'Processing…' : isLogin ? 'Sign In' : 'Create Account'}
           </button>
-          <p className="text-[10px] text-muted-foreground text-center">
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-medium">
-              {isLogin ? 'Sign Up' : 'Sign In'}
+          <div className="pt-1">
+            <button type="button" onClick={() => setIsLogin(!isLogin)}
+              className="w-full py-2 text-xs font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-colors btn-press" style={{ borderRadius: 'var(--radius)' }}>
+              {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
             </button>
-          </p>
+          </div>
         </form>
         <p className="text-[10px] text-muted-foreground text-center mt-4">
           <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Privacy Policy</Link>
