@@ -572,6 +572,15 @@ export default function Forecast() {
         totalMonthlyOut -= adjustment;
       }
 
+      // While CC debt exists and PASS 2 didn't intentionally hold cash here,
+      // redirect all surplus above the floor to debt — never leave cash idle with CC debt.
+      if (b.ccDebtBalance > 0 && debtPayments[i] >= b.rawDebtPayment && finalLiquid > b.monthMinSafe) {
+        const surplus = finalLiquid - b.monthMinSafe;
+        monthDebtPayment += surplus;
+        totalMonthlyOut += surplus;
+        finalLiquid = b.monthMinSafe;
+      }
+
       // FIX #9: Don't floor at 0 — allow display of negative to alert user
       const endingCash = Math.round(finalLiquid);
 
