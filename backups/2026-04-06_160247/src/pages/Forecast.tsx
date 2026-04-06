@@ -572,14 +572,13 @@ export default function Forecast() {
         totalMonthlyOut -= adjustment;
       }
 
-      // While CC debt exists, redirect all surplus above the cash floor to debt.
-      // Use cashFloor (the user's configured minimum) — not monthMinSafe — so the
-      // pre-paycheck bills buffer doesn't silently absorb surplus that should go to debt.
+      // While CC debt exists, redirect all surplus above the floor to debt.
       // If PASS 2 reduced debt to save up for a future one-time cash purchase, respect that
-      // buffer (savingsBuffer) so the accumulation is preserved. Otherwise end cash = cashFloor.
-      if (b.ccDebtBalance > 0 && finalLiquid > cashFloor) {
+      // buffer (savingsBuffer) so the save-up still accumulates — but redirect any additional
+      // surplus beyond it. End cash = floor (or floor + buffer if saving up).
+      if (b.ccDebtBalance > 0 && finalLiquid > b.monthMinSafe) {
         const savingsBuffer = Math.max(0, b.rawDebtPayment - debtPayments[i]);
-        const surplus = finalLiquid - cashFloor - savingsBuffer;
+        const surplus = finalLiquid - b.monthMinSafe - savingsBuffer;
         if (surplus > 0) {
           monthDebtPayment += surplus;
           totalMonthlyOut += surplus;
@@ -759,10 +758,10 @@ export default function Forecast() {
                   <Legend onClick={e => toggleSeries(e.dataKey as string)} formatter={(value, entry) => (
                     <span style={{ color: hiddenSeries.includes(entry.dataKey as string) ? '#555' : entry.color, cursor: 'pointer', fontSize: 10 }}>{value}</span>
                   )} wrapperStyle={{ fontSize: 10 }} />
-                  <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} strokeOpacity={isVisible('netWorth') ? 1 : 0} />
-                  <Bar dataKey="totalAssets" name="Assets" fill="hsl(142, 71%, 45%)" opacity={isVisible('totalAssets') ? 0.3 : 0} />
-                  <Bar dataKey="totalLiabilities" name="Liabilities" fill="hsl(0, 84%, 60%)" opacity={isVisible('totalLiabilities') ? 0.3 : 0} />
-                  <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
+                  {isVisible('netWorth') && <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} />}
+                  {isVisible('totalAssets') && <Bar dataKey="totalAssets" name="Assets" fill="hsl(142, 71%, 45%)" opacity={0.3} />}
+                  {isVisible('totalLiabilities') && <Bar dataKey="totalLiabilities" name="Liabilities" fill="hsl(0, 84%, 60%)" opacity={0.3} />}
+                  {isVisible('endingCash') && <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />}
                 </ComposedChart>
               ) : (
                 <LineChart data={filteredData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -773,11 +772,11 @@ export default function Forecast() {
                   <Legend onClick={e => toggleSeries(e.dataKey as string)} formatter={(value, entry) => (
                     <span style={{ color: hiddenSeries.includes(entry.dataKey as string) ? '#555' : entry.color, cursor: 'pointer', fontSize: 10 }}>{value}</span>
                   )} wrapperStyle={{ fontSize: 10 }} />
-                  <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} strokeOpacity={isVisible('netWorth') ? 1 : 0} />
-                  <Line type="monotone" dataKey="investmentBalance" name="Investments" stroke="hsl(142, 71%, 45%)" strokeWidth={1.5} dot={false} strokeOpacity={isVisible('investmentBalance') ? 1 : 0} />
-                  <Line type="monotone" dataKey="retirementBalance" name="Retirement" stroke="hsl(262, 83%, 58%)" strokeWidth={1.5} dot={false} strokeOpacity={isVisible('retirementBalance') ? 1 : 0} />
-                  <Line type="monotone" dataKey="savingsBalance" name="Savings" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeOpacity={isVisible('savingsBalance') ? 1 : 0} />
-                  <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(30, 100%, 50%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
+                  {isVisible('netWorth') && <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} />}
+                  {isVisible('investmentBalance') && <Line type="monotone" dataKey="investmentBalance" name="Investments" stroke="hsl(142, 71%, 45%)" strokeWidth={1.5} dot={false} />}
+                  {isVisible('retirementBalance') && <Line type="monotone" dataKey="retirementBalance" name="Retirement" stroke="hsl(262, 83%, 58%)" strokeWidth={1.5} dot={false} />}
+                  {isVisible('savingsBalance') && <Line type="monotone" dataKey="savingsBalance" name="Savings" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} />}
+                  {isVisible('endingCash') && <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(30, 100%, 50%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />}
                 </LineChart>
               )}
             </ResponsiveContainer>
