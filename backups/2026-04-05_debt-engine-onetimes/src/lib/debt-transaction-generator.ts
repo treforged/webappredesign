@@ -141,15 +141,9 @@ function getCardProjections(
   monthlyTakeHome: number,
   monthlyExpenses: number,
   months: number,
-  oneTimeByMonth?: { income: number; expenses: number }[],
 ) {
   if (options.paymentMode === 'variable') {
-    const sim = simulateVariablePayoff(
-      cards, liquidCash, options.cashFloor, options.strategy,
-      monthlyTakeHome, monthlyExpenses, months,
-      undefined, undefined, undefined, undefined, undefined,
-      oneTimeByMonth,
-    );
+    const sim = simulateVariablePayoff(cards, liquidCash, options.cashFloor, options.strategy, monthlyTakeHome, monthlyExpenses, months);
     return cards.map(c => {
       const cardOverrides = options.overrides[c.id] || {};
       const basePays = sim.monthlyPayments.get(c.id) || [];
@@ -209,24 +203,9 @@ export function getDebtPaymentsByMonth(
   const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
-  // Build per-month one-time cash flows from non-generated transactions so the
-  // debt engine knows to drop to minimum payments when a large expense is coming.
-  const now = new Date();
-  const oneTimeByMonth: { income: number; expenses: number }[] = Array.from({ length: months }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    let income = 0, expenses = 0;
-    for (const t of transactions) {
-      if ((t as any).isGenerated) continue;
-      if (!t.date?.startsWith(key)) continue;
-      if (t.type === 'income') income += Number(t.amount);
-      else expenses += Number(t.amount);
-    }
-    return { income, expenses };
-  });
-
-  const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months, oneTimeByMonth);
+  const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);
   const byMonth: Record<string, number> = {};
+  const now = new Date();
 
   for (const proj of projections) {
     for (let i = 0; i < proj.months.length; i++) {
@@ -283,21 +262,8 @@ export function getDebtBalancesByMonth(
   const monthlyTakeHome = paycheckIncome + nonPaycheckIncome;
   const monthlyExpenses = calcCashOnlyMonthlyExpenses(rules, cards);
 
+  const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months);
   const now = new Date();
-  const oneTimeByMonth: { income: number; expenses: number }[] = Array.from({ length: months }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    let income = 0, expenses = 0;
-    for (const t of transactions) {
-      if ((t as any).isGenerated) continue;
-      if (!t.date?.startsWith(key)) continue;
-      if (t.type === 'income') income += Number(t.amount);
-      else expenses += Number(t.amount);
-    }
-    return { income, expenses };
-  });
-
-  const projections = getCardProjections(cards, liquidCash, options, monthlyTakeHome, monthlyExpenses, months, oneTimeByMonth);
   const result: { monthKey: string; totalBalance: number; totalInterest: number }[] = [];
 
   for (let i = 0; i < months; i++) {
