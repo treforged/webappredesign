@@ -572,18 +572,13 @@ export default function Forecast() {
         totalMonthlyOut -= adjustment;
       }
 
-      // While CC debt exists, redirect all surplus above the floor to debt.
-      // If PASS 2 reduced debt to save up for a future one-time cash purchase, respect that
-      // buffer (savingsBuffer) so the save-up still accumulates — but redirect any additional
-      // surplus beyond it. End cash = floor (or floor + buffer if saving up).
-      if (b.ccDebtBalance > 0 && finalLiquid > b.monthMinSafe) {
-        const savingsBuffer = Math.max(0, b.rawDebtPayment - debtPayments[i]);
-        const surplus = finalLiquid - b.monthMinSafe - savingsBuffer;
-        if (surplus > 0) {
-          monthDebtPayment += surplus;
-          totalMonthlyOut += surplus;
-          finalLiquid -= surplus;
-        }
+      // While CC debt exists and PASS 2 didn't intentionally hold cash here,
+      // redirect all surplus above the floor to debt — never leave cash idle with CC debt.
+      if (b.ccDebtBalance > 0 && debtPayments[i] >= b.rawDebtPayment && finalLiquid > b.monthMinSafe) {
+        const surplus = finalLiquid - b.monthMinSafe;
+        monthDebtPayment += surplus;
+        totalMonthlyOut += surplus;
+        finalLiquid = b.monthMinSafe;
       }
 
       // FIX #9: Don't floor at 0 — allow display of negative to alert user
