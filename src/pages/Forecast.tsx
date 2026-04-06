@@ -616,7 +616,7 @@ export default function Forecast() {
         milestones.push({ month: b.monthLabel, event: '💸 One-time expense caused floor breach' });
       } else if (endingCash < 0 && (i === 0 || data[data.length - 1]?.endingCash >= 0)) {
         milestones.push({ month: b.monthLabel, event: '⚠️ Cash goes negative!' });
-      } else if (endingCash >= 0 && endingCash < b.monthMinSafe && (i === 0 || (data.length > 0 && data[data.length - 1]?.endingCash >= baseData[Math.max(0, i - 1)].monthMinSafe))) {
+      } else if (endingCash >= 0 && endingCash < cashFloor && (i === 0 || (data.length > 0 && data[data.length - 1]?.endingCash >= cashFloor))) {
         milestones.push({ month: b.monthLabel, event: '⚠️ Cash below safe minimum' });
       }
 
