@@ -366,18 +366,7 @@ export default function Forecast() {
         row.utilization = totalLimit > 0 ? Math.round((row.totalCCBalance / totalLimit) * 100) : 0;
         return row;
       });
-      // Total real debt payments per month (excluding post-payoff autopay rows where startBalance=0)
-      // Indexed 0..35 matching the forecast month indices. Used as rawDebtPayment in PASS 1
-      // so Forecast popup debt numbers match the Debt Payoff tab simulation.
-      const debtPaymentTotals = Array.from({ length: 36 }, (_, i) =>
-        projs.reduce((total, proj) => {
-          const m = proj.months[i];
-          if (!m || m.startBalance <= 0) return total;
-          return total + m.payment;
-        }, 0),
-      );
-
-      return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })), debtPaymentTotals };
+      return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })) };
     } catch { return null; }
   }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents, pauseSavings, forecastMonthEvents, goals, carFunds]);
 
@@ -507,13 +496,9 @@ export default function Forecast() {
         baseExpenses = budgetFallback * expenseMultiplier;
       }
 
-      // Prefer cardProjectionData's payment totals — they use the same full simulation
-      // (event-based, augmented CC purchases, one-time items) as the Debt Payoff tab,
-      // so the Forecast popup debt numbers are consistent with the per-card projections.
-      // Fall back to debtPaymentsByMonth for months where cardProjectionData is unavailable.
       let rawDebtPayment = (i === 0 && currentMonthRecommendedDebt !== null)
         ? currentMonthRecommendedDebt
-        : (cardProjectionData?.debtPaymentTotals?.[i] ?? debtPaymentsByMonth[monthKey] ?? 0);
+        : (debtPaymentsByMonth[monthKey] || 0);
 
       // FIX #5: Only fall back to minimum payments if debt engine returned 0 but balance > 0
       if (rawDebtPayment <= 0) {
