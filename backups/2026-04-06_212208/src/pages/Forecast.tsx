@@ -609,17 +609,19 @@ export default function Forecast() {
         totalMonthlyOut -= adjustment;
       }
 
-      // While CC debt exists, redirect ALL surplus above the cash floor to debt.
-      // No savingsBuffer — when there's CC debt, end cash must be at the floor.
-      // One-time cash expense months (e.g. car down payment) that breach the floor are
-      // handled by the PASS 3 safety net above, which reduces that month's debt payment.
-      // CC one-time purchases do NOT reduce cash (they add to CC balance) so they are
-      // already excluded from oneTimeNet and never trigger save-up behavior here.
+      // While CC debt exists, redirect all surplus above the cash floor to debt.
+      // Use cashFloor (the user's configured minimum) — not monthMinSafe — so the
+      // pre-paycheck bills buffer doesn't silently absorb surplus that should go to debt.
+      // If PASS 2 reduced debt to save up for a future one-time cash purchase, respect that
+      // buffer (savingsBuffer) so the accumulation is preserved. Otherwise end cash = cashFloor.
       if (b.ccDebtBalance > 0 && finalLiquid > cashFloor) {
-        const surplus = finalLiquid - cashFloor;
-        monthDebtPayment += surplus;
-        totalMonthlyOut += surplus;
-        finalLiquid -= surplus;
+        const savingsBuffer = Math.max(0, b.rawDebtPayment - debtPayments[i]);
+        const surplus = finalLiquid - cashFloor - savingsBuffer;
+        if (surplus > 0) {
+          monthDebtPayment += surplus;
+          totalMonthlyOut += surplus;
+          finalLiquid -= surplus;
+        }
       }
 
       // FIX #9: Don't floor at 0 — allow display of negative to alert user
