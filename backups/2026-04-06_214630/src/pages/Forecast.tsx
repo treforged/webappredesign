@@ -524,42 +524,16 @@ export default function Forecast() {
       expenseMultiplier *= (1 + monthlyExpenseGrowth);
     }
 
-    // ═══ PASS 2: Look-ahead — save up for one-time CASH expenses, redirect surplus otherwise ═══
-    //
-    // Design goals:
-    //  • When CC debt exists and no upcoming cash expense needs saving, PASS 3 pins end cash
-    //    to cashFloor (all surplus → debt). PASS 2 must simulate this so it sees the correct
-    //    starting balance for future months.
-    //  • When a future one-time CASH expense would breach the floor, PASS 2 reduces debt
-    //    payments in the months immediately before the expense (latest-first = "1 month before
-    //    if possible, more if needed"), down to CC minimums. Those months become "save-up months"
-    //    where PASS 3 skips its redirect so cash accumulates.
-    //  • CC one-time purchases are excluded from oneTimeByMonth and never trigger save-up.
-    //  • CC minimums are always met — payments never drop below ccMinTotal.
-
-    // Total CC minimum payment across all cards (floor for save-up reduction)
-    const ccCards = active.filter((a: any) => a.account_type === 'credit_card');
-    const ccMinTotal = debts
-      .filter((d: any) => ccCards.some((a: any) => a.name.toLowerCase() === d.name.toLowerCase()))
-      .reduce((s: number, d: any) => s + Number(d.min_payment), 0);
-
+    // ═══ PASS 2: Look-ahead — iteratively reduce debt payments to maintain cash floor ═══
     const debtPayments = baseData.map(b => b.rawDebtPayment);
 
-    // Months where PASS 2 reduced debt to save up — PASS 3 skips redirect in these months
-    const saveUpMonths = new Set<number>();
-
-    // Simulate cash flow accounting for PASS 3 pinning in normal months.
-    // Save-up months are NOT pinned — their extra cash carries forward to cover future expenses.
+    // Helper: recompute simulated cash from scratch
     const recomputeSimCash = (simCash: number[]) => {
       let bal = liquidBal;
       for (let i = 0; i < 36; i++) {
         const b = baseData[i];
         const totalOut = b.baseExpenses + debtPayments[i] + monthlySavingsContrib + monthlyCarContrib + b.monthTransfers;
         bal += b.netIncome - totalOut + b.oneTimeNet;
-        // Simulate PASS 3 redirect: pin to cashFloor in normal months (not save-up months)
-        if (!saveUpMonths.has(i) && b.ccDebtBalance > 0 && bal > cashFloor) {
-          bal = cashFloor;
-        }
         simCash[i] = bal;
       }
     };
@@ -567,32 +541,34 @@ export default function Forecast() {
     const simCash: number[] = Array.from({ length: 36 });
     recomputeSimCash(simCash);
 
+    // All months are adjustable — when a future one-time expense will breach the floor,
+    // PASS 2 must be able to reduce the current month's debt payment too.
     const minAdjustableMonthIndex = 0;
 
-    // Iteratively find floor breaches and reduce debt in months immediately before each breach,
-    // working backward (prefer the 1 month before, then 2, etc.) and stopping at CC minimums.
-    for (let pass = 0; pass < 20; pass++) {
+    // FIX #7: Improved cash floor enforcement — scan backward from breached month
+    // to find months with reducible debt payments, and also recompute after EACH fix
+    for (let pass = 0; pass < 10; pass++) {
       let anyFixed = false;
       for (let i = 0; i < 36; i++) {
-        if (simCash[i] >= cashFloor) continue;
-        const shortfall = cashFloor - simCash[i];
+        if (simCash[i] >= baseData[i].monthMinSafe) continue;
+        const shortfall = baseData[i].monthMinSafe - simCash[i];
         let toRecover = shortfall;
 
-        // Scan BACKWARD from the breached month — prefer reducing the month closest to the breach
-        for (let j = i; j >= minAdjustableMonthIndex && toRecover > 0; j--) {
-          const minPayment = j === i ? 0 : ccMinTotal; // expense month itself can go to 0; prior months floor at minimums
-          const canReduce = Math.max(0, Math.min(debtPayments[j] - minPayment, toRecover));
+        // Reduce debt payments from the earliest adjustable month forward to the breached month
+        // so cash accumulates in prior months rather than only reducing the expense month itself
+        for (let j = minAdjustableMonthIndex; j <= i && toRecover > 0; j++) {
+          const canReduce = Math.min(debtPayments[j], toRecover);
           if (canReduce > 0) {
             debtPayments[j] -= canReduce;
             toRecover -= canReduce;
-            if (j < i) saveUpMonths.add(j); // prior months become save-up months
             anyFixed = true;
           }
         }
 
+        // FIX #8: Recompute after each individual month fix to cascade correctly
         if (anyFixed) {
           recomputeSimCash(simCash);
-          break; // restart scan to catch cascading effects
+          break; // restart full scan from month 0 to catch cascading effects
         }
       }
       if (!anyFixed) break;
@@ -633,11 +609,13 @@ export default function Forecast() {
         totalMonthlyOut -= adjustment;
       }
 
-      // Redirect surplus to debt when CC balance exists — EXCEPT in save-up months.
-      // Save-up months (identified by PASS 2) intentionally hold cash above the floor
-      // to cover an upcoming one-time CASH expense without breaching the floor.
-      // CC one-time purchases are excluded from oneTimeByMonth and never trigger save-up.
-      if (!saveUpMonths.has(i) && b.ccDebtBalance > 0 && finalLiquid > cashFloor) {
+      // While CC debt exists, redirect ALL surplus above the cash floor to debt.
+      // No savingsBuffer — when there's CC debt, end cash must be at the floor.
+      // One-time cash expense months (e.g. car down payment) that breach the floor are
+      // handled by the PASS 3 safety net above, which reduces that month's debt payment.
+      // CC one-time purchases do NOT reduce cash (they add to CC balance) so they are
+      // already excluded from oneTimeNet and never trigger save-up behavior here.
+      if (b.ccDebtBalance > 0 && finalLiquid > cashFloor) {
         const surplus = finalLiquid - cashFloor;
         monthDebtPayment += surplus;
         totalMonthlyOut += surplus;
