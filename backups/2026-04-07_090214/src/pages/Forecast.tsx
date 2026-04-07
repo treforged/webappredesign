@@ -517,11 +517,11 @@ export default function Forecast() {
       }
 
       // rawDebtPayment drives the cash-flow calculation (PASS 2 floor protection, PASS 3 surplus).
-      // All months use cardProjectionData's real-debt-only totals (startBalance > 0 guard kept to
-      // avoid post-payoff autopay inflating PASS 2's look-ahead). Falls back to scalar sim.
-      let rawDebtPayment = cardProjectionData?.debtPaymentTotals?.[i]
-        ?? debtPaymentsByMonth[monthKey]
-        ?? 0;
+      // Month 0 uses currentMonthRecommendedDebt (remaining-this-month based on actual transactions).
+      // Future months use cardProjectionData's real-debt-only totals (event-based, same sim as Debt Payoff tab).
+      let rawDebtPayment = (i === 0 && currentMonthRecommendedDebt !== null)
+        ? currentMonthRecommendedDebt
+        : (cardProjectionData?.debtPaymentTotals?.[i] ?? debtPaymentsByMonth[monthKey] ?? 0);
 
       // FIX #5: Only fall back to minimum payments if debt engine returned 0 but balance > 0
       if (rawDebtPayment <= 0) {
@@ -641,7 +641,7 @@ export default function Forecast() {
 
         // Scan BACKWARD from the breached month — prefer reducing the month closest to the breach
         for (let j = i; j >= minAdjustableMonthIndex && toRecover > 0; j--) {
-          const minPayment = ccMinTotal; // minimums always required — even in the expense month
+          const minPayment = j === i ? 0 : ccMinTotal; // expense month itself can go to 0; prior months floor at minimums
           const canReduce = Math.max(0, Math.min(debtPayments[j] - minPayment, toRecover));
           if (canReduce > 0) {
             debtPayments[j] -= canReduce;
@@ -744,7 +744,7 @@ export default function Forecast() {
         startingCash,
         takeHome: Math.round(b.netIncome), totalExpenses: Math.round(totalMonthlyOut),
         debtPayment: Math.round(monthDebtPayment),
-
+        planDebtPayment: Math.round(cardProjectionData?.allPaymentTotals?.[i] ?? monthDebtPayment),
         brokerageContrib: Math.round(b.monthBrokerageContrib),
         retireContrib: Math.round(b.monthRetireContrib),
         investGrowth: Math.round(investGrowthAmt),
@@ -978,7 +978,7 @@ export default function Forecast() {
                         { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
                         { label: 'Ending Cash', value: formatCurrency(row.endingCash, false), op: '=' },
                         { label: '', value: '' },
-                        { label: 'Debt Payment', value: formatCurrency(row.debtPayment, false) },
+                        { label: 'Debt Payment', value: formatCurrency(row.planDebtPayment, false) },
                         { label: 'Brokerage Contrib', value: formatCurrency(row.brokerageContrib, false) },
                         { label: 'Retirement Contrib', value: formatCurrency(row.retireContrib, false) },
                         { label: 'Net Worth', value: formatCurrency(row.netWorth, false) },
