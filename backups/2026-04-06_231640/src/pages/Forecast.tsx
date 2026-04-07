@@ -298,37 +298,11 @@ export default function Forecast() {
         };
       });
 
-      // Build one-time cash items per month so the CC balance simulation knows to hold back
-      // cash in months with large one-time cash expenses (e.g. a $3,000 down payment in June).
-      // Without this, the simulation over-allocates to debt and shows payoff months too early.
-      // CC-funded expenses are excluded (they don't reduce liquid cash).
-      const ccSourceIds = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
-      const oneTimeArr: { income: number; expenses: number }[] = [{ income: 0, expenses: 0 }];
-      for (let oi = 1; oi < 36; oi++) {
-        const od = new Date(now.getFullYear(), now.getMonth() + oi, 1);
-        const omk = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
-        const txns = (transactions as any[]).filter((t: any) =>
-          t.date && t.date.startsWith(omk) && !(t as any).isGenerated,
-        );
-        const inc = txns
-          .filter((t: any) => t.type === 'income')
-          .reduce((s: number, t: any) => s + Number(t.amount), 0);
-        const exp = txns
-          .filter((t: any) => {
-            if (t.type !== 'expense') return false;
-            if (t.payment_source && ccSourceIds.has(t.payment_source)) return false;
-            return true;
-          })
-          .reduce((s: number, t: any) => s + Number(t.amount), 0);
-        oneTimeArr.push({ income: inc, expenses: exp });
-      }
-
       const projs = (() => {
         const sim = simulateVariablePayoff(
           cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche',
           monthlyTakeHome, monthlyExpenses, 36,
           adjustedMonthEvents, undefined, cardPurchasesPerMonth,
-          undefined, undefined, oneTimeArr,
         );
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];

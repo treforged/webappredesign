@@ -587,12 +587,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
           <div className="card-forged p-3 sm:p-4 text-center">
             <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase">Payoff ETA</p>
             <p className="text-base sm:text-lg font-display font-bold text-primary">
-              {(() => {
-                // Derive from the per-card projections (same sim as the card detail rows)
-                // so this number is always consistent with the per-card "Payoff: X mo" display.
-                const eta = Math.max(0, ...projections.map(p => p.payoffMonth ?? 0));
-                return eta > 0 ? `${eta} mo` : 'Paid';
-              })()}
+              {recommendations.projectedPayoffMonths > 0 ? `${recommendations.projectedPayoffMonths} mo` : 'Paid'}
             </p>
           </div>
         </div>
