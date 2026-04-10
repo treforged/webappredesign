@@ -1,2 +1,11 @@
 .aider*
 node_modules/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+.env.test
