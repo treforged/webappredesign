@@ -7,6 +7,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** Safely convert a Stripe Unix timestamp to ISO string. Returns null if missing. */
+function toISO(unixSeconds: number | null | undefined): string | null {
+  if (unixSeconds == null || !Number.isFinite(unixSeconds)) return null;
+  return new Date(unixSeconds * 1000).toISOString();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,32 +52,61 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── checkout.session.completed ────────────────────────────────────────────
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const userId = session.metadata?.supabase_user_id;
-      const customerId = session.customer;
-      const subscriptionId = session.subscription;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string | null;
 
-      if (userId && subscriptionId) {
-        // Fix 9: use Stripe SDK instead of raw fetch
-        const sub = await stripe.subscriptions.retrieve(subscriptionId as string);
+      if (!userId) {
+        console.error("checkout.session.completed: missing supabase_user_id in metadata");
+        return new Response(JSON.stringify({ received: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-        await supabase.from("user_subscriptions").upsert({
+      if (subscriptionId) {
+        // Retrieve subscription to get accurate status and period end
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+
+        const { error } = await supabase.from("user_subscriptions").upsert({
           user_id: userId,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           plan: "premium",
           subscription_status: sub.status,
-          current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+          current_period_end: toISO((sub as any).current_period_end),
         }, { onConflict: "user_id" });
 
-        // Fix 6: profiles.is_premium removed — user_subscriptions is the only authority
+        if (error) {
+          console.error("checkout upsert error:", error.message);
+          throw new Error(error.message);
+        }
+      } else {
+        // No subscription ID on the session (e.g. setup mode) — mark premium with customer only
+        const { error } = await supabase.from("user_subscriptions").upsert({
+          user_id: userId,
+          stripe_customer_id: customerId,
+          plan: "premium",
+          subscription_status: "active",
+        }, { onConflict: "user_id" });
+
+        if (error) {
+          console.error("checkout upsert (no sub) error:", error.message);
+          throw new Error(error.message);
+        }
       }
     }
 
-    if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+    // ── customer.subscription.updated / deleted ───────────────────────────────
+    if (
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted"
+    ) {
       const sub = event.data.object;
-      const customerId = sub.customer;
+      const customerId = sub.customer as string;
 
       const { data: userSub } = await supabase
         .from("user_subscriptions")
@@ -81,25 +116,26 @@ Deno.serve(async (req) => {
 
       if (userSub) {
         const isActive = ["active", "trialing"].includes(sub.status);
-        await supabase.from("user_subscriptions").update({
+
+        const { error } = await supabase.from("user_subscriptions").update({
           subscription_status: sub.status,
           plan: isActive ? "premium" : "free",
-          current_period_end: (sub as any).current_period_end
-            ? new Date((sub as any).current_period_end * 1000).toISOString()
-            : null,
+          current_period_end: toISO((sub as any).current_period_end),
+          stripe_subscription_id: sub.id,
         }).eq("user_id", userSub.user_id);
 
-        // Fix 6: profiles.is_premium removed — user_subscriptions is the only authority
+        if (error) console.error("subscription updated error:", error.message);
       }
     }
 
-    // Fix 4: handle invoice.payment_succeeded to re-activate past_due subscriptions
+    // ── invoice.payment_succeeded ─────────────────────────────────────────────
+    // Re-activates subscriptions that were past_due. Also sets plan: "premium"
+    // in case the row was downgraded while payment was failing.
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as any;
-      const customerId = invoice.customer;
-      const subscriptionId = invoice.subscription;
+      const customerId = invoice.customer as string;
+      const subscriptionId = invoice.subscription as string | null;
 
-      // Only act on subscription invoices (not one-time charges)
       if (!subscriptionId) {
         return new Response(JSON.stringify({ received: true }), {
           status: 200,
@@ -114,16 +150,24 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (userSub) {
-        await supabase.from("user_subscriptions").update({
+        // Retrieve subscription to get accurate period end
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+
+        const { error } = await supabase.from("user_subscriptions").update({
           subscription_status: "active",
+          plan: "premium",
           stripe_subscription_id: subscriptionId,
+          current_period_end: toISO((sub as any).current_period_end),
         }).eq("user_id", userSub.user_id);
+
+        if (error) console.error("invoice.payment_succeeded update error:", error.message);
       }
     }
 
+    // ── invoice.payment_failed ────────────────────────────────────────────────
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as any;
-      const customerId = invoice.customer;
+      const customerId = invoice.customer as string;
 
       const { data: userSub } = await supabase
         .from("user_subscriptions")
@@ -132,9 +176,11 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (userSub) {
-        await supabase.from("user_subscriptions").update({
+        const { error } = await supabase.from("user_subscriptions").update({
           subscription_status: "past_due",
         }).eq("user_id", userSub.user_id);
+
+        if (error) console.error("invoice.payment_failed update error:", error.message);
       }
     }
 
