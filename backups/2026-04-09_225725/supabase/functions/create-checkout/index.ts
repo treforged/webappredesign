@@ -1,11 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.25.76";
-import {
-  checkRateLimit,
-  getClientIp,
-  rateLimitedResponse,
-  type RateLimitConfig,
-} from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,8 +9,6 @@ const corsHeaders = {
 
 const PAYLOAD_SIZE_LIMIT = 2048; // 2 KB — more than enough for { return_url }
 
-const RATE_LIMIT: RateLimitConfig = { windowMs: 60_000, max: 20 };
-
 const bodySchema = z.object({
   return_url: z.string().url('return_url must be a valid URL').max(2000).optional(),
 }).strict(); // reject any unexpected fields
@@ -24,13 +16,6 @@ const bodySchema = z.object({
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
-  }
-
-  // Rate limit by IP before doing any work
-  const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, RATE_LIMIT);
-  if (!rl.allowed) {
-    return rateLimitedResponse(corsHeaders, RATE_LIMIT, rl.resetAt);
   }
 
   try {
