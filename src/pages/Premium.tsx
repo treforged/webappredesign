@@ -37,7 +37,7 @@ export default function Premium() {
       body: {
         plan,
         ui_mode: 'embedded',
-        return_url: `${window.location.origin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+        return_url: `${window.location.origin}/premium/success`,
       },
     });
 
