@@ -12,6 +12,7 @@ export default function Premium() {
   const { isPremium, hasStripeCustomer, isLoading } = useSubscription();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
@@ -23,7 +24,7 @@ export default function Premium() {
       }
 
       const { data, error } = await tracedInvoke<{ url: string }>(supabase, 'create-checkout', {
-        body: { return_url: window.location.origin },
+        body: { return_url: window.location.origin, plan: selectedPlan },
       });
 
       if (error) throw error;
@@ -93,6 +94,31 @@ export default function Premium() {
         </p>
       </div>
 
+      {/* Billing toggle — only show when not yet premium */}
+      {!isPremium && (
+        <div className="flex items-center justify-center">
+          <div className="inline-flex items-center bg-secondary border border-border p-0.5" style={{ borderRadius: 'var(--radius)' }}>
+            <button
+              onClick={() => setSelectedPlan('yearly')}
+              className={`px-4 py-1.5 text-xs font-semibold transition-colors flex items-center gap-1.5 ${selectedPlan === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              style={{ borderRadius: 'calc(var(--radius) - 2px)' }}
+            >
+              Yearly
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${selectedPlan === 'yearly' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-gold/20 text-gold'}`}>
+                SAVE 25%
+              </span>
+            </button>
+            <button
+              onClick={() => setSelectedPlan('monthly')}
+              className={`px-4 py-1.5 text-xs font-semibold transition-colors ${selectedPlan === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              style={{ borderRadius: 'calc(var(--radius) - 2px)' }}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card-forged p-6 space-y-4">
           <div>
@@ -124,9 +150,23 @@ export default function Premium() {
             <h3 className="font-display font-semibold text-sm text-gold">Premium</h3>
           </div>
           <p className="text-[10px] text-muted-foreground">Full access. Total control.</p>
-          <p className="font-display font-bold text-3xl tracking-tight text-gold">
-            $9<span className="text-sm text-muted-foreground font-normal">/mo</span>
-          </p>
+          {isPremium ? null : selectedPlan === 'yearly' ? (
+            <div>
+              <p className="font-display font-bold text-3xl tracking-tight text-gold">
+                $89.99<span className="text-sm text-muted-foreground font-normal">/yr</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">$7.50/mo — 2 months free</p>
+            </div>
+          ) : (
+            <p className="font-display font-bold text-3xl tracking-tight text-gold">
+              $9.99<span className="text-sm text-muted-foreground font-normal">/mo</span>
+            </p>
+          )}
+          {isPremium && (
+            <p className="font-display font-bold text-3xl tracking-tight text-gold">
+              Active
+            </p>
+          )}
           <ul className="space-y-2">
             {premium.map((f) => (
               <li key={f} className="flex items-center gap-2 text-xs">

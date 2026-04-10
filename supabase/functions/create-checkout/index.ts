@@ -9,13 +9,20 @@ import {
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { createTracer, hashId } from "../_shared/tracer.ts";
 
-const PAYLOAD_SIZE_LIMIT = 2048; // 2 KB — more than enough for { return_url }
+const PAYLOAD_SIZE_LIMIT = 2048;
 
 const RATE_LIMIT: RateLimitConfig = { windowMs: 60_000, max: 20 };
 
+// Price IDs — override via edge function secrets if needed
+const PRICE_IDS = {
+  monthly: Deno.env.get("STRIPE_PRICE_MONTHLY") ?? "price_1TKXd02cDVgFonAbfApHZHkd",
+  yearly:  Deno.env.get("STRIPE_PRICE_YEARLY")  ?? "price_1TDyCe2cDVgFonAb5P637p2r",
+} as const;
+
 const bodySchema = z.object({
   return_url: z.string().url('return_url must be a valid URL').max(2000).optional(),
-}).strict(); // reject any unexpected fields
+  plan: z.enum(['monthly', 'yearly']).default('yearly'),
+}).strict();
 
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -91,7 +98,7 @@ Deno.serve(async (req) => {
     }
 
     // Reject malformed JSON and unexpected fields
-    let parsed: { return_url?: string } = {};
+    let parsed: { return_url?: string; plan?: 'monthly' | 'yearly' } = {};
     if (rawBody.trim()) {
       let json: unknown;
       try {
@@ -199,7 +206,7 @@ Deno.serve(async (req) => {
       },
       body: new URLSearchParams({
         customer: customerId,
-        "line_items[0][price]": "price_1TCZWP2cDVgFonAbtUAJHskT",
+        "line_items[0][price]": PRICE_IDS[parsed.plan ?? 'yearly'],
         "line_items[0][quantity]": "1",
         mode: "subscription",
         allow_promotion_codes: "true",
