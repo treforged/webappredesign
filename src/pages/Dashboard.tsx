@@ -519,7 +519,7 @@ export default function Dashboard() {
           <MetricCard label="Monthly Expenses" value={summary.expenses > 0 ? formatCurrency(summary.expenses, false) : '—'} accent="crimson" icon={CreditCard} />
         </ClickableMetric>
         <ClickableMetric onClick={openDebtPaymentsCalc} tooltip="View debt payment breakdown by card">
-          <MetricCard label="Debt Payments" value={totalDebtPayments > 0 ? formatCurrency(totalDebtPayments, false) : '—'} accent="blue" icon={Landmark} />
+          <MetricCard label="Debt Payments" value={totalDebtPayments > 0 ? formatCurrency(totalDebtPayments, false) : '—'} accent="silver" icon={Landmark} />
         </ClickableMetric>
       </div>
 
