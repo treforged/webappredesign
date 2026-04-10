@@ -26,15 +26,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Service role client — only this key can access the rate_limits table
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
-
-  // Rate limit by IP before doing any auth or business logic
+  // Rate limit by IP before doing any work
   const ip = getClientIp(req);
-  const rl = await checkRateLimit(supabase, `${ip}:create-checkout`, RATE_LIMIT);
+  const rl = checkRateLimit(ip, RATE_LIMIT);
   if (!rl.allowed) {
     return rateLimitedResponse(corsHeaders, RATE_LIMIT, rl.resetAt);
   }
@@ -105,6 +99,12 @@ Deno.serve(async (req) => {
       ? new URL(sanitizedReturnUrl).origin
       : req.headers.get("origin") || "https://app.treforged.com";
 
+    // Use service role for all DB operations since we can't use anon client auth
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Check if user already has a stripe customer
     const { data: existingSub } = await supabase
       .from("user_subscriptions")
@@ -131,7 +131,11 @@ Deno.serve(async (req) => {
       if (!customerRes.ok) throw new Error(`Stripe customer error: ${JSON.stringify(customer)}`);
       customerId = customer.id;
 
-      await supabase.from("user_subscriptions").upsert({
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await serviceClient.from("user_subscriptions").upsert({
         user_id: userId,
         stripe_customer_id: customerId,
       }, { onConflict: "user_id" });

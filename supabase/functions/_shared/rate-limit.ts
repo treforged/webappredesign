@@ -1,16 +1,13 @@
 /**
- * In-memory sliding-window rate limiter for Supabase Edge Functions.
+ * Database-backed sliding-window rate limiter for Supabase Edge Functions.
  *
- * State is per-isolate — good enough for abuse prevention on a small app.
- * Entries are pruned on every check to avoid unbounded memory growth.
+ * State is stored in the `rate_limits` table via the `rate_limit_check`
+ * Postgres function. The table has RLS enabled with no policies and all
+ * table/function privileges revoked from `anon` and `authenticated` —
+ * only the service role key used here can write to it.
  */
 
-interface Entry {
-  count: number;
-  windowStart: number;
-}
-
-const store = new Map<string, Entry>();
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export interface RateLimitConfig {
   /** Time window length in milliseconds. */
@@ -22,49 +19,36 @@ export interface RateLimitConfig {
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
-  /** Unix timestamp (ms) when the current window resets. */
+  /** JS timestamp (ms) when the current window resets. */
   resetAt: number;
 }
 
-/** Prune entries whose windows have already expired. */
-function prune(windowMs: number): void {
-  const cutoff = Date.now() - windowMs;
-  for (const [key, entry] of store) {
-    if (entry.windowStart < cutoff) store.delete(key);
-  }
-}
-
-export function checkRateLimit(
+/**
+ * Atomically check and increment the rate limit counter for `key`.
+ * Calls the `rate_limit_check` Postgres function via the service role client.
+ */
+export async function checkRateLimit(
+  supabase: SupabaseClient,
   key: string,
   config: RateLimitConfig,
-): RateLimitResult {
-  const now = Date.now();
+): Promise<RateLimitResult> {
+  const { data, error } = await supabase.rpc("rate_limit_check", {
+    p_key: key,
+    p_window_ms: config.windowMs,
+    p_max: config.max,
+  });
 
-  // Periodically clean up expired entries (every ~100 checks via size heuristic)
-  if (store.size > 100) prune(config.windowMs);
-
-  const entry = store.get(key);
-
-  if (!entry || now - entry.windowStart >= config.windowMs) {
-    store.set(key, { count: 1, windowStart: now });
-    return {
-      allowed: true,
-      remaining: config.max - 1,
-      resetAt: now + config.windowMs,
-    };
+  if (error || !data || data.length === 0) {
+    // On DB error, fail open so a Supabase hiccup doesn't block all requests.
+    console.error("rate_limit_check error:", error?.message ?? "no data");
+    return { allowed: true, remaining: config.max, resetAt: Date.now() + config.windowMs };
   }
 
-  entry.count += 1;
-  const resetAt = entry.windowStart + config.windowMs;
-
-  if (entry.count > config.max) {
-    return { allowed: false, remaining: 0, resetAt };
-  }
-
+  const row = data[0] as { allowed: boolean; remaining: number; reset_at: string };
   return {
-    allowed: true,
-    remaining: config.max - entry.count,
-    resetAt,
+    allowed: row.allowed,
+    remaining: row.remaining,
+    resetAt: new Date(row.reset_at).getTime(),
   };
 }
 
@@ -94,7 +78,7 @@ export function rateLimitedResponse(
     headers: {
       ...corsHeaders,
       "Content-Type": "application/json",
-      "Retry-After": String(retryAfterSec),
+      "Retry-After": String(Math.max(retryAfterSec, 1)),
       "X-RateLimit-Limit": String(config.max),
       "X-RateLimit-Remaining": "0",
       "X-RateLimit-Reset": String(Math.ceil(resetAt / 1000)),
