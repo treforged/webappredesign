@@ -125,7 +125,7 @@ export default function Premium() {
   // ── Embedded checkout phase ──────────────────────────────────────────────────
   if (phase === 'checkout' && clientSecret) {
     return (
-      <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-4">
+      <div className="p-4 lg:p-6 pb-12 max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
