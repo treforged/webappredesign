@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
         "line_items[0][quantity]": "1",
         mode: "subscription",
         allow_promotion_codes: "true",
+        payment_method_collection: "if_required",
         success_url: `${origin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/premium/cancel`,
         "metadata[supabase_user_id]": userId,
