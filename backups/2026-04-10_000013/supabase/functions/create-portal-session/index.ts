@@ -5,13 +5,16 @@ import {
   rateLimitedResponse,
   type RateLimitConfig,
 } from "../_shared/rate-limit.ts";
-import { getCorsHeaders } from "../_shared/cors.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
 const RATE_LIMIT: RateLimitConfig = { windowMs: 60_000, max: 20 };
 
 Deno.serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -69,7 +72,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use trusted Origin header only — never trust client-provided return_url
+    // Fix 5: ignore client-provided return_url — use trusted Origin header only
     const origin = req.headers.get("origin") || "https://app.treforged.com";
 
     const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
