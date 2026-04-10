@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import CookieBanner from "@/components/shared/CookieBanner";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -84,7 +83,6 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
-          <CookieBanner />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

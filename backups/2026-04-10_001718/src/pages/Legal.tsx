@@ -1,99 +1,5 @@
-import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { COOKIE_CATEGORIES, CookieConsentState } from '@/lib/cookie-consent';
-import { useCookieConsent } from '@/hooks/useCookieConsent';
-import { Shield, ChevronDown, ChevronUp, X } from 'lucide-react';
-
-function CookiePreferencesInline() {
-  const { consent, acceptAll, rejectNonEssential, saveCustom } = useCookieConsent();
-  const [open, setOpen] = useState(false);
-  const [analytics, setAnalytics] = useState(consent?.analytics ?? false);
-  const [marketing, setMarketing] = useState(consent?.marketing ?? false);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  function handleSave() {
-    saveCustom({ analytics, marketing });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  return (
-    <section className="space-y-3">
-      <h2 className="font-display font-semibold text-base">12. Cookie Preferences</h2>
-      <p className="text-muted-foreground leading-relaxed">
-        You can review and change your cookie consent at any time below.
-      </p>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-xs font-medium text-primary hover:underline"
-      >
-        <Shield size={12} />
-        {open ? 'Hide preferences' : 'Manage cookie preferences'}
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-      </button>
-
-      {open && (
-        <div className="border border-border p-4 space-y-3" style={{ borderRadius: 'var(--radius)' }}>
-          {COOKIE_CATEGORIES.map((cat) => {
-            const isExpanded = expanded === cat.id;
-            const value =
-              cat.id === 'essential'
-                ? true
-                : cat.id === 'analytics'
-                ? analytics
-                : marketing;
-            const toggle =
-              cat.id === 'essential'
-                ? undefined
-                : cat.id === 'analytics'
-                ? () => setAnalytics((v) => !v)
-                : () => setMarketing((v) => !v);
-
-            return (
-              <div key={cat.id} className="border border-border/60" style={{ borderRadius: 'var(--radius)' }}>
-                <div className="flex items-center justify-between px-3 py-2.5 gap-3">
-                  <button
-                    className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
-                    onClick={() => setExpanded(isExpanded ? null : cat.id)}
-                  >
-                    <span className="text-xs font-medium">{cat.label}</span>
-                    {isExpanded ? <ChevronUp size={11} className="text-muted-foreground shrink-0" /> : <ChevronDown size={11} className="text-muted-foreground shrink-0" />}
-                  </button>
-                  <button
-                    role="switch"
-                    aria-checked={value}
-                    disabled={cat.required}
-                    onClick={toggle}
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center transition-colors ${cat.required ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${value ? 'bg-primary' : 'bg-muted'}`}
-                    style={{ borderRadius: '9999px' }}
-                  >
-                    <span className={`block h-3.5 w-3.5 bg-white shadow-sm transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'}`} style={{ borderRadius: '9999px' }} />
-                  </button>
-                </div>
-                {isExpanded && (
-                  <div className="px-3 pb-3 border-t border-border/40 pt-2 space-y-1">
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{cat.description}</p>
-                    <p className="text-[10px] text-muted-foreground/70"><span className="font-medium text-muted-foreground">Examples: </span>{cat.examples.join(', ')}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          <div className="flex items-center gap-2 pt-1">
-            <button onClick={rejectNonEssential} className="text-[11px] text-muted-foreground hover:text-foreground px-3 py-1.5 border border-border transition-colors" style={{ borderRadius: 'var(--radius)' }}>Reject non-essential</button>
-            <button onClick={acceptAll} className="text-[11px] text-muted-foreground hover:text-foreground px-3 py-1.5 border border-border transition-colors" style={{ borderRadius: 'var(--radius)' }}>Accept all</button>
-            <button onClick={handleSave} className="text-[11px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-1.5 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
-              {saved ? 'Saved ✓' : 'Save preferences'}
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
 
 function PrivacyContent() {
   return (
@@ -238,8 +144,6 @@ function PrivacyContent() {
           <a href="mailto:support@treforged.com" className="text-primary hover:underline">support@treforged.com</a>
         </p>
       </section>
-
-      <CookiePreferencesInline />
     </div>
   );
 }
