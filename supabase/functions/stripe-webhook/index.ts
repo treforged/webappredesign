@@ -39,8 +39,10 @@ Deno.serve(async (req) => {
 
     const relevantEvents = [
       "checkout.session.completed",
+      "customer.subscription.created",
       "customer.subscription.updated",
       "customer.subscription.deleted",
+      "invoice.paid",
       "invoice.payment_succeeded",
       "invoice.payment_failed",
     ];
@@ -100,8 +102,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── customer.subscription.updated / deleted ───────────────────────────────
+    // ── customer.subscription.created / updated / deleted ────────────────────
     if (
+      event.type === "customer.subscription.created" ||
       event.type === "customer.subscription.updated" ||
       event.type === "customer.subscription.deleted"
     ) {
@@ -128,10 +131,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── invoice.payment_succeeded ─────────────────────────────────────────────
-    // Re-activates subscriptions that were past_due. Also sets plan: "premium"
-    // in case the row was downgraded while payment was failing.
-    if (event.type === "invoice.payment_succeeded") {
+    // ── invoice.paid / invoice.payment_succeeded ──────────────────────────────
+    // Both events fire on successful payment. invoice.paid is Stripe's preferred
+    // event for subscription lifecycle; payment_succeeded is also kept for safety.
+    // Re-activates past_due subscriptions and ensures plan stays "premium".
+    if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as any;
       const customerId = invoice.customer as string;
       const subscriptionId = invoice.subscription as string | null;
