@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2 } from 'lucide-react';
 import { getDayName } from '@/lib/scheduling';
 import { supabase } from '@/integrations/supabase/client';
 import { tracedInvoke } from '@/lib/tracer';
@@ -95,11 +95,6 @@ export default function SettingsPage() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  // Delete account state
-  const [showDeleteZone, setShowDeleteZone] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
   const [displayName, setDisplayName] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [weeklyGrossIncome, setWeeklyGrossIncome] = useState('1875');
@@ -181,20 +176,6 @@ export default function SettingsPage() {
   };
 
   const depositAccounts = accounts.filter((a: any) => ['checking', 'savings', 'high_yield_savings', 'business_checking'].includes(a.account_type) && a.active);
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') return;
-    setDeleteLoading(true);
-    try {
-      const { error } = await tracedInvoke(supabase, 'delete-account', {});
-      if (error) throw error;
-      toast.success('Account deleted. Goodbye.');
-      await supabase.auth.signOut();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
-      setDeleteLoading(false);
-    }
-  };
 
   const handleEmailChange = async () => {
     const result = emailChangeSchema.safeParse({ newEmail });
@@ -519,70 +500,6 @@ export default function SettingsPage() {
           <p className="text-[10px] text-muted-foreground mt-1">Cash-protected mode: extra card payments only when cash stays above this floor</p>
         </div>
       </div>
-
-      {/* Danger Zone — hidden in demo mode */}
-      {!isDemo && (
-        <div className="card-forged p-5 space-y-4 border border-destructive/20">
-          <h2 className="text-[11px] font-medium text-destructive uppercase tracking-wider">Danger Zone</h2>
-
-          {!showDeleteZone ? (
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium">Delete Account</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Permanently deletes your account and all data. Active subscriptions are cancelled immediately. Billing records are retained per IRS requirements.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowDeleteZone(true)}
-                className="shrink-0 flex items-center gap-1.5 bg-secondary border border-destructive/30 text-destructive px-3 py-1.5 text-xs font-medium hover:bg-destructive/10 transition-colors btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-              >
-                <Trash2 size={12} />
-                Delete account
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-xs text-destructive" style={{ borderRadius: 'var(--radius)' }}>
-                <AlertCircle size={13} className="mt-0.5 shrink-0" />
-                <span>
-                  This is <strong>permanent and irreversible</strong>. All your budgets, accounts, transactions, and goals will be deleted. Active subscriptions will be cancelled with no refund.
-                </span>
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Type <strong className="text-foreground">DELETE</strong> to confirm:
-              </p>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={e => setDeleteConfirmText(e.target.value)}
-                placeholder="DELETE"
-                className="w-full bg-secondary border border-destructive/30 px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-destructive"
-                style={{ borderRadius: 'var(--radius)' }}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
-                  className="flex items-center gap-1.5 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium btn-press disabled:opacity-50"
-                  style={{ borderRadius: 'var(--radius)' }}
-                >
-                  {deleteLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                  {deleteLoading ? 'Deleting…' : 'Permanently delete my account'}
-                </button>
-                <button
-                  onClick={() => { setShowDeleteZone(false); setDeleteConfirmText(''); }}
-                  disabled={deleteLoading}
-                  className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors btn-press disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Subscription Management — hidden in demo mode */}
       {!isDemo && (
