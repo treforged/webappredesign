@@ -79,11 +79,17 @@ export default function BudgetControl() {
   const [payFrequency, setPayFrequency] = useState<PayFrequency>('weekly');
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // Pre-tax deductions
+  // Pre-tax deductions (amounts)
   const [deduction401kPct, setDeduction401kPct] = useState(0);
   const [deductionHsa, setDeductionHsa] = useState(0);
   const [deductionFsa, setDeductionFsa] = useState(0);
   const [deductionMedical, setDeductionMedical] = useState(0);
+
+  // Pre vs post-tax toggles (true = pre-tax, false = post-tax)
+  const [deduction401kPreTax, setDeduction401kPreTax] = useState(true);
+  const [deductionHsaPreTax, setDeductionHsaPreTax] = useState(true);
+  const [deductionFsaPreTax, setDeductionFsaPreTax] = useState(true);
+  const [deductionMedicalPreTax, setDeductionMedicalPreTax] = useState(true);
 
   // Calc drawer
   const [calcDrawer, setCalcDrawer] = useState<{ title: string; lines: { label: string; value: string; op?: string }[] } | null>(null);
@@ -108,6 +114,10 @@ export default function BudgetControl() {
       setDeductionHsa(Number((profile as any).deduction_hsa) || 0);
       setDeductionFsa(Number((profile as any).deduction_fsa) || 0);
       setDeductionMedical(Number((profile as any).deduction_medical) || 0);
+      setDeduction401kPreTax((profile as any).deduction_401k_pretax !== false);
+      setDeductionHsaPreTax((profile as any).deduction_hsa_pretax !== false);
+      setDeductionFsaPreTax((profile as any).deduction_fsa_pretax !== false);
+      setDeductionMedicalPreTax((profile as any).deduction_medical_pretax !== false);
       profileLoaded.current = true;
     }
   }, [profile]);
@@ -122,36 +132,46 @@ export default function BudgetControl() {
   }, [rulesLoading, isDemo, user, rules.length, starterSeeded]);
 
   // Auto-save income/tax with debounce + auto-sync income rule
+  type DeductionConfig = {
+    pct401k: number; preTax401k: boolean;
+    hsa: number; preTaxHsa: boolean;
+    fsa: number; preTaxFsa: boolean;
+    medical: number; preTaxMedical: boolean;
+  };
+
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const doAutoSave = useCallback((
-    wg: number, tr: number, pd: number, pf: PayFrequency,
-    d401k: number, dHsa: number, dFsa: number, dMedical: number,
+    wg: number, tr: number, pd: number, pf: PayFrequency, ded: DeductionConfig,
   ) => {
     if (!profileLoaded.current || isDemo) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
       setAutoSaveStatus('saving');
-      const paycheckGross = pf === 'biweekly' ? wg * 2 : pf === 'monthly' ? wg * 52 / 12 : wg;
-      const preTaxPerPaycheck = paycheckGross * (d401k / 100) + dHsa + dFsa + dMedical;
-      const netPerPaycheck = (paycheckGross - preTaxPerPaycheck) * (1 - tr / 100);
+      const gross = pf === 'biweekly' ? wg * 2 : pf === 'monthly' ? wg * 52 / 12 : wg;
+      const amt401k = gross * (ded.pct401k / 100);
+      const preTax = (ded.preTax401k ? amt401k : 0) + (ded.preTaxHsa ? ded.hsa : 0) + (ded.preTaxFsa ? ded.fsa : 0) + (ded.preTaxMedical ? ded.medical : 0);
+      const postTax = (!ded.preTax401k ? amt401k : 0) + (!ded.preTaxHsa ? ded.hsa : 0) + (!ded.preTaxFsa ? ded.fsa : 0) + (!ded.preTaxMedical ? ded.medical : 0);
+      const netPerPaycheck = (gross - preTax) * (1 - tr / 100) - postTax;
       const paychecksPerYear = pf === 'biweekly' ? 26 : pf === 'monthly' ? 12 : 52;
-      const annualNet = netPerPaycheck * paychecksPerYear;
       updateProfile.mutate({
         weekly_gross_income: wg,
         tax_rate: tr,
         paycheck_day: pd,
         paycheck_frequency: pf,
         gross_income: wg * 52 / 12,
-        monthly_income_default: annualNet / 12,
-        deduction_401k_pct: d401k,
-        deduction_hsa: dHsa,
-        deduction_fsa: dFsa,
-        deduction_medical: dMedical,
+        monthly_income_default: (netPerPaycheck * paychecksPerYear) / 12,
+        deduction_401k_pct: ded.pct401k,
+        deduction_hsa: ded.hsa,
+        deduction_fsa: ded.fsa,
+        deduction_medical: ded.medical,
+        deduction_401k_pretax: ded.preTax401k,
+        deduction_hsa_pretax: ded.preTaxHsa,
+        deduction_fsa_pretax: ded.preTaxFsa,
+        deduction_medical_pretax: ded.preTaxMedical,
       } as any, {
         onSuccess: () => {
           setAutoSaveStatus('saved');
           setTimeout(() => setAutoSaveStatus('idle'), 2000);
-          // Auto-sync income rule to match top settings
           const incomeRule = rules.find((r: any) => r.rule_type === 'income' && r.active);
           if (incomeRule) {
             const needsUpdate = Math.round(Number(incomeRule.amount) * 100) !== Math.round(netPerPaycheck * 100) ||
@@ -172,24 +192,38 @@ export default function BudgetControl() {
     }, 800);
   }, [isDemo, updateProfile, rules, updateRule]);
 
+  // Helper — current deduction config snapshot
+  const dedSnapshot = (): DeductionConfig => ({
+    pct401k: deduction401kPct, preTax401k: deduction401kPreTax,
+    hsa: deductionHsa, preTaxHsa: deductionHsaPreTax,
+    fsa: deductionFsa, preTaxFsa: deductionFsaPreTax,
+    medical: deductionMedical, preTaxMedical: deductionMedicalPreTax,
+  });
+
   const handleWeeklyGrossBlur = () => {
     const parsed = parseFloat(weeklyGrossInput);
     if (!isNaN(parsed) && parsed > 0) {
       setWeeklyGross(parsed);
-      doAutoSave(parsed, taxRate, paycheckDay, payFrequency, deduction401kPct, deductionHsa, deductionFsa, deductionMedical);
+      doAutoSave(parsed, taxRate, paycheckDay, payFrequency, dedSnapshot());
     } else {
       setWeeklyGrossInput(String(weeklyGross));
     }
   };
-  const setTaxRateAuto = (v: number) => { setTaxRate(v); doAutoSave(weeklyGross, v, paycheckDay, payFrequency, deduction401kPct, deductionHsa, deductionFsa, deductionMedical); };
-  const setPaycheckDayAuto = (v: number) => { setPaycheckDay(v); doAutoSave(weeklyGross, taxRate, v, payFrequency, deduction401kPct, deductionHsa, deductionFsa, deductionMedical); };
-  const setPayFrequencyAuto = (v: PayFrequency) => { setPayFrequency(v); doAutoSave(weeklyGross, taxRate, paycheckDay, v, deduction401kPct, deductionHsa, deductionFsa, deductionMedical); };
+  const setTaxRateAuto = (v: number) => { setTaxRate(v); doAutoSave(weeklyGross, v, paycheckDay, payFrequency, dedSnapshot()); };
+  const setPaycheckDayAuto = (v: number) => { setPaycheckDay(v); doAutoSave(weeklyGross, taxRate, v, payFrequency, dedSnapshot()); };
+  const setPayFrequencyAuto = (v: PayFrequency) => { setPayFrequency(v); doAutoSave(weeklyGross, taxRate, paycheckDay, v, dedSnapshot()); };
 
-  // Deduction change handlers
-  const setDeduction401kAuto = (v: number) => { setDeduction401kPct(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, v, deductionHsa, deductionFsa, deductionMedical); };
-  const setDeductionHsaAuto = (v: number) => { setDeductionHsa(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, deduction401kPct, v, deductionFsa, deductionMedical); };
-  const setDeductionFsaAuto = (v: number) => { setDeductionFsa(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, deduction401kPct, deductionHsa, v, deductionMedical); };
-  const setDeductionMedicalAuto = (v: number) => { setDeductionMedical(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, deduction401kPct, deductionHsa, deductionFsa, v); };
+  // Deduction amount handlers
+  const setDeduction401kAuto = (v: number) => { setDeduction401kPct(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), pct401k: v }); };
+  const setDeductionHsaAuto = (v: number) => { setDeductionHsa(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), hsa: v }); };
+  const setDeductionFsaAuto = (v: number) => { setDeductionFsa(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), fsa: v }); };
+  const setDeductionMedicalAuto = (v: number) => { setDeductionMedical(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), medical: v }); };
+
+  // Pre/post-tax toggle handlers
+  const togglePreTax401k = (v: boolean) => { setDeduction401kPreTax(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), preTax401k: v }); };
+  const togglePreTaxHsa = (v: boolean) => { setDeductionHsaPreTax(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), preTaxHsa: v }); };
+  const togglePreTaxFsa = (v: boolean) => { setDeductionFsaPreTax(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), preTaxFsa: v }); };
+  const togglePreTaxMedical = (v: boolean) => { setDeductionMedicalPreTax(v); doAutoSave(weeklyGross, taxRate, paycheckDay, payFrequency, { ...dedSnapshot(), preTaxMedical: v }); };
 
   // Unified pay schedule
   const paycheckGross = useMemo(() => {
@@ -198,14 +232,27 @@ export default function BudgetControl() {
     return weeklyGross;
   }, [weeklyGross, payFrequency]);
 
+  const amt401kFlat = useMemo(() => paycheckGross * (deduction401kPct / 100), [paycheckGross, deduction401kPct]);
+
   const preTaxDeductionsFlat = useMemo(() =>
-    paycheckGross * (deduction401kPct / 100) + deductionHsa + deductionFsa + deductionMedical,
-    [paycheckGross, deduction401kPct, deductionHsa, deductionFsa, deductionMedical]);
+    (deduction401kPreTax ? amt401kFlat : 0) +
+    (deductionHsaPreTax ? deductionHsa : 0) +
+    (deductionFsaPreTax ? deductionFsa : 0) +
+    (deductionMedicalPreTax ? deductionMedical : 0),
+    [amt401kFlat, deduction401kPreTax, deductionHsa, deductionHsaPreTax, deductionFsa, deductionFsaPreTax, deductionMedical, deductionMedicalPreTax]);
+
+  const postTaxDeductionsFlat = useMemo(() =>
+    (!deduction401kPreTax ? amt401kFlat : 0) +
+    (!deductionHsaPreTax ? deductionHsa : 0) +
+    (!deductionFsaPreTax ? deductionFsa : 0) +
+    (!deductionMedicalPreTax ? deductionMedical : 0),
+    [amt401kFlat, deduction401kPreTax, deductionHsa, deductionHsaPreTax, deductionFsa, deductionFsaPreTax, deductionMedical, deductionMedicalPreTax]);
 
   const payConfig = useMemo(() => ({
     weeklyGross, taxRate, paycheckDay, frequency: payFrequency,
     preTaxDeductions: preTaxDeductionsFlat,
-  }), [weeklyGross, taxRate, paycheckDay, payFrequency, preTaxDeductionsFlat]);
+    postTaxDeductions: postTaxDeductionsFlat,
+  }), [weeklyGross, taxRate, paycheckDay, payFrequency, preTaxDeductionsFlat, postTaxDeductionsFlat]);
 
   const paycheckNet = useMemo(() => getPaycheckNet(payConfig), [payConfig]);
   const now = new Date();
@@ -499,17 +546,33 @@ export default function BudgetControl() {
     ],
   });
 
-  const openIncomeCalc = () => setCalcDrawer({
-    title: 'Income This Month',
-    lines: [
+  const openIncomeCalc = () => {
+    const lines: { label: string; value: string; op?: string }[] = [
       { label: `Pay frequency: ${payFrequency}`, value: '' },
-      { label: 'Net per paycheck (post-tax)', value: formatCurrency(paycheckNet, false) },
-      { label: 'Paychecks this month', value: String(getPaychecksInMonth(payConfig, now.getFullYear(), now.getMonth()).length) },
-      { label: 'Total monthly take-home', value: formatCurrency(monthlyTakeHome, false), op: '=' },
-      ...incomeRules.filter((r: any) => r.active).map((r: any) => ({ label: `  Rule: ${r.name}`, value: formatCurrency(toCurrentMonthAmount(r), false), op: '+' })),
-      { label: 'Total recurring income', value: formatCurrency(totalRecurringIncome, false), op: '=' },
-    ],
-  });
+      { label: 'Gross per paycheck', value: formatCurrency(paycheckGross, false) },
+    ];
+    if (preTaxDeductionsFlat > 0) {
+      lines.push({ label: `Pre-tax deductions (reduces taxable income)`, value: formatCurrency(preTaxDeductionsFlat, false), op: '−' });
+      lines.push({ label: 'Taxable gross per paycheck', value: formatCurrency(paycheckGross - preTaxDeductionsFlat, false), op: '=' });
+      lines.push({ label: `Income tax (${taxRate}%)`, value: formatCurrency((paycheckGross - preTaxDeductionsFlat) * taxRate / 100, false), op: '−' });
+    } else {
+      lines.push({ label: `Income tax (${taxRate}%)`, value: formatCurrency(paycheckGross * taxRate / 100, false), op: '−' });
+    }
+    if (postTaxDeductionsFlat > 0) {
+      lines.push({ label: 'Post-tax deductions', value: formatCurrency(postTaxDeductionsFlat, false), op: '−' });
+    }
+    if (preTaxDeductionsFlat > 0) {
+      lines.push({ label: `Tax saved by pre-tax deductions`, value: formatCurrency(preTaxDeductionsFlat * taxRate / 100, false) });
+    }
+    lines.push({ label: 'Net per paycheck', value: formatCurrency(paycheckNet, false), op: '=' });
+    lines.push({ label: 'Paychecks this month', value: String(getPaychecksInMonth(payConfig, now.getFullYear(), now.getMonth()).length) });
+    lines.push({ label: 'Total monthly take-home', value: formatCurrency(monthlyTakeHome, false), op: '=' });
+    incomeRules.filter((r: any) => r.active).forEach((r: any) =>
+      lines.push({ label: `  Rule: ${r.name}`, value: formatCurrency(toCurrentMonthAmount(r), false), op: '+' }),
+    );
+    lines.push({ label: 'Total recurring income', value: formatCurrency(totalRecurringIncome, false), op: '=' });
+    setCalcDrawer({ title: 'Income This Month', lines });
+  };
 
   const RuleRow = ({ r, color = 'text-destructive' }: { r: any; color?: string }) => (
     <div className={`flex items-center justify-between py-2.5 border-b border-border/50 last:border-0 ${!r.active ? 'opacity-40' : ''}`}>
@@ -632,43 +695,76 @@ export default function BudgetControl() {
             <p className="text-sm font-display font-bold text-primary mt-1">{nextPayday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
           </div>
         </div>
-        {/* Pre-Tax Deductions */}
+        {/* Paycheck Deductions */}
         <div className="pt-3 border-t border-border space-y-2">
-          <div className="flex items-center gap-2">
-            <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pre-Tax Deductions (per paycheck)</h4>
-            {preTaxDeductionsFlat > 0 && (
-              <span className="text-[10px] text-primary font-medium">
-                −{formatCurrency(preTaxDeductionsFlat, false)}/check · saves {formatCurrency(preTaxDeductionsFlat * (taxRate / 100), false)} in tax
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Paycheck Deductions</h4>
+            {(preTaxDeductionsFlat + postTaxDeductionsFlat) > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {preTaxDeductionsFlat > 0 && <span className="text-primary">−{formatCurrency(preTaxDeductionsFlat, false)} pre-tax <span className="text-success">(saves {formatCurrency(preTaxDeductionsFlat * (taxRate / 100), false)} tax)</span></span>}
+                {preTaxDeductionsFlat > 0 && postTaxDeductionsFlat > 0 && <span className="mx-1">·</span>}
+                {postTaxDeductionsFlat > 0 && <span className="text-gold">−{formatCurrency(postTaxDeductionsFlat, false)} post-tax</span>}
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase">401k Contribution (%)</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 401k */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-muted-foreground uppercase">401k (%)</label>
               <input type="number" min={0} max={100} step={0.5} value={deduction401kPct}
                 onChange={e => setDeduction401kAuto(parseFloat(e.target.value) || 0)}
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
-              {deduction401kPct > 0 && <p className="text-[9px] text-muted-foreground mt-0.5">{formatCurrency(paycheckGross * (deduction401kPct / 100), false)}/check</p>}
+                className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+              {amt401kFlat > 0 && <p className="text-[9px] text-muted-foreground">{formatCurrency(amt401kFlat, false)}/check</p>}
+              <div className="flex gap-1">
+                <button onClick={() => togglePreTax401k(true)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${deduction401kPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Traditional</button>
+                <button onClick={() => togglePreTax401k(false)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${!deduction401kPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Roth</button>
+              </div>
             </div>
-            <div>
+            {/* HSA */}
+            <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground uppercase">HSA ($/check)</label>
               <input type="number" min={0} step={1} value={deductionHsa}
                 onChange={e => setDeductionHsaAuto(parseFloat(e.target.value) || 0)}
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+                className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+              <div className="flex gap-1">
+                <button onClick={() => togglePreTaxHsa(true)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${deductionHsaPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Pre-Tax</button>
+                <button onClick={() => togglePreTaxHsa(false)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${!deductionHsaPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Post-Tax</button>
+              </div>
             </div>
-            <div>
+            {/* FSA */}
+            <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground uppercase">FSA ($/check)</label>
               <input type="number" min={0} step={1} value={deductionFsa}
                 onChange={e => setDeductionFsaAuto(parseFloat(e.target.value) || 0)}
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+                className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+              <div className="flex gap-1">
+                <button onClick={() => togglePreTaxFsa(true)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${deductionFsaPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Pre-Tax</button>
+                <button onClick={() => togglePreTaxFsa(false)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${!deductionFsaPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Post-Tax</button>
+              </div>
             </div>
-            <div>
+            {/* Medical */}
+            <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground uppercase">Medical Ins. ($/check)</label>
               <input type="number" min={0} step={1} value={deductionMedical}
                 onChange={e => setDeductionMedicalAuto(parseFloat(e.target.value) || 0)}
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+                className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} />
+              <div className="flex gap-1">
+                <button onClick={() => togglePreTaxMedical(true)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${deductionMedicalPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Pre-Tax</button>
+                <button onClick={() => togglePreTaxMedical(false)} className={`flex-1 text-[9px] px-2 py-1 border transition-colors ${!deductionMedicalPreTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border hover:border-primary/50'}`} style={{ borderRadius: 'var(--radius)' }}>Post-Tax</button>
+              </div>
             </div>
           </div>
+          {/* Gross → Net breakdown */}
+          {(preTaxDeductionsFlat + postTaxDeductionsFlat) > 0 && (
+            <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground pt-1">
+              <span className="font-medium text-foreground">{formatCurrency(paycheckGross, false)}</span>
+              {preTaxDeductionsFlat > 0 && <><span className="text-primary">−{formatCurrency(preTaxDeductionsFlat, false)} pre-tax</span><span>→</span><span className="font-medium text-foreground">{formatCurrency(paycheckGross - preTaxDeductionsFlat, false)} taxable</span></>}
+              <span>× {(100 - taxRate).toFixed(0)}%</span>
+              {postTaxDeductionsFlat > 0 && <><span className="text-gold">−{formatCurrency(postTaxDeductionsFlat, false)} post-tax</span></>}
+              <span>→</span>
+              <span className="font-display font-bold text-success">{formatCurrency(paycheckNet, false)} net</span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 pt-2 border-t border-border">

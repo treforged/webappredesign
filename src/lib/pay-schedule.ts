@@ -9,8 +9,10 @@ export type PayScheduleConfig = {
   paycheckDay: number; // 0=Sun..6=Sat for weekly/biweekly, 1-31 for monthly
   frequency: PayFrequency;
   paycheckStartDate?: string; // 'YYYY-MM-DD' — biweekly phase anchor (any known paycheck date)
-  /** Flat pre-tax deductions per paycheck (401k + HSA + FSA + medical). Applied before income tax. */
+  /** Flat pre-tax deductions per paycheck. Applied before income tax: (gross - preTax) * (1 - taxRate%). */
   preTaxDeductions?: number;
+  /** Flat post-tax deductions per paycheck. Subtracted after income tax. */
+  postTaxDeductions?: number;
 };
 
 export type PaycheckInfo = {
@@ -19,11 +21,12 @@ export type PaycheckInfo = {
   net: number;
 };
 
-/** Get net (post-tax) amount per paycheck */
+/** Get net (post-tax, post-deduction) amount per paycheck */
 export function getPaycheckNet(config: PayScheduleConfig): number {
   const gross = getPaycheckGross(config);
   const pretax = config.preTaxDeductions ?? 0;
-  return (gross - pretax) * (1 - config.taxRate / 100);
+  const posttax = config.postTaxDeductions ?? 0;
+  return (gross - pretax) * (1 - config.taxRate / 100) - posttax;
 }
 
 /** Get gross amount per paycheck based on frequency */
@@ -41,7 +44,8 @@ export function getPaychecksInMonth(config: PayScheduleConfig, year: number, mon
   const monthEnd = new Date(year, month + 1, 0);
   const gross = getPaycheckGross(config);
   const pretax = config.preTaxDeductions ?? 0;
-  const net = (gross - pretax) * (1 - config.taxRate / 100);
+  const posttax = config.postTaxDeductions ?? 0;
+  const net = (gross - pretax) * (1 - config.taxRate / 100) - posttax;
 
   if (config.frequency === 'monthly') {
     const day = Math.min(config.paycheckDay || 1, monthEnd.getDate());
@@ -111,7 +115,14 @@ export function buildPayConfig(profile: any): PayScheduleConfig {
   const hsa = Number(profile?.deduction_hsa) || 0;
   const fsa = Number(profile?.deduction_fsa) || 0;
   const medical = Number(profile?.deduction_medical) || 0;
-  const preTaxDeductions = paycheckGross * (d401k / 100) + hsa + fsa + medical;
+  // Default: 401k, HSA, FSA are pre-tax; medical defaults pre-tax too
+  const pre401k = profile?.deduction_401k_pretax !== false;
+  const preHsa = profile?.deduction_hsa_pretax !== false;
+  const preFsa = profile?.deduction_fsa_pretax !== false;
+  const preMedical = profile?.deduction_medical_pretax !== false;
+  const amt401k = paycheckGross * (d401k / 100);
+  const preTaxDeductions = (pre401k ? amt401k : 0) + (preHsa ? hsa : 0) + (preFsa ? fsa : 0) + (preMedical ? medical : 0);
+  const postTaxDeductions = (!pre401k ? amt401k : 0) + (!preHsa ? hsa : 0) + (!preFsa ? fsa : 0) + (!preMedical ? medical : 0);
   return {
     weeklyGross: wg,
     taxRate: Number(profile?.tax_rate) || 22,
@@ -119,6 +130,7 @@ export function buildPayConfig(profile: any): PayScheduleConfig {
     frequency: pf,
     paycheckStartDate: profile?.paycheck_start_date || undefined,
     preTaxDeductions,
+    postTaxDeductions,
   };
 }
 
