@@ -15,9 +15,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useDebts, useAccounts, useProfile, useRecurringRules } from '@/hooks/useSupabaseData';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { toast } from 'sonner';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/contexts/AuthContext';
-import PremiumGate from '@/components/shared/PremiumGate';
 
 type Props = {
   accounts: any[];
@@ -42,8 +39,6 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
   const { update: updateAccount } = useAccounts();
   const { update: updateProfile } = useProfile();
   const [pauseSavings] = usePersistedState<boolean>('tre:debtpayoff:pause-savings', false);
-  const { isPremium } = useSubscription();
-  const { isDemo } = useAuth();
   const [strategy, setStrategy] = usePersistedState<'avalanche' | 'snowball'>('tre:debt:strategy', 'avalanche');
   const [paymentMode, setPaymentMode] = usePersistedState<'variable' | 'consistent'>('tre:debt:paymentMode', 'variable');
   const [cashFloor, setCashFloorLocal] = useState(() => Number(profile?.cash_floor) ?? 500);
@@ -895,12 +890,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
                 </div>
 
                 {isExpanded && (
-                  <PremiumGate
-                    isPremium={isPremium || isDemo}
-                    message="Upgrade to unlock monthly payment projections"
-                    className="border-t border-border"
-                  >
-                  <div className="px-3 sm:px-4 py-3">
+                  <div className="border-t border-border px-3 sm:px-4 py-3">
                     {proj.card.autopayFullBalance && (
                       <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-success/10 border border-success/20 text-[10px] sm:text-xs text-success" style={{ borderRadius: 'var(--radius)' }}>
                         <CheckCircle2 size={14} className="shrink-0" />
@@ -977,7 +967,6 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
                       </table>
                     </div>
                   </div>
-                  </PremiumGate>
                 )}
               </div>
             );
