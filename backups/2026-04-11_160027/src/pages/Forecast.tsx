@@ -720,7 +720,7 @@ export default function Forecast() {
       totalLiabilityBal = b.ccDebtBalance + b.otherDebtBalance;
 
       const investGrowthAmt = Math.round(investBal * monthlyInvestGrowth * 100) / 100;
-      const retireGrowthAmt = Math.round(retireBal * monthlyRetireGrowth * 100) / 100;
+      const retireGrowthAmt = Math.round(retireBal * monthlyInvestGrowth * 100) / 100;
 
       savingsBal += monthlySavingsContrib;
       savingsBal *= (1 + monthlySavingsInterest);
@@ -959,7 +959,6 @@ export default function Forecast() {
                   <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} strokeOpacity={isVisible('netWorth') ? 1 : 0} />
                   <Bar dataKey="totalAssets" name="Assets" fill="hsl(142, 71%, 45%)" opacity={isVisible('totalAssets') ? 0.3 : 0} />
                   <Bar dataKey="totalLiabilities" name="Liabilities" fill="hsl(0, 84%, 60%)" opacity={isVisible('totalLiabilities') ? 0.3 : 0} />
-                  <Line type="monotone" dataKey="retirementBalance" name="Retirement" stroke="hsl(262, 83%, 58%)" strokeWidth={1.5} dot={false} strokeOpacity={isVisible('retirementBalance') ? 1 : 0} />
                   <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
                 </ComposedChart>
               ) : (
@@ -1031,7 +1030,6 @@ export default function Forecast() {
                         { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
                         { label: 'Brokerage Contrib', value: formatCurrency(row.brokerageContrib, false) },
                         { label: 'Retirement Contrib', value: formatCurrency(row.retireContrib, false) },
-                        { label: 'Retirement Balance', value: formatCurrency(row.retirementBalance, false) },
                         { label: 'Net Worth', value: formatCurrency(row.netWorth, false) },
                       ],
                     })}>

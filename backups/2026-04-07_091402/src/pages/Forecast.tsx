@@ -8,10 +8,10 @@ import { useDebts, useSavingsGoals, useCarFunds, useAccounts, useSubscriptions, 
 import { generateScheduledEvents, aggregateByMonth } from '@/lib/scheduling';
 import { simulateVariablePayoff, buildCardData, projectCardVariable, getCurrentMonthDebtRecommendations, CC_DEFAULT_CATEGORIES } from '@/lib/credit-card-engine';
 import { getDebtPaymentsByMonth, getDebtBalancesByMonth } from '@/lib/debt-transaction-generator';
-import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions, getRemainingTransactionIncomeByDay } from '@/lib/pay-schedule';
+import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  Bar, ComposedChart, ReferenceLine,
+  Bar, ComposedChart, ReferenceLine, Area, AreaChart,
 } from 'recharts';
 import { Settings2, List, BarChart3, TrendingUp, CreditCard, Info, X } from 'lucide-react';
 
@@ -335,35 +335,12 @@ export default function Forecast() {
         oneTimeArr.push({ income: inc, expenses: exp });
       }
 
-      // ── Month 0 remaining income/expenses ───────────────────────────────────
-      // Uses merged transactions (same source as CreditCardEngine variableSim) so
-      // the Forecast popup and trajectory chart match the Debt Payoff tab for April.
-      // Month 0 income = all remaining income to end of month (day 31), not just to
-      // the primary due day. Month 0 expenses exclude CC-charged and debt payments.
-      const allTxnsForM0 = mergeWithGeneratedTransactions(transactions, rules, accounts);
-      const ccIdsForM0 = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
-      const nowForM0 = new Date();
-      const m0MonthStr = `${nowForM0.getFullYear()}-${String(nowForM0.getMonth() + 1).padStart(2, '0')}`;
-      const m0TodayStr = nowForM0.toISOString().split('T')[0];
-      const m0Income = getRemainingTransactionIncomeByDay(allTxnsForM0, 31);
-      const m0Expenses = (allTxnsForM0 as any[])
-        .filter((t: any) => {
-          if (t.type !== 'expense') return false;
-          if (!t.date || !t.date.startsWith(m0MonthStr)) return false;
-          if (t.date < m0TodayStr) return false;
-          if (t.category === 'Debt Payments') return false;
-          if (t.category === 'Balance Adjustment') return false;
-          if (t.payment_source && ccIdsForM0.has(t.payment_source)) return false;
-          return true;
-        })
-        .reduce((s: number, t: any) => s + Number(t.amount), 0);
-
       const projs = (() => {
         const sim = simulateVariablePayoff(
           cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche',
           monthlyTakeHome, monthlyExpenses, 36,
           adjustedMonthEvents, undefined, cardPurchasesPerMonth,
-          m0Income, m0Expenses, oneTimeArr,
+          undefined, undefined, oneTimeArr,
         );
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];
@@ -485,28 +462,6 @@ export default function Forecast() {
     // FIX #1: Apply expense growth multiplier — was completely missing before
     const monthlyExpenseGrowth = Math.pow(1 + assumptions.expenseGrowth / 100, 1 / 12) - 1;
 
-    // Per-account weighted APY for retirement growth — falls back to global investmentGrowth
-    const retireAccounts = active.filter((a: any) => retireTypes.includes(a.account_type));
-    const totalRetireBal = retireAccounts.reduce((s: number, a: any) => s + Number(a.balance), 0);
-    const weightedRetireApy = totalRetireBal > 0
-      ? retireAccounts.reduce((s: number, a: any) => {
-          const apy = a.apy_rate != null ? Number(a.apy_rate) : assumptions.investmentGrowth;
-          return s + apy * (Number(a.balance) / totalRetireBal);
-        }, 0)
-      : assumptions.investmentGrowth;
-    const monthlyRetireGrowth = Math.pow(1 + weightedRetireApy / 100, 1 / 12) - 1;
-
-    // Monthly 401k paycheck contribution (from deduction settings, not just transfer rules)
-    const prof = profile as any;
-    const d401kVal = Number(prof?.deduction_401k_value) || 0;
-    const d401kMode = prof?.deduction_401k_mode || 'pct';
-    const paycheckGrossForForecast = payConfig
-      ? (payConfig.frequency === 'biweekly' ? payConfig.weeklyGross * 2 : payConfig.frequency === 'monthly' ? payConfig.weeklyGross * 52 / 12 : payConfig.weeklyGross)
-      : 0;
-    const contribPerCheck = d401kMode === 'pct' ? paycheckGrossForForecast * (d401kVal / 100) : d401kVal;
-    const paychecksPerYear = payConfig?.frequency === 'biweekly' ? 26 : payConfig?.frequency === 'monthly' ? 12 : 52;
-    const monthly401kContrib = contribPerCheck * (paychecksPerYear / 12);
-
     const monthlySavingsContrib = goals.reduce((s: number, g: any) => s + Number(g.monthly_contribution), 0);
     const monthlyCarContrib = carFunds.reduce((s: number, c: any) => {
       const rem = Number(c.down_payment_goal) - Number(c.current_saved);
@@ -600,9 +555,6 @@ export default function Forecast() {
           monthBrokerageContrib += monthAmt;
         }
       }
-
-      // Add paycheck 401k deduction contribution (not double-count if also has a transfer rule to 401k)
-      monthRetireContrib += monthly401kContrib;
 
       const oneTime = oneTimeByMonth[monthKey] || { income: 0, expense: 0 };
       const oneTimeNet = oneTime.income - oneTime.expense;
@@ -720,14 +672,14 @@ export default function Forecast() {
       totalLiabilityBal = b.ccDebtBalance + b.otherDebtBalance;
 
       const investGrowthAmt = Math.round(investBal * monthlyInvestGrowth * 100) / 100;
-      const retireGrowthAmt = Math.round(retireBal * monthlyRetireGrowth * 100) / 100;
+      const retireGrowthAmt = Math.round(retireBal * monthlyInvestGrowth * 100) / 100;
 
       savingsBal += monthlySavingsContrib;
       savingsBal *= (1 + monthlySavingsInterest);
       investBal += b.monthBrokerageContrib;
       investBal *= (1 + monthlyInvestGrowth);
       retireBal += b.monthRetireContrib;
-      retireBal *= (1 + monthlyRetireGrowth);
+      retireBal *= (1 + monthlyInvestGrowth);
 
       let totalMonthlyOut = b.baseExpenses + monthDebtPayment + monthlySavingsContrib + monthlyCarContrib + b.monthTransfers;
 
@@ -792,7 +744,6 @@ export default function Forecast() {
         startingCash,
         takeHome: Math.round(b.netIncome), totalExpenses: Math.round(totalMonthlyOut),
         debtPayment: Math.round(monthDebtPayment),
-        plannedDebtPayment: cardProjectionData?.allPaymentTotals?.[i] ?? Math.round(monthDebtPayment),
 
         brokerageContrib: Math.round(b.monthBrokerageContrib),
         retireContrib: Math.round(b.monthRetireContrib),
@@ -959,7 +910,6 @@ export default function Forecast() {
                   <Line type="monotone" dataKey="netWorth" name="Net Worth" stroke="hsl(47, 100%, 50%)" strokeWidth={2.5} dot={false} strokeOpacity={isVisible('netWorth') ? 1 : 0} />
                   <Bar dataKey="totalAssets" name="Assets" fill="hsl(142, 71%, 45%)" opacity={isVisible('totalAssets') ? 0.3 : 0} />
                   <Bar dataKey="totalLiabilities" name="Liabilities" fill="hsl(0, 84%, 60%)" opacity={isVisible('totalLiabilities') ? 0.3 : 0} />
-                  <Line type="monotone" dataKey="retirementBalance" name="Retirement" stroke="hsl(262, 83%, 58%)" strokeWidth={1.5} dot={false} strokeOpacity={isVisible('retirementBalance') ? 1 : 0} />
                   <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
                 </ComposedChart>
               ) : (
@@ -986,16 +936,16 @@ export default function Forecast() {
             <div className="card-forged p-3 sm:p-5">
               <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2"><CreditCard size={12} /> Credit Card Debt Payoff Trajectory</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={cardProjectionData.data.slice(0, filterYear === 'all' ? 36 : parseInt(filterYear) * 12)} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <AreaChart data={cardProjectionData.data.slice(0, filterYear === 'all' ? 36 : parseInt(filterYear) * 12)} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={tickStyle} interval={xInterval} />
                   <YAxis tick={tickStyle} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                   <Tooltip content={<ForecastTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
                   {cardProjectionData.cards.map(c => (
-                    <Line key={c.name} type="monotone" dataKey={c.name} stroke={c.color} strokeWidth={2} dot={false} />
+                    <Area key={c.name} type="monotone" dataKey={c.name} stackId="1" fill={c.color} stroke={c.color} fillOpacity={0.4} />
                   ))}
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
@@ -1025,13 +975,12 @@ export default function Forecast() {
                         { label: 'Take-Home Income', value: formatCurrency(row.takeHome, false), op: '+' },
                         { label: 'Expenses + Debt + Transfers', value: formatCurrency(row.totalExpenses, false), op: '−' },
                         { label: 'One-Time Net (Cash)', value: formatCurrency(row.oneTimeNet || 0, false), op: row.oneTimeNet >= 0 ? '+' : '−' },
+                        { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
                         { label: 'Ending Cash', value: formatCurrency(row.endingCash, false), op: '=' },
                         { label: '', value: '' },
-                        { label: 'Debt Payment', value: formatCurrency(row.plannedDebtPayment ?? row.debtPayment, false) },
-                        { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
+                        { label: 'Debt Payment', value: formatCurrency(row.debtPayment, false) },
                         { label: 'Brokerage Contrib', value: formatCurrency(row.brokerageContrib, false) },
                         { label: 'Retirement Contrib', value: formatCurrency(row.retireContrib, false) },
-                        { label: 'Retirement Balance', value: formatCurrency(row.retirementBalance, false) },
                         { label: 'Net Worth', value: formatCurrency(row.netWorth, false) },
                       ],
                     })}>
