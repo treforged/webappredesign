@@ -14,15 +14,6 @@ function toISO(unixSeconds: number | null | undefined): string | null {
   return new Date(unixSeconds * 1000).toISOString();
 }
 
-/**
- * Extract current_period_end from a Stripe Subscription.
- * The field is typed as `number` in the Stripe SDK but the `2025-08-27.basil`
- * API version renamed several period fields — cast via `unknown` to avoid `any`.
- */
-function getPeriodEnd(sub: Stripe.Subscription): number | null {
-  return (sub as unknown as { current_period_end?: number }).current_period_end ?? null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -63,7 +54,7 @@ Deno.serve(async (req) => {
       throw sigErr;
     }
 
-    // rootSpan remains open — closed after all event handlers run below.
+    rootSpan.end; // keep rootSpan open — update attributes with event type below
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -75,10 +66,8 @@ Deno.serve(async (req) => {
       "customer.subscription.created",
       "customer.subscription.updated",
       "customer.subscription.deleted",
-      // Use invoice.paid (canonical payment event) only.
-      // invoice.payment_succeeded fires for the same invoice and would cause
-      // duplicate Stripe API calls + DB writes for no benefit.
       "invoice.paid",
+      "invoice.payment_succeeded",
       "invoice.payment_failed",
     ];
 
@@ -141,7 +130,7 @@ Deno.serve(async (req) => {
           stripe_subscription_id: subscriptionId,
           plan: "premium",
           subscription_status: sub.status,
-          current_period_end: toISO(getPeriodEnd(sub)),
+          current_period_end: toISO((sub as any).current_period_end),
         }, { onConflict: "user_id" });
         if (error) {
           dbUpsertSpan.end("ERROR", new Error(error.message));
@@ -150,7 +139,7 @@ Deno.serve(async (req) => {
         }
         dbUpsertSpan.end("OK");
       } else {
-        // No subscription ID on the session (e.g. setup mode or one-time payment)
+        // No subscription ID on the session (e.g. setup mode)
         const dbUpsertSpan = tracer.startSpan("db.user_subscriptions.upsert", {
           parentSpanId: rootSpan.spanId,
           kind: "CLIENT",
@@ -210,30 +199,25 @@ Deno.serve(async (req) => {
         const { error } = await supabase.from("user_subscriptions").update({
           subscription_status: sub.status,
           plan: isActive ? "premium" : "free",
-          current_period_end: toISO(getPeriodEnd(sub)),
+          current_period_end: toISO((sub as any).current_period_end),
           stripe_subscription_id: sub.id,
         }).eq("user_id", userSub.user_id);
         if (error) {
           dbUpdateSpan.end("ERROR", new Error(error.message));
           console.error("subscription updated error:", error.message);
-          // Throw so Stripe retries — a silent 200 here would permanently lose
-          // the subscription state change.
-          throw new Error(error.message);
+        } else {
+          dbUpdateSpan.end("OK");
         }
-        dbUpdateSpan.end("OK");
       }
     }
 
-    // ── invoice.paid ──────────────────────────────────────────────────────
-    // Canonical payment success event. invoice.payment_succeeded is intentionally
-    // not handled — it fires for the same invoice and would cause duplicate work.
-    if (event.type === "invoice.paid") {
-      const invoice = event.data.object as Stripe.Invoice;
+    // ── invoice.paid / invoice.payment_succeeded ──────────────────────────
+    if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as any;
       const customerId = invoice.customer as string;
-      const subscriptionId = (invoice as unknown as { subscription?: string }).subscription ?? null;
+      const subscriptionId = invoice.subscription as string | null;
 
       if (!subscriptionId) {
-        // One-time invoice, not a subscription renewal — nothing to update.
         rootSpan.end("OK");
         return new Response(JSON.stringify({ received: true }), {
           status: 200,
@@ -254,7 +238,7 @@ Deno.serve(async (req) => {
       dbLookupSpan.end("OK");
 
       if (userSub) {
-        // ── Stripe: retrieve subscription for updated period end ──────
+        // ── Stripe: retrieve subscription for period end ──────────────
         const stripeRetrieveSpan = tracer.startSpan("stripe.subscriptions.retrieve", {
           parentSpanId: rootSpan.spanId,
           kind: "CLIENT",
@@ -269,7 +253,7 @@ Deno.serve(async (req) => {
           throw stripeErr;
         }
 
-        // ── DB: confirm active status + advance period end ────────────
+        // ── DB: update subscription to active ─────────────────────────
         const dbUpdateSpan = tracer.startSpan("db.user_subscriptions.update", {
           parentSpanId: rootSpan.spanId,
           kind: "CLIENT",
@@ -284,26 +268,20 @@ Deno.serve(async (req) => {
           subscription_status: "active",
           plan: "premium",
           stripe_subscription_id: subscriptionId,
-          current_period_end: toISO(getPeriodEnd(sub)),
+          current_period_end: toISO((sub as any).current_period_end),
         }).eq("user_id", userSub.user_id);
         if (error) {
           dbUpdateSpan.end("ERROR", new Error(error.message));
-          console.error("invoice.paid update error:", error.message);
-          // Throw so Stripe retries — a silent 200 here would leave the user
-          // without their renewed period end date.
-          throw new Error(error.message);
+          console.error("invoice.payment_succeeded update error:", error.message);
+        } else {
+          dbUpdateSpan.end("OK");
         }
-        dbUpdateSpan.end("OK");
       }
     }
 
     // ── invoice.payment_failed ────────────────────────────────────────────
-    // Stripe enters its dunning retry cycle after the first failure. We mark
-    // the subscription past_due but intentionally keep plan = "premium" so the
-    // user retains access during the retry window. The plan is downgraded to
-    // "free" only when Stripe gives up and fires customer.subscription.deleted.
     if (event.type === "invoice.payment_failed") {
-      const invoice = event.data.object as Stripe.Invoice;
+      const invoice = event.data.object as any;
       const customerId = invoice.customer as string;
 
       const dbLookupSpan = tracer.startSpan("db.user_subscriptions.select", {
@@ -335,11 +313,9 @@ Deno.serve(async (req) => {
         if (error) {
           dbUpdateSpan.end("ERROR", new Error(error.message));
           console.error("invoice.payment_failed update error:", error.message);
-          // Throw so Stripe retries — a silent 200 here would leave the
-          // subscription status stale (still "active" instead of "past_due").
-          throw new Error(error.message);
+        } else {
+          dbUpdateSpan.end("OK");
         }
-        dbUpdateSpan.end("OK");
       }
     }
 
