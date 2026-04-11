@@ -212,6 +212,7 @@ Deno.serve(async (req) => {
           plan: isActive ? "premium" : "free",
           current_period_end: toISO(getPeriodEnd(sub)),
           stripe_subscription_id: sub.id,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
         }).eq("user_id", userSub.user_id);
         if (error) {
           dbUpdateSpan.end("ERROR", new Error(error.message));

@@ -1,99 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail } from 'lucide-react';
 import { getDayName } from '@/lib/scheduling';
 import { supabase } from '@/integrations/supabase/client';
 import { tracedInvoke } from '@/lib/tracer';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { emailChangeSchema, passwordChangeSchema } from '@/lib/schemas';
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '');
-
-// ── Embedded payment method update form ───────────────────────────────────────
-function PaymentUpdateForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
-    try {
-      // Confirm the SetupIntent — 'if_required' avoids redirect for card payments
-      const { setupIntent, error } = await stripe.confirmSetup({
-        elements,
-        redirect: 'if_required',
-      });
-      if (error) throw new Error(error.message);
-      if (!setupIntent?.payment_method) throw new Error('No payment method returned');
-
-      const pmId = typeof setupIntent.payment_method === 'string'
-        ? setupIntent.payment_method
-        : setupIntent.payment_method.id;
-
-      // Tell the backend to set this PM as the subscription's default
-      const { error: fnErr } = await tracedInvoke(supabase, 'update-payment-method', {
-        body: { payment_method_id: pmId },
-      });
-      if (fnErr) throw fnErr;
-
-      toast.success('Payment method updated');
-      onSuccess();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update payment method');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement options={{ layout: 'tabs' }} />
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={!stripe || loading}
-          className="flex-1 py-2 text-xs font-medium bg-primary text-primary-foreground btn-press disabled:opacity-50 flex items-center justify-center gap-1.5"
-          style={{ borderRadius: 'var(--radius)' }}
-        >
-          {loading ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
-          {loading ? 'Saving…' : 'Save card'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="px-3 py-2 text-xs font-medium bg-secondary border border-border hover:border-primary/40 transition-colors btn-press disabled:opacity-50"
-          style={{ borderRadius: 'var(--radius)' }}
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
 
 export default function SettingsPage() {
   const { user, isDemo } = useAuth();
   const { data: profile, loading, update } = useProfile();
   const { data: accounts } = useAccounts();
-  const { subscription, isPremium, hasStripeCustomer, isLoading: subLoading, refetch: refetchSub } = useSubscription();
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
-  const [setupLoading, setSetupLoading] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const { subscription, isPremium, hasStripeCustomer, isLoading: subLoading } = useSubscription();
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -231,37 +154,25 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCancelOrResume = async (action: 'cancel' | 'resume') => {
-    setCancelLoading(true);
-    setConfirmCancel(false);
+  const handleManageSubscription = async () => {
+    if (!hasStripeCustomer) return;
+    setPortalLoading(true);
     try {
-      const { error } = await tracedInvoke(supabase, 'manage-subscription', { body: { action } });
+      const { data, error } = await tracedInvoke<{ url: string }>(supabase, 'create-portal-session', {
+        body: { return_url: window.location.origin },
+      });
       if (error) throw error;
-      await refetchSub();
-      toast.success(action === 'cancel' ? 'Subscription will cancel at period end' : 'Subscription resumed');
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update subscription');
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('Billing portal URL was not returned');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to open billing portal');
     } finally {
-      setCancelLoading(false);
+      setPortalLoading(false);
     }
   };
-
-  const handleShowPaymentUpdate = useCallback(async () => {
-    setSetupLoading(true);
-    try {
-      const { data, error } = await tracedInvoke<{ client_secret: string }>(supabase, 'create-setup-intent', {});
-      if (error) throw error;
-      if (data?.client_secret) {
-        setSetupClientSecret(data.client_secret);
-      } else {
-        toast.error('Failed to initialize payment form');
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to open payment update');
-    } finally {
-      setSetupLoading(false);
-    }
-  }, []);
 
   return (
     <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-6">
@@ -501,31 +412,25 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Subscription Management — hidden in demo mode */}
+      {/* Subscription Status — hidden in demo mode */}
       {!isDemo && (
         <div className="card-forged p-5 space-y-4">
           <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Subscription</h2>
-
           {subLoading ? (
-            <p className="text-xs text-muted-foreground">Loading subscription info…</p>
+            <p className="text-xs text-muted-foreground">Loading subscription info...</p>
           ) : isPremium ? (
-            <div className="space-y-4">
-              {/* Status row */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle size={14} className="text-primary" />
                 <span className="text-sm font-semibold text-primary">Premium Active</span>
               </div>
-
-              {/* Plan details */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-muted-foreground">Status</span>
                   <p className="font-medium capitalize">{subscription?.subscription_status || '—'}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">
-                    {subscription?.cancel_at_period_end ? 'Cancels on' : 'Renews'}
-                  </span>
+                  <span className="text-muted-foreground">Renews</span>
                   <p className="font-medium">
                     {subscription?.current_period_end
                       ? format(new Date(subscription.current_period_end), 'MMM d, yyyy')
@@ -533,101 +438,11 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Pending cancellation warning */}
-              {subscription?.cancel_at_period_end && (
-                <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-xs text-destructive" style={{ borderRadius: 'var(--radius)' }}>
-                  <AlertCircle size={13} className="mt-0.5 shrink-0" />
-                  <span>
-                    Your subscription will cancel on{' '}
-                    <strong>
-                      {subscription.current_period_end
-                        ? format(new Date(subscription.current_period_end), 'MMM d, yyyy')
-                        : 'period end'}
-                    </strong>
-                    . You'll keep access until then.
-                  </span>
-                </div>
-              )}
-
-              {/* Actions — only shown when payment update is not open */}
-              {!setupClientSecret && hasStripeCustomer && (
-                <div className="flex flex-wrap gap-2">
-                  {/* Update payment method */}
-                  <button
-                    onClick={handleShowPaymentUpdate}
-                    disabled={setupLoading}
-                    className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press disabled:opacity-50"
-                    style={{ borderRadius: 'var(--radius)' }}
-                  >
-                    {setupLoading ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />}
-                    Update payment method
-                  </button>
-
-                  {/* Cancel / Resume */}
-                  {subscription?.cancel_at_period_end ? (
-                    <button
-                      onClick={() => handleCancelOrResume('resume')}
-                      disabled={cancelLoading}
-                      className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium btn-press disabled:opacity-50"
-                      style={{ borderRadius: 'var(--radius)' }}
-                    >
-                      {cancelLoading ? <Loader2 size={12} className="animate-spin" /> : <Crown size={12} />}
-                      Keep subscription
-                    </button>
-                  ) : (
-                    <>
-                      {confirmCancel ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Cancel at period end?</span>
-                          <button
-                            onClick={() => handleCancelOrResume('cancel')}
-                            disabled={cancelLoading}
-                            className="px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground btn-press disabled:opacity-50"
-                            style={{ borderRadius: 'var(--radius)' }}
-                          >
-                            {cancelLoading ? <Loader2 size={12} className="animate-spin" /> : 'Yes, cancel'}
-                          </button>
-                          <button
-                            onClick={() => setConfirmCancel(false)}
-                            className="px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmCancel(true)}
-                          className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-destructive/40 hover:text-destructive transition-colors btn-press"
-                          style={{ borderRadius: 'var(--radius)' }}
-                        >
-                          Cancel subscription
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Embedded payment method update (Stripe Elements) */}
-              {setupClientSecret && (
-                <div className="border border-border rounded-lg overflow-hidden p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Update payment method</span>
-                    <button onClick={() => setSetupClientSecret(null)} className="text-muted-foreground hover:text-foreground">
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <Elements
-                    stripe={stripePromise}
-                    options={{ clientSecret: setupClientSecret, appearance: { theme: 'night', variables: { fontSizeBase: '13px' } } }}
-                  >
-                    <PaymentUpdateForm
-                      onSuccess={() => { setSetupClientSecret(null); refetchSub(); }}
-                      onCancel={() => setSetupClientSecret(null)}
-                    />
-                  </Elements>
-                </div>
+              {hasStripeCustomer && (
+                <button onClick={handleManageSubscription} disabled={portalLoading}
+                  className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium btn-press disabled:opacity-50" style={{ borderRadius: 'var(--radius)' }}>
+                  <Crown size={12} /> {portalLoading ? 'Loading...' : 'Manage Subscription'}
+                </button>
               )}
             </div>
           ) : (
