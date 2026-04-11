@@ -1,24 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
 import { useAccounts, useDebts, useAccountReconciliations } from '@/hooks/useSupabaseData';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
-import { usePlaidItems } from '@/hooks/usePlaidItems';
 import { Link } from 'react-router-dom';
 import MetricCard from '@/components/shared/MetricCard';
 import FormModal from '@/components/shared/FormModal';
-import PlaidLinkButton from '@/components/shared/PlaidLinkButton';
-import PremiumGate from '@/components/shared/PremiumGate';
 import {
   Building2, Plus, Edit2, Trash2, Wallet, TrendingUp, TrendingDown,
   CreditCard, PiggyBank, Landmark, DollarSign, Eye, EyeOff,
-  Link2, RefreshCw, Unlink, Loader2,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 const ACCOUNT_TYPES = [
   { value: 'checking', label: 'Checking' },
@@ -58,42 +49,14 @@ const APY_TYPES = ['401k', 'roth_ira', 'brokerage', 'savings', 'high_yield_savin
 
 export default function Accounts() {
   const { isDemo } = useAuth();
-  const { isPremium } = useSubscription();
   const { data: accounts, add, update, remove, loading } = useAccounts();
   const { data: debts, update: updateDebt, add: addDebt } = useDebts();
   const { add: addReconciliation } = useAccountReconciliations();
-  const { items: plaidItems, loading: plaidLoading, remove: removePlaidItem, invalidate: invalidatePlaid } = usePlaidItems();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'assets' | 'liabilities'>('all');
-  const [syncingAll, setSyncingAll] = useState(false);
-
-  const handlePlaidSuccess = useCallback(() => {
-    invalidatePlaid();
-  }, [invalidatePlaid]);
-
-  const handleSync = useCallback(async () => {
-    setSyncingAll(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error('Not authenticated');
-      const res = await fetch(`${FN_BASE}/plaid-sync`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? 'Sync failed');
-      toast.success(`Synced ${body.synced} account${body.synced !== 1 ? 's' : ''}`);
-      invalidatePlaid();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Sync failed');
-    } finally {
-      setSyncingAll(false);
-    }
-  }, [invalidatePlaid]);
 
   const activeAccounts = useMemo(() => accounts.filter((a: any) => a.active), [accounts]);
 
@@ -298,79 +261,6 @@ export default function Accounts() {
           );
         })}
       </div>
-
-      {/* ── Linked Banks (Plaid) ─────────────────────────────────────────── */}
-      {!isDemo && (
-        <div className="card-forged p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold flex items-center gap-1.5"><Link2 size={14} className="text-primary" /> Linked Banks</h3>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Auto-sync balances from your bank accounts (premium)</p>
-            </div>
-            {isPremium && (
-              <div className="flex items-center gap-2">
-                {plaidItems.length > 0 && (
-                  <button
-                    onClick={handleSync}
-                    disabled={syncingAll}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground btn-press disabled:opacity-50"
-                    title="Sync all linked banks"
-                  >
-                    {syncingAll ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
-                    Sync all
-                  </button>
-                )}
-                {plaidItems.length < 3 && (
-                  <PlaidLinkButton onSuccess={handlePlaidSuccess} disabled={syncingAll} />
-                )}
-              </div>
-            )}
-          </div>
-
-          {!isPremium ? (
-            <PremiumGate
-              isPremium={false}
-              title="Auto-Sync Bank Balances"
-              features={['Connect up to 3 institutions', 'Balances sync on login and on demand', 'Flows into Forecast & Net Worth automatically']}
-            >
-              <div className="h-16" />
-            </PremiumGate>
-          ) : plaidLoading ? (
-            <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
-              <Loader2 size={12} className="animate-spin" /> Loading linked banks…
-            </div>
-          ) : plaidItems.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No linked banks yet. Click "Link Bank Account" to connect your first institution.</p>
-          ) : (
-            <div className="space-y-2">
-              {plaidItems.map(item => (
-                <div key={item.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0 gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Building2 size={13} className="text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold truncate">{item.institution_name ?? 'Bank'}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {item.last_synced_at
-                          ? `Last synced ${new Date(item.last_synced_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-                          : 'Not yet synced'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removePlaidItem(item.plaid_item_id)}
-                    className="text-muted-foreground hover:text-destructive shrink-0"
-                    title="Unlink this bank"
-                  >
-                    <Unlink size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {showForm && (
         <FormModal

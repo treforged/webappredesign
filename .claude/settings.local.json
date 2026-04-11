@@ -8,7 +8,31 @@
       "Read(//c/Users/tvonh/**)",
       "Bash(echo \"SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN\")",
       "Bash(env)",
-      "mcp__claude_ai_Supabase__deploy_edge_function"
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" add supabase/functions/_shared/cors.ts)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" commit -m \"fix: add x-trace-id to CORS allowed headers\")",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" show HEAD:supabase/functions/create-checkout/index.ts)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" add supabase/functions/create-checkout/index.ts src/pages/Premium.tsx)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" commit -m \"feat: add yearly plan, update pricing to 9.99/mo and 89.99/yr\")",
+      "Bash(C:/Program Files/Git/cmd/git.exe:*)",
+      "Bash(\"C:/Program Files/Git/cmd/git.exe\" -C \"C:/Users/tvonh/Desktop/webappredesign\" grep -i \"stripe\" .env.local)",
+      "Bash(C:/Program Files/nodejs/npm.cmd install:*)",
+      "Bash(mkdir -p \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-10_phase0/src/components/layout\")",
+      "Bash(cp \"/c/Users/tvonh/Desktop/webappredesign/src/components/layout/Sidebar.tsx\" \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-10_phase0/src/components/layout/Sidebar.tsx\")",
+      "Bash(cp \"/c/Users/tvonh/Desktop/webappredesign/src/components/layout/MobileNav.tsx\" \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-10_phase0/src/components/layout/MobileNav.tsx\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(mkdir -p \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-11_phase0/src/pages\")",
+      "Bash(cp \"/c/Users/tvonh/Desktop/webappredesign/src/pages/Auth.tsx\" \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-11_phase0/src/pages/Auth.tsx\")",
+      "Bash(mkdir -p \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-11_041112/supabase/functions/stripe-webhook\")",
+      "Bash(cp \"/c/Users/tvonh/Desktop/webappredesign/supabase/functions/stripe-webhook/index.ts\" \"/c/Users/tvonh/Desktop/webappredesign/backups/2026-04-11_041112/supabase/functions/stripe-webhook/index.ts\")",
+      "mcp__claude_ai_Stripe__list_coupons",
+      "mcp__claude_ai_Stripe__stripe_api_execute",
+      "mcp__claude_ai_Supabase__list_tables",
+      "Bash(mkdir -p \"C:/Users/tvonh/Desktop/webappredesign/backups/$\\(date +%Y-%m-%d_%H%M%S\\)/supabase/migrations\")",
+      "Bash(mkdir -p \"C:/Users/tvonh/Desktop/webappredesign/backups/$\\(date +%Y-%m-%d_%H%M%S\\)/src/pages\")"
     ]
   }
 }
