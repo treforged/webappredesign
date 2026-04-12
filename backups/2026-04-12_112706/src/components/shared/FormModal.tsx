@@ -9,8 +9,6 @@ type Field = {
   options?: { value: string; label: string }[];
   required?: boolean;
   step?: string;
-  disabled?: boolean;
-  hint?: string;
 };
 
 type Props = {
@@ -51,8 +49,7 @@ export default function FormModal({ title, fields, values, onChange, onSave, onC
                 <select
                   value={values[f.key] || ''}
                   onChange={e => onChange(f.key, e.target.value)}
-                  disabled={f.disabled}
-                  className={`w-full mt-0.5 bg-secondary border border-border px-2 py-1.5 text-xs text-foreground ${f.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className="w-full mt-0.5 bg-secondary border border-border px-2 py-1.5 text-xs text-foreground"
                   style={{ borderRadius: 'var(--radius)' }}
                 >
                   {f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -62,14 +59,12 @@ export default function FormModal({ title, fields, values, onChange, onSave, onC
                   type={f.type}
                   step={f.step}
                   value={values[f.key] || ''}
-                  onChange={e => !f.disabled && onChange(f.key, e.target.value)}
-                  readOnly={f.disabled}
-                  className={`w-full mt-0.5 bg-secondary border border-border px-2 py-1.5 text-xs text-foreground ${f.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onChange={e => onChange(f.key, e.target.value)}
+                  className="w-full mt-0.5 bg-secondary border border-border px-2 py-1.5 text-xs text-foreground"
                   style={{ borderRadius: 'var(--radius)' }}
                   placeholder={f.placeholder}
                 />
               )}
-              {f.hint && <p className="text-[10px] text-muted-foreground mt-0.5">{f.hint}</p>}
             </div>
           ))}
         </div>
