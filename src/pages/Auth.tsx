@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { loginSchema, signUpSchema } from '@/lib/schemas';
 
-type Mode = 'login' | 'signup' | 'reset' | 'set-password';
+type Mode = 'login' | 'signup' | 'reset' | 'set-password' | 'mfa';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -16,6 +16,12 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  // MFA challenge state
+  const [mfaFactorId, setMfaFactorId] = useState('');
+  const [mfaChallengeId, setMfaChallengeId] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorType, setMfaFactorType] = useState<string>('totp');
 
   useEffect(() => {
     // Supabase appends #access_token=...&type=recovery to the redirectTo URL
@@ -125,6 +131,31 @@ export default function Auth() {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+
+        // Check if MFA is required before granting access
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aal && aal.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
+          // User has MFA enrolled — find first verified factor and challenge it
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const rawFactors = factorsData as any;
+          const allFactors = [
+            ...(factorsData?.totp ?? []),
+            ...(factorsData?.phone ?? []),
+            ...((rawFactors?.email ?? []) as any[]),
+          ];
+          const factor = allFactors.find(f => f.status === 'verified');
+          if (factor) {
+            const { data: challenge, error: ce } = await supabase.auth.mfa.challenge({ factorId: factor.id });
+            if (ce || !challenge) throw ce ?? new Error('MFA challenge failed');
+            setMfaFactorId(factor.id);
+            setMfaChallengeId(challenge.id);
+            setMfaFactorType(factor.factor_type);
+            setMode('mfa');
+            setLoading(false);
+            return;
+          }
+        }
+
         toast.success('Signed in successfully');
       } else {
         const { error } = await supabase.auth.signUp({
@@ -144,6 +175,75 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  const handleMfaVerify = async () => {
+    if (!mfaCode.trim()) { toast.error('Enter the verification code'); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: mfaChallengeId,
+        code: mfaCode.trim(),
+      });
+      if (error) throw error;
+      toast.success('Signed in successfully');
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── MFA challenge UI ──────────────────────────────────────────────────────
+  if (mode === 'mfa') {
+    const FACTOR_HINTS: Record<string, string> = {
+      totp: 'Enter the 6-digit code from your authenticator app.',
+      phone: 'Enter the SMS code sent to your phone.',
+      email: 'Enter the code sent to your email.',
+    };
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
+            <p className="text-xs text-muted-foreground mt-1">Two-factor verification required.</p>
+          </div>
+          <div className="card-forged p-6 space-y-4">
+            <p className="text-[10px] text-muted-foreground">
+              {FACTOR_HINTS[mfaFactorType] ?? 'Enter your verification code.'}
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={8}
+              value={mfaCode}
+              onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
+              placeholder={mfaFactorType === 'totp' ? '000000' : 'Verification code'}
+              autoFocus
+              className="w-full bg-secondary border border-border px-3 py-3 text-lg text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-ring"
+              style={{ borderRadius: 'var(--radius)' }}
+            />
+            <button
+              onClick={handleMfaVerify}
+              disabled={loading || !mfaCode.trim()}
+              className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
+              style={{ borderRadius: 'var(--radius)' }}
+            >
+              {loading ? 'Verifying…' : 'Verify'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setMfaCode(''); }}
+              className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Back to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Set new password UI (after clicking reset email link) ─────────────────
   if (mode === 'set-password') {

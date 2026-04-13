@@ -4,9 +4,6 @@ import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
 import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle } from 'lucide-react';
-import { LinkedAccounts } from '@/components/settings/LinkedAccounts';
-import { PhoneAuth } from '@/components/settings/PhoneAuth';
-import { TwoFactorAuth } from '@/components/settings/TwoFactorAuth';
 import { getDayName } from '@/lib/scheduling';
 import { supabase } from '@/integrations/supabase/client';
 import { tracedInvoke } from '@/lib/tracer';
@@ -365,21 +362,6 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
-
-          <div className="border-t border-border" />
-
-          {/* Linked Accounts */}
-          <LinkedAccounts />
-
-          <div className="border-t border-border" />
-
-          {/* Phone Number */}
-          <PhoneAuth />
-
-          <div className="border-t border-border" />
-
-          {/* Two-Factor Auth */}
-          <TwoFactorAuth />
 
           <div className="border-t border-border" />
 
