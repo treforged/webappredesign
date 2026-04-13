@@ -781,47 +781,22 @@ export default function BudgetControl() {
             </button>
           </div>
 
-          {/* Deduction rows — grouped by type */}
-          {(() => {
-            const isCatalogItem = (label: string) => DEDUCTION_CATALOG.some(c => c.label.toLowerCase() === label.toLowerCase());
-            const getGroup = (label: string): string => {
-              const l = label.toLowerCase();
-              if (DEDUCTION_CATALOG.slice(0, 7).some(c => c.label.toLowerCase() === l)) return 'Benefits';
-              if (DEDUCTION_CATALOG.slice(7, 13).some(c => c.label.toLowerCase() === l)) return 'Retirement & Savings';
-              if (DEDUCTION_CATALOG.slice(13, 17).some(c => c.label.toLowerCase() === l)) return 'Taxes';
-              if (DEDUCTION_CATALOG.slice(17).some(c => c.label.toLowerCase() === l)) return 'Other';
-              return 'Custom';
-            };
-            const groupOrder = ['Taxes', 'Benefits', 'Retirement & Savings', 'Other', 'Custom'];
-            const grouped: Record<string, typeof deductionAmounts> = {};
-            for (const d of deductionAmounts) {
-              const g = getGroup(d.label);
-              if (!grouped[g]) grouped[g] = [];
-              grouped[g].push(d);
-            }
-            const retirementAccounts = accounts.filter((a: any) => a.active && ['brokerage', 'roth_ira', '401k'].includes(a.account_type));
-            return groupOrder.filter(g => grouped[g]?.length).map(group => (
-              <div key={group} className="space-y-0">
-                <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5 pt-2 pb-0.5">{group}</p>
-                <div className="space-y-1.5">
-                  {grouped[group].map(d => {
+          {/* Deduction rows */}
+          <div className="space-y-1.5">
+            {deductionAmounts.map(d => {
               const isRetirement = /401|403|roth|ira/i.test(d.label);
               const isTaxItem = /withholding|fica|oasdi/i.test(d.label);
-              const fromCatalog = isCatalogItem(d.label);
+              const retirementAccounts = accounts.filter((a: any) => a.active && ['brokerage', 'roth_ira', '401k'].includes(a.account_type));
               return (
                 <div key={d.id} className="border-b border-border/30 last:border-0 pb-1.5">
                   <div className="flex items-center gap-2 py-1 flex-wrap sm:flex-nowrap">
-                    {/* Label — read-only for catalog items, editable for custom */}
-                    {fromCatalog ? (
-                      <span className="flex-1 min-w-[120px] text-[11px] font-medium text-foreground px-0.5 py-0.5 select-none">{d.label}</span>
-                    ) : (
+                    {/* Editable label */}
                     <input
                       type="text"
                       value={d.label}
                       onChange={e => updateDeduction(d.id, { label: e.target.value })}
                       className="flex-1 min-w-[120px] bg-transparent border-b border-transparent hover:border-border focus:border-primary text-[11px] font-medium text-foreground px-0.5 py-0.5 outline-none transition-colors"
                     />
-                    )}
                     {/* Value input */}
                     <input
                       type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
@@ -896,10 +871,7 @@ export default function BudgetControl() {
                 </div>
               );
             })}
-                </div>
-              </div>
-            ));
-          })()}
+          </div>
 
           {/* Totals summary */}
           {(preTaxDeductionsFlat + postTaxDeductionsFlat) > 0 && (
@@ -1178,7 +1150,7 @@ export default function BudgetControl() {
             <div className="space-y-1.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Retirement & Savings</p>
               <div className="flex flex-wrap gap-1.5">
-                {DEDUCTION_CATALOG.slice(7, 13).map(item => <CatalogBtn key={item.label} item={item} />)}
+                {DEDUCTION_CATALOG.slice(7, 14).map(item => <CatalogBtn key={item.label} item={item} />)}
               </div>
             </div>
 
@@ -1186,7 +1158,7 @@ export default function BudgetControl() {
             <div className="space-y-1.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Taxes</p>
               <div className="flex flex-wrap gap-1.5">
-                {DEDUCTION_CATALOG.slice(13, 17).map(item => <CatalogBtn key={item.label} item={item} />)}
+                {DEDUCTION_CATALOG.slice(14, 18).map(item => <CatalogBtn key={item.label} item={item} />)}
               </div>
             </div>
 
@@ -1194,7 +1166,7 @@ export default function BudgetControl() {
             <div className="space-y-1.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Other</p>
               <div className="flex flex-wrap gap-1.5">
-                {DEDUCTION_CATALOG.slice(17).map(item => <CatalogBtn key={item.label} item={item} />)}
+                {DEDUCTION_CATALOG.slice(18).map(item => <CatalogBtn key={item.label} item={item} />)}
               </div>
             </div>
 
