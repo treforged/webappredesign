@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Shield, ShieldCheck, ShieldOff, QrCode, Loader2, X, CheckCircle, Trash2, Mail } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldOff, QrCode, Loader2, X, CheckCircle, Trash2 } from 'lucide-react';
 
 type MfaFactor = {
   id: string;
@@ -12,7 +12,7 @@ type MfaFactor = {
   email?: string;
 };
 
-type EnrollView = 'none' | 'totp-qr' | 'totp-verify' | 'email-verify';
+type EnrollView = 'none' | 'totp-qr' | 'totp-verify';
 
 export function TwoFactorAuth() {
   const [factors, setFactors] = useState<MfaFactor[]>([]);
@@ -26,10 +26,6 @@ export function TwoFactorAuth() {
   const [totpFactorId, setTotpFactorId] = useState('');
   const [totpCode, setTotpCode] = useState('');
 
-  // Email MFA state
-  const [emailFactorId, setEmailFactorId] = useState('');
-  const [emailMfaCode, setEmailMfaCode] = useState('');
-  const [emailChallengeId, setEmailChallengeId] = useState('');
 
   const loadFactors = useCallback(async () => {
     setLoading(true);
@@ -83,38 +79,6 @@ export function TwoFactorAuth() {
     setActionLoading(false);
   };
 
-  // ── Email MFA enrollment ───────────────────────────────────────────────────
-  const startEmailEnroll = async () => {
-    setActionLoading(true);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'email' } as any);
-    if (error || !data) {
-      toast.error(error?.message ?? 'Failed to enroll email MFA');
-    } else {
-      setEmailFactorId(data.id);
-      const { data: ch, error: ce } = await supabase.auth.mfa.challenge({ factorId: data.id });
-      if (ce || !ch) { toast.error('Failed to send email code'); setActionLoading(false); return; }
-      setEmailChallengeId(ch.id);
-      setView('email-verify');
-      toast.success('Verification code sent to your email');
-    }
-    setActionLoading(false);
-  };
-
-  const verifyEmailMfa = async () => {
-    if (!emailMfaCode.trim()) { toast.error('Enter the verification code'); return; }
-    setActionLoading(true);
-    const { error } = await supabase.auth.mfa.verify({ factorId: emailFactorId, challengeId: emailChallengeId, code: emailMfaCode.trim() });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Email two-factor enabled');
-      setView('none');
-      setEmailMfaCode('');
-      await loadFactors();
-    }
-    setActionLoading(false);
-  };
-
   // ── Unenroll ───────────────────────────────────────────────────────────────
   const handleUnenroll = async (factorId: string, label: string) => {
     setActionLoading(true);
@@ -135,7 +99,6 @@ export function TwoFactorAuth() {
     }
     setView('none');
     setTotpCode('');
-    setEmailMfaCode('');
   };
 
   const verifiedFactors = factors.filter(f => f.status === 'verified');
@@ -217,17 +180,6 @@ export function TwoFactorAuth() {
               Add Authenticator App
             </button>
           )}
-          {!factors.some(f => f.factor_type === 'email') && (
-            <button
-              onClick={startEmailEnroll}
-              disabled={actionLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium border border-border hover:border-primary/40 hover:text-primary transition-colors btn-press disabled:opacity-50"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              {actionLoading ? <Loader2 size={10} className="animate-spin" /> : <Mail size={10} />}
-              Add Email Code
-            </button>
-          )}
         </div>
       )}
 
@@ -285,34 +237,6 @@ export function TwoFactorAuth() {
         </div>
       )}
 
-      {/* Email MFA: verify */}
-      {view === 'email-verify' && (
-        <div className="space-y-3 border border-border p-4" style={{ borderRadius: 'var(--radius)' }}>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium">Enter the code sent to your email</p>
-            <button onClick={cancelEnroll} className="text-muted-foreground hover:text-foreground"><X size={13} /></button>
-          </div>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={8}
-            value={emailMfaCode}
-            onChange={e => setEmailMfaCode(e.target.value.replace(/\D/g, ''))}
-            placeholder="Verification code"
-            className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-ring"
-            style={{ borderRadius: 'var(--radius)' }}
-          />
-          <button
-            onClick={verifyEmailMfa}
-            disabled={actionLoading || !emailMfaCode.trim()}
-            className="w-full py-2 text-xs font-medium bg-primary text-primary-foreground btn-press disabled:opacity-50 flex items-center justify-center gap-1.5"
-            style={{ borderRadius: 'var(--radius)' }}
-          >
-            {actionLoading ? <Loader2 size={12} className="animate-spin" /> : null}
-            Confirm & Enable
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -51,9 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Handle different auth events
       if (event === 'SIGNED_IN') {
-        // Only navigate to dashboard if we're on auth page and user successfully logged in
         if (location.pathname === '/auth') {
-          navigate('/dashboard');
+          // Check MFA requirement before navigating — if AAL2 is needed,
+          // Auth.tsx handles the challenge screen; don't navigate yet
+          supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: aal }) => {
+            if (aal && aal.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
+              // MFA pending — Auth.tsx will switch to 'mfa' mode, stay put
+              return;
+            }
+            navigate('/dashboard');
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         navigate('/auth');
