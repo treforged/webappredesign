@@ -463,7 +463,7 @@ export default function Forecast() {
     // separately and appear in net worth but NOT in ending cash calculations.
     const liquidTypes = ['checking', 'business_checking', 'cash'];
     const investTypes = ['brokerage'];
-    const retireTypes = ['roth_ira', '401k', 'ira', 'hsa'];
+    const retireTypes = ['roth_ira', '401k'];
     const liabilityTypes = ['credit_card', 'student_loan', 'auto_loan', 'other_liability'];
 
     let liquidBal = active.filter((a: any) => liquidTypes.includes(a.account_type)).reduce((s: number, a: any) => s + Number(a.balance), 0);
@@ -496,31 +496,16 @@ export default function Forecast() {
       : assumptions.investmentGrowth;
     const monthlyRetireGrowth = Math.pow(1 + weightedRetireApy / 100, 1 / 12) - 1;
 
-    // Monthly retirement paycheck contributions — reads paycheck_deductions JSONB first,
-    // falls back to legacy deduction_401k_value if no linked deductions exist
+    // Monthly 401k paycheck contribution (from deduction settings, not just transfer rules)
     const prof = profile as any;
+    const d401kVal = Number(prof?.deduction_401k_value) || 0;
+    const d401kMode = prof?.deduction_401k_mode || 'pct';
     const paycheckGrossForForecast = payConfig
       ? (payConfig.frequency === 'biweekly' ? payConfig.weeklyGross * 2 : payConfig.frequency === 'monthly' ? payConfig.weeklyGross * 52 / 12 : payConfig.weeklyGross)
       : 0;
+    const contribPerCheck = d401kMode === 'pct' ? paycheckGrossForForecast * (d401kVal / 100) : d401kVal;
     const paychecksPerYear = payConfig?.frequency === 'biweekly' ? 26 : payConfig?.frequency === 'monthly' ? 12 : 52;
-    const retireAccountIds = new Set(retireAccounts.map((a: any) => a.id as string));
-    const payDeds: { value: number; mode: 'flat' | 'pct'; accountId?: string }[] =
-      Array.isArray(prof?.paycheck_deductions) ? prof.paycheck_deductions : [];
-    const linkedRetireMonthly = payDeds
-      .filter(d => d.accountId && retireAccountIds.has(d.accountId) && d.value > 0)
-      .reduce((s, d) => {
-        const perCheck = d.mode === 'pct' ? paycheckGrossForForecast * (d.value / 100) : d.value;
-        return s + perCheck * (paychecksPerYear / 12);
-      }, 0);
-    // Fallback: legacy deduction_401k_value column
-    const monthly401kContrib = linkedRetireMonthly > 0
-      ? linkedRetireMonthly
-      : (() => {
-          const d401kVal = Number(prof?.deduction_401k_value) || 0;
-          const d401kMode = prof?.deduction_401k_mode || 'pct';
-          const perCheck = d401kMode === 'pct' ? paycheckGrossForForecast * (d401kVal / 100) : d401kVal;
-          return perCheck * (paychecksPerYear / 12);
-        })();
+    const monthly401kContrib = contribPerCheck * (paychecksPerYear / 12);
 
     const monthlySavingsContrib = goals.reduce((s: number, g: any) => s + Number(g.monthly_contribution), 0);
     const monthlyCarContrib = carFunds.reduce((s: number, c: any) => {
