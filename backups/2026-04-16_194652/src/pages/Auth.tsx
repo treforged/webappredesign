@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -22,8 +22,6 @@ export default function Auth() {
   const [mfaChallengeId, setMfaChallengeId] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [mfaFactorType, setMfaFactorType] = useState<string>('totp');
-  const [totpCountdown, setTotpCountdown] = useState(0);
-  const [mfaError, setMfaError] = useState('');
 
   useEffect(() => {
     // Supabase appends #access_token=...&type=recovery to the redirectTo URL
@@ -185,21 +183,8 @@ export default function Auth() {
     }
   };
 
-  // TOTP countdown — shows seconds remaining in 30s window
-  useEffect(() => {
-    if (mode !== 'mfa' || mfaFactorType !== 'totp') return;
-    const tick = () => {
-      const now = Math.floor(Date.now() / 1000);
-      setTotpCountdown(30 - (now % 30));
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [mode, mfaFactorType]);
-
-  const handleMfaVerify = useCallback(async () => {
-    if (!mfaCode.trim()) { setMfaError('Enter the verification code'); return; }
-    setMfaError('');
+  const handleMfaVerify = async () => {
+    if (!mfaCode.trim()) { toast.error('Enter the verification code'); return; }
     setLoading(true);
     try {
       const { error } = await supabase.auth.mfa.verify({
@@ -211,31 +196,19 @@ export default function Auth() {
       toast.success('Signed in successfully');
       navigate('/dashboard');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Verification failed';
-      setMfaError(msg);
-      setMfaCode('');
+      toast.error(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setLoading(false);
     }
-  }, [mfaCode, mfaFactorId, mfaChallengeId, navigate]);
-
-  // Auto-submit when 6 digits entered for TOTP
-  useEffect(() => {
-    if (mfaFactorType === 'totp' && mfaCode.length === 6 && !loading) {
-      handleMfaVerify();
-    }
-  }, [mfaCode, mfaFactorType, loading, handleMfaVerify]);
+  };
 
   // ── MFA challenge UI ──────────────────────────────────────────────────────
   if (mode === 'mfa') {
     const FACTOR_HINTS: Record<string, string> = {
-      totp: 'Open your authenticator app and enter the 6-digit code. It submits automatically.',
+      totp: 'Enter the 6-digit code from your authenticator app.',
       phone: 'Enter the SMS code sent to your phone.',
       email: 'Enter the code sent to your email.',
     };
-    const countdownPct = mfaFactorType === 'totp' ? (totpCountdown / 30) * 100 : 100;
-    const isExpiring = mfaFactorType === 'totp' && totpCountdown <= 5;
-
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
@@ -244,65 +217,31 @@ export default function Auth() {
             <p className="text-xs text-muted-foreground mt-1">Two-factor verification required.</p>
           </div>
           <div className="card-forged p-6 space-y-4">
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-[10px] text-muted-foreground">
               {FACTOR_HINTS[mfaFactorType] ?? 'Enter your verification code.'}
             </p>
-
-            {/* TOTP countdown bar */}
-            {mfaFactorType === 'totp' && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">Code expires in</span>
-                  <span className={`text-[10px] font-semibold tabular-nums ${isExpiring ? 'text-destructive' : 'text-foreground'}`}>
-                    {totpCountdown}s
-                  </span>
-                </div>
-                <div className="h-1 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ${isExpiring ? 'bg-destructive' : 'bg-primary'}`}
-                    style={{ width: `${countdownPct}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
             <input
               type="text"
               inputMode="numeric"
-              maxLength={mfaFactorType === 'totp' ? 6 : 8}
+              maxLength={8}
               value={mfaCode}
-              onChange={e => { setMfaError(''); setMfaCode(e.target.value.replace(/\D/g, '')); }}
+              onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
               placeholder={mfaFactorType === 'totp' ? '000000' : 'Verification code'}
               autoFocus
-              className={`w-full bg-secondary border px-3 py-3 text-lg text-foreground text-center tracking-[0.4em] focus:outline-none focus:ring-1 ${mfaError ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-ring'}`}
+              className="w-full bg-secondary border border-border px-3 py-3 text-lg text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-ring"
               style={{ borderRadius: 'var(--radius)' }}
             />
-
-            {mfaError && (
-              <p className="text-[10px] text-destructive -mt-2">{mfaError}</p>
-            )}
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                Verifying…
-              </div>
-            )}
-
-            {!loading && mfaFactorType !== 'totp' && (
-              <button
-                onClick={handleMfaVerify}
-                disabled={!mfaCode.trim()}
-                className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
-                style={{ borderRadius: 'var(--radius)' }}
-              >
-                Verify
-              </button>
-            )}
-
+            <button
+              onClick={handleMfaVerify}
+              disabled={loading || !mfaCode.trim()}
+              className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
+              style={{ borderRadius: 'var(--radius)' }}
+            >
+              {loading ? 'Verifying…' : 'Verify'}
+            </button>
             <button
               type="button"
-              onClick={() => { setMode('login'); setMfaCode(''); setMfaError(''); }}
+              onClick={() => { setMode('login'); setMfaCode(''); }}
               className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               ← Back to Sign In

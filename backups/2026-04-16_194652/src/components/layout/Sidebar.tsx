@@ -41,7 +41,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-between px-4 h-14 border-b border-sidebar-border">
         {!collapsed && (
           <Link to={brandTo} className="font-display font-bold text-sm tracking-tight text-primary hover:opacity-80 transition-opacity">
-            FORGED
+            TRE FORGED
           </Link>
         )}
         <button

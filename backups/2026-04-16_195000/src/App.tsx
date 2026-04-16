@@ -23,7 +23,6 @@ const BudgetControl = lazy(() => import("@/pages/BudgetControl"));
 const Forecast = lazy(() => import("@/pages/Forecast"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
 const Legal = lazy(() => import("@/pages/Legal"));
-const Onboarding = lazy(() => import("@/pages/Onboarding"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,14 +42,10 @@ function PageLoader() {
   );
 }
 
-function ProtectedRoute({ children, skipOnboardingCheck }: { children: React.ReactNode; skipOnboardingCheck?: boolean }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isDemo } = useAuth();
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><span className="text-sm text-muted-foreground animate-pulse">Authenticating…</span></div>;
   if (!user && !isDemo) return <Navigate to="/auth" replace />;
-  if (!skipOnboardingCheck && user && !isDemo) {
-    const done = localStorage.getItem(`forged:onboarding_done_${user.id}`);
-    if (!done) return <Navigate to="/onboarding" replace />;
-  }
   return <>{children}</>;
 }
 
@@ -73,11 +68,6 @@ function AppRoutes() {
         <Route path="/premium/success" element={<Suspense fallback={<PageLoader />}><PremiumSuccess /></Suspense>} />
         <Route path="/premium/cancel" element={<Suspense fallback={<PageLoader />}><PremiumCancel /></Suspense>} />
       </Route>
-      <Route path="/onboarding" element={
-        <ProtectedRoute skipOnboardingCheck>
-          <Suspense fallback={<PageLoader />}><Onboarding /></Suspense>
-        </ProtectedRoute>
-      } />
       <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
       <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
       <Route path="/subscriptions" element={<Navigate to="/budget" replace />} />
