@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal } from 'lucide-react';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle } from 'lucide-react';
 import { LinkedAccounts } from '@/components/settings/LinkedAccounts';
 import { TwoFactorAuth } from '@/components/settings/TwoFactorAuth';
 import { getDayName } from '@/lib/scheduling';
@@ -97,10 +97,9 @@ export default function SettingsPage() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  // Delete account state — steps: 'hidden' | 'confirm' | 'email-sent' | 'deleting'
-  const [deleteStep, setDeleteStep] = useState<'hidden' | 'confirm' | 'email-sent' | 'deleting'>('hidden');
+  // Delete account state
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteOtp, setDeleteOtp] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
@@ -185,46 +184,18 @@ export default function SettingsPage() {
 
   const depositAccounts = accounts.filter((a: any) => ['checking', 'savings', 'high_yield_savings', 'business_checking'].includes(a.account_type) && a.active);
 
-  const handleSendDeleteConfirmation = async () => {
-    setDeleteLoading(true);
-    try {
-      const { error } = await supabase.auth.reauthenticate();
-      if (error) throw error;
-      setDeleteStep('email-sent');
-      toast.success('Confirmation code sent — check your email inbox');
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send confirmation email');
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE' || deleteOtp.length < 6) return;
+    if (deleteConfirmText !== 'DELETE') return;
     setDeleteLoading(true);
     try {
-      // Verify the reauthentication OTP before deletion
-      const { error: otpErr } = await supabase.auth.verifyOtp({
-        email: user?.email ?? '',
-        token: deleteOtp.trim(),
-        type: 'reauthentication' as any,
-      });
-      if (otpErr) throw new Error('Invalid confirmation code — check your email and try again');
-
       const { error } = await tracedInvoke(supabase, 'delete-account', {});
       if (error) throw error;
-      toast.success('Account permanently deleted. Goodbye.');
+      toast.success('Account deleted. Goodbye.');
       await supabase.auth.signOut();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete account');
       setDeleteLoading(false);
     }
-  };
-
-  const resetDeleteFlow = () => {
-    setDeleteStep('hidden');
-    setDeleteConfirmText('');
-    setDeleteOtp('');
   };
 
   const handleEmailChange = async () => {
@@ -350,7 +321,7 @@ export default function SettingsPage() {
 
       {/* Account Security — hidden in demo */}
       {!isDemo && (
-        <div id="security" className="card-forged p-5 space-y-5">
+        <div className="card-forged p-5 space-y-5">
           <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Account Security</h2>
 
           {/* Change Email */}
@@ -613,7 +584,7 @@ export default function SettingsPage() {
         <div className="card-forged p-5 space-y-4 border border-destructive/20">
           <h2 className="text-[11px] font-medium text-destructive uppercase tracking-wider">Danger Zone</h2>
 
-          {deleteStep === 'hidden' && (
+          {!showDeleteZone ? (
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-medium">Delete Account</p>
@@ -622,7 +593,7 @@ export default function SettingsPage() {
                 </p>
               </div>
               <button
-                onClick={() => setDeleteStep('confirm')}
+                onClick={() => setShowDeleteZone(true)}
                 className="shrink-0 flex items-center gap-1.5 bg-secondary border border-destructive/30 text-destructive px-3 py-1.5 text-xs font-medium hover:bg-destructive/10 transition-colors btn-press"
                 style={{ borderRadius: 'var(--radius)' }}
               >
@@ -630,30 +601,16 @@ export default function SettingsPage() {
                 Delete account
               </button>
             </div>
-          )}
-
-          {deleteStep === 'confirm' && (
+          ) : (
             <div className="space-y-3">
-              {/* Irreversible warning */}
               <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-xs text-destructive" style={{ borderRadius: 'var(--radius)' }}>
                 <AlertCircle size={13} className="mt-0.5 shrink-0" />
                 <span>
-                  This is <strong>permanent and irreversible</strong>. All your budgets, accounts, transactions, and goals will be deleted.
+                  This is <strong>permanent and irreversible</strong>. All your budgets, accounts, transactions, and goals will be deleted. Active subscriptions will be cancelled with no refund.
                 </span>
               </div>
-
-              {/* Subscription cancellation notice */}
-              {isPremium && (
-                <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 text-xs text-amber-600" style={{ borderRadius: 'var(--radius)' }}>
-                  <Crown size={13} className="mt-0.5 shrink-0 text-amber-500" />
-                  <span>
-                    Your <strong>Premium subscription will be cancelled immediately</strong> with no refund. You will lose access to all premium features upon deletion.
-                  </span>
-                </div>
-              )}
-
               <p className="text-[10px] text-muted-foreground">
-                Type <strong className="text-foreground">DELETE</strong> to confirm, then we'll send a verification code to your email:
+                Type <strong className="text-foreground">DELETE</strong> to confirm:
               </p>
               <input
                 type="text"
@@ -665,57 +622,8 @@ export default function SettingsPage() {
               />
               <div className="flex gap-2">
                 <button
-                  onClick={handleSendDeleteConfirmation}
-                  disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
-                  className="flex items-center gap-1.5 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium btn-press disabled:opacity-50"
-                  style={{ borderRadius: 'var(--radius)' }}
-                >
-                  {deleteLoading ? <Loader2 size={12} className="animate-spin" /> : <SendHorizonal size={12} />}
-                  {deleteLoading ? 'Sending…' : 'Send confirmation email'}
-                </button>
-                <button
-                  onClick={resetDeleteFlow}
-                  disabled={deleteLoading}
-                  className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors btn-press disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {deleteStep === 'email-sent' && (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 px-3 py-2.5 text-xs text-primary" style={{ borderRadius: 'var(--radius)' }}>
-                <Mail size={13} className="mt-0.5 shrink-0" />
-                <span>
-                  A 6-digit confirmation code was sent to <strong>{user?.email}</strong>. Enter it below to permanently delete your account.
-                </span>
-              </div>
-
-              {isPremium && (
-                <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 text-xs text-amber-600" style={{ borderRadius: 'var(--radius)' }}>
-                  <Crown size={13} className="mt-0.5 shrink-0 text-amber-500" />
-                  <span>Your Premium subscription will be <strong>cancelled immediately</strong> with no refund.</span>
-                </div>
-              )}
-
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={deleteOtp}
-                onChange={e => setDeleteOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="6-digit code from your email"
-                className="w-full bg-secondary border border-destructive/30 px-3 py-2 text-xs text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-destructive"
-                style={{ borderRadius: 'var(--radius)' }}
-                autoFocus
-              />
-
-              <div className="flex gap-2">
-                <button
                   onClick={handleDeleteAccount}
-                  disabled={deleteOtp.length < 6 || deleteLoading}
+                  disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
                   className="flex items-center gap-1.5 bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-medium btn-press disabled:opacity-50"
                   style={{ borderRadius: 'var(--radius)' }}
                 >
@@ -723,20 +631,13 @@ export default function SettingsPage() {
                   {deleteLoading ? 'Deleting…' : 'Permanently delete my account'}
                 </button>
                 <button
-                  onClick={resetDeleteFlow}
+                  onClick={() => { setShowDeleteZone(false); setDeleteConfirmText(''); }}
                   disabled={deleteLoading}
                   className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors btn-press disabled:opacity-50"
                 >
                   Cancel
                 </button>
               </div>
-              <button
-                onClick={handleSendDeleteConfirmation}
-                disabled={deleteLoading}
-                className="text-[10px] text-muted-foreground hover:text-foreground underline"
-              >
-                Resend code
-              </button>
             </div>
           )}
         </div>

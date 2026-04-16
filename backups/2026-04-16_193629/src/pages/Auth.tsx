@@ -213,7 +213,7 @@ export default function Auth() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
+            <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
             <p className="text-xs text-muted-foreground mt-1">Two-factor verification required.</p>
           </div>
           <div className="card-forged p-6 space-y-4">
@@ -259,7 +259,7 @@ export default function Auth() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
+            <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
             <p className="text-xs text-muted-foreground mt-1">Choose a new password for your account.</p>
           </div>
 
@@ -319,7 +319,7 @@ export default function Auth() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
+            <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
           </div>
           <div className="card-forged p-6 space-y-4 text-center">
             <p className="text-sm font-semibold text-foreground">Check your inbox</p>
@@ -353,7 +353,7 @@ export default function Auth() {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
+          <h1 className="font-display font-bold text-xl tracking-tight text-gold">TRE FORGED</h1>
           <p className="text-xs text-muted-foreground mt-1">
             {mode === 'login' && 'Welcome back. Sign in to continue.'}
             {mode === 'signup' && 'Create your account to get started.'}

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useRetirementAutoUpdate } from '@/hooks/useRetirementAutoUpdate';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import MetricCard from '@/components/shared/MetricCard';
@@ -21,12 +21,11 @@ import {
 import {
   Plus, ArrowUpRight, DollarSign, CreditCard,
   TrendingUp, PiggyBank, Landmark, Percent, Wallet, Repeat,
-  CalendarDays, AlertTriangle, Info, X, Car, Shield,
+  CalendarDays, AlertTriangle, Info, X, Car,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateMonthlyPayment } from '@/lib/calculations';
-import { supabase } from '@/integrations/supabase/client';
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -115,18 +114,6 @@ export default function Dashboard() {
   const { data: rules, loading: rulesLoading } = useRecurringRules();
 
   const [calcDrawer, setCalcDrawer] = useState<{ title: string; lines: { label: string; value: string; op?: string }[] } | null>(null);
-  const [showSecurityBanner, setShowSecurityBanner] = useState(false);
-
-  useEffect(() => {
-    if (isDemo) return;
-    supabase.auth.mfa.listFactors().then(({ data }) => {
-      if (!data) return;
-      const raw = data as any;
-      const all = [...(data.totp ?? []), ...(data.phone ?? []), ...((raw.email ?? []) as any[])];
-      const hasVerified = all.some((f: any) => f.status === 'verified');
-      setShowSecurityBanner(!hasVerified);
-    });
-  }, [isDemo]);
 
   const essentialLoading = txnLoading || acctLoading || profileLoading;
 
@@ -434,37 +421,6 @@ export default function Dashboard() {
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
       <AccountUpdateReminder />
-
-      {/* Security nudge — shown when user has no MFA enrolled */}
-      {showSecurityBanner && !isDemo && (
-        <div className="flex items-start justify-between gap-3 bg-amber-500/8 border border-amber-500/25 px-4 py-3" style={{ borderRadius: 'var(--radius)' }}>
-          <div className="flex items-start gap-3">
-            <Shield size={15} className="text-amber-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-amber-600">Your account has no two-factor protection</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                Adding 2FA takes under a minute and significantly reduces the risk of unauthorized access.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to="/settings#security"
-              className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 text-[10px] font-semibold hover:bg-amber-600 transition-colors btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              <Shield size={10} /> Secure my account
-            </Link>
-            <button
-              onClick={() => setShowSecurityBanner(false)}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1"
-            >
-              <X size={13} />
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
