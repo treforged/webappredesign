@@ -12,13 +12,12 @@ initialize(
   {
     plugins: [
       new Observability({
+        networkRecording: { enabled: true, recordHeadersAndBody: true },
         serviceName: 'forged-web',
-        environment: import.meta.env.MODE,
       }),
       new SessionReplay({
         privacySetting: 'strict',
         serviceName: 'forged-web',
-        environment: import.meta.env.MODE,
       }),
     ],
   }
