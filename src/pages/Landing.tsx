@@ -70,6 +70,12 @@ export default function Landing() {
   const { setIsDemo } = useAuth();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) sessionStorage.setItem('forged:ref', ref);
+  }, []);
   const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
   const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
 

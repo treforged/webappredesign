@@ -21,9 +21,8 @@ import {
 import {
   Plus, ArrowUpRight, DollarSign, CreditCard,
   TrendingUp, PiggyBank, Landmark, Percent, Wallet, Repeat,
-  CalendarDays, AlertTriangle, Info, X, Car, Shield, Check, FileDown,
+  CalendarDays, AlertTriangle, Info, X, Car, Shield, Check,
 } from 'lucide-react';
-import { exportDashboardPdf } from '@/lib/exportPdf';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateMonthlyPayment } from '@/lib/calculations';
@@ -515,30 +514,9 @@ export default function Dashboard() {
             Your financial control system &bull; {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {(isPremium || isDemo) && (
-            <button
-              onClick={() => exportDashboardPdf({
-                month: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-                liquidCash: accountSummary.liquidCash,
-                netWorth: accountSummary.netWorth,
-                income: summary.income,
-                expenses: summary.expenses,
-                totalDebtPayments,
-                savingsRate: summary.savingsRate,
-                totalSaved: summary.totalSaved,
-                ccDebt: accountSummary.ccDebt ?? 0,
-              })}
-              className="shrink-0 flex items-center gap-1.5 bg-secondary border border-border px-3 py-2 text-xs font-medium btn-press hover:border-primary/40 hover:text-primary transition-colors"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              <FileDown size={13} /> PDF
-            </button>
-          )}
-          <Link to="/transactions" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press hover:bg-primary/90 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
-            <Plus size={14} /> Add Transaction
-          </Link>
-        </div>
+        <Link to="/transactions" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press hover:bg-primary/90 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
+          <Plus size={14} /> Add Transaction
+        </Link>
       </div>
 
       {/* Demo feature guide — only shown in demo mode */}

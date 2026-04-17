@@ -13,8 +13,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   Bar, ComposedChart, ReferenceLine,
 } from 'recharts';
-import { Settings2, List, BarChart3, TrendingUp, CreditCard, Info, X, FileDown } from 'lucide-react';
-import { exportForecastPdf, type ForecastRow } from '@/lib/exportPdf';
+import { Settings2, List, BarChart3, TrendingUp, CreditCard, Info, X } from 'lucide-react';
 
 function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: () => void; title: string; lines: { label: string; value: string; op?: string }[] }) {
   if (!open) return null;
@@ -878,26 +877,6 @@ export default function Forecast() {
           </button>
           <button onClick={() => setShowAssumptions(!showAssumptions)} className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <Settings2 size={12} /> Assumptions
-          </button>
-          <button
-            onClick={() => {
-              const label = filterYear === 'all' ? 'All 36 Months' : `Year ${filterYear}`;
-              exportForecastPdf(filteredData.map((r: any) => ({
-                month: r.month,
-                takeHome: r.takeHome ?? 0,
-                totalExpenses: r.totalExpenses ?? 0,
-                debtPayment: r.debtPayment ?? 0,
-                liquidCash: r.liquidCash ?? 0,
-                endingCash: r.endingCash ?? 0,
-                netWorth: r.netWorth ?? 0,
-                debtBalance: r.debtBalance ?? 0,
-                savingsBalance: r.savingsBalance ?? 0,
-              } as ForecastRow)), label);
-            }}
-            className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
-            style={{ borderRadius: 'var(--radius)' }}
-          >
-            <FileDown size={12} /> PDF
           </button>
         </div>
       </div>

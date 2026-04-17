@@ -189,6 +189,7 @@ export default function Onboarding() {
       const tr = parseFloat(data.taxRate) || 22;
       const gross = data.paycheckFrequency === 'biweekly' ? wg * 26 / 12 : wg * 52 / 12;
 
+      const refCode = sessionStorage.getItem('forged:ref') || null;
       await supabase.from('profiles').update({
         display_name: data.displayName || user?.email?.split('@')[0] || 'User',
         weekly_gross_income: wg,
@@ -196,7 +197,9 @@ export default function Onboarding() {
         monthly_income_default: gross * (1 - tr / 100),
         tax_rate: tr,
         paycheck_frequency: data.paycheckFrequency,
+        ...(refCode ? { referred_by: refCode } : {}),
       }).eq('user_id', user!.id);
+      if (refCode) sessionStorage.removeItem('forged:ref');
 
       const expenses = [
         { label: 'Rent / Mortgage', amount: data.monthlyRent, category: 'Housing' },

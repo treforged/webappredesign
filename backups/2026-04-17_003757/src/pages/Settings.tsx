@@ -94,7 +94,6 @@ export default function SettingsPage() {
   const { subscription, isPremium, hasStripeCustomer, isLoading: subLoading, refetch: refetchSub } = useSubscription();
   const [cancelLoading, setCancelLoading] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [referralCount, setReferralCount] = useState<number | null>(null);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -149,13 +148,6 @@ export default function SettingsPage() {
       setDirty(false);
     }
   }, [profile]);
-
-  useEffect(() => {
-    if (!user || isDemo) return;
-    const refCode = user.id.slice(0, 8);
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('referred_by', refCode)
-      .then(({ count }) => setReferralCount(count ?? 0));
-  }, [user, isDemo]);
 
   const markDirty = () => setDirty(true);
 
@@ -576,16 +568,9 @@ export default function SettingsPage() {
           <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Share2 size={12} /> Invite a Friend
           </h2>
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">
-              Share Forged with someone who wants to take control of their finances.
-            </p>
-            {referralCount !== null && referralCount > 0 && (
-              <span className="text-[10px] font-medium text-primary shrink-0">
-                {referralCount} joined via your link
-              </span>
-            )}
-          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Share Forged with someone who wants to take control of their finances.
+          </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 min-w-0 bg-secondary border border-border px-3 py-2 text-[10px] text-muted-foreground font-mono truncate" style={{ borderRadius: 'var(--radius)' }}>
               {`https://app.treforged.com?ref=${user.id.slice(0, 8)}`}
