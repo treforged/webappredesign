@@ -15,7 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getClientIp, rateLimitedResponse } from "../_shared/rate-limit.ts";
 
-const MAX_LINKED = 6;
+const MAX_LINKED = 3;
 const RATE_LIMIT = { windowMs: 60_000, max: 10 };
 
 Deno.serve(async (req) => {
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4.3 — Enforce max 6 linked institutions
+    // 4.3 — Enforce max 3 linked institutions
     const { count } = await supabase
       .from("plaid_items")
       .select("id", { count: "exact", head: true })

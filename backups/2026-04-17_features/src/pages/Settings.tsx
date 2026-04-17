@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2 } from 'lucide-react';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal } from 'lucide-react';
 import { LinkedAccounts } from '@/components/settings/LinkedAccounts';
 import { TwoFactorAuth } from '@/components/settings/TwoFactorAuth';
 import { getDayName } from '@/lib/scheduling';
@@ -93,7 +93,6 @@ export default function SettingsPage() {
   const { data: accounts } = useAccounts();
   const { subscription, isPremium, hasStripeCustomer, isLoading: subLoading, refetch: refetchSub } = useSubscription();
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -561,36 +560,6 @@ export default function SettingsPage() {
           <p className="text-[10px] text-muted-foreground mt-1">Cash-protected mode: extra card payments only when cash stays above this floor</p>
         </div>
       </div>
-
-      {/* Invite a Friend */}
-      {!isDemo && user && (
-        <div className="card-forged p-5 space-y-3">
-          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Share2 size={12} /> Invite a Friend
-          </h2>
-          <p className="text-[10px] text-muted-foreground">
-            Share Forged with someone who wants to take control of their finances.
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 min-w-0 bg-secondary border border-border px-3 py-2 text-[10px] text-muted-foreground font-mono truncate" style={{ borderRadius: 'var(--radius)' }}>
-              {`https://app.treforged.com?ref=${user.id.slice(0, 8)}`}
-            </code>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(`https://app.treforged.com?ref=${user.id.slice(0, 8)}`);
-                setInviteCopied(true);
-                setTimeout(() => setInviteCopied(false), 2000);
-              }}
-              className="shrink-0 flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              {inviteCopied
-                ? <><CheckCircle size={12} className="text-success" /> Copied!</>
-                : <><Copy size={12} /> Copy link</>}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Support */}
       {!isDemo && (

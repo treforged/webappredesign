@@ -10,7 +10,6 @@ import { generateScheduledEvents } from '@/lib/scheduling';
 import FormModal from '@/components/shared/FormModal';
 import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Copy, Repeat, AlertTriangle, Landmark, SlidersHorizontal, Crown, Download } from 'lucide-react';
 import { exportTransactionsCsv } from '@/lib/exportCsv';
-import { exportTransactionsPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -598,30 +597,16 @@ export default function Transactions() {
         </div>
         <div className="flex items-center gap-2">
           {(isPremium || isDemo) ? (
-            <>
-              <button
-                onClick={() => {
-                  const filename = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
-                  exportTransactionsCsv(filtered, filename);
-                }}
-                className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-                title="Export as CSV"
-              >
-                <Download size={12} /> CSV
-              </button>
-              <button
-                onClick={() => {
-                  const period = filterMonth === 'all' ? 'All Time' : filterMonth === 'forecast' ? 'Forecast Range' : filterMonth;
-                  exportTransactionsPdf(filtered, period);
-                }}
-                className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-                title="Export as PDF"
-              >
-                <Download size={12} /> PDF
-              </button>
-            </>
+            <button
+              onClick={() => {
+                const filename = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+                exportTransactionsCsv(filtered, filename);
+              }}
+              className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
+              style={{ borderRadius: 'var(--radius)' }}
+            >
+              <Download size={12} /> Export
+            </button>
           ) : (
             <Link to="/premium" className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium text-primary/70 hover:text-primary hover:border-primary/40 transition-colors btn-press" style={{ borderRadius: 'var(--radius)' }}>
               <Crown size={12} /> Export

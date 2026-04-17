@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,20 +153,6 @@ export default function Onboarding() {
     displayName: (user?.user_metadata?.display_name as string) ?? '',
   });
   const [saving, setSaving] = useState(false);
-
-  // Auto-skip for existing accounts that already have profile data
-  useEffect(() => {
-    if (!user) return;
-    const flag = localStorage.getItem(`forged:onboarding_done_${user.id}`);
-    if (flag) { navigate('/dashboard', { replace: true }); return; }
-    supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => {
-        if (data?.display_name) {
-          localStorage.setItem(`forged:onboarding_done_${user.id}`, '1');
-          navigate('/dashboard', { replace: true });
-        }
-      });
-  }, [user, navigate]);
 
   const update = useCallback(<K extends keyof OnboardingData>(key: K, val: OnboardingData[K]) => {
     setData(prev => ({ ...prev, [key]: val }));
