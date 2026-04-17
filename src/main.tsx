@@ -1,12 +1,12 @@
 import { createRoot } from 'react-dom/client';
 import { injectSpeedInsights } from '@vercel/speed-insights';
-import { initialize } from 'launchdarkly-js-client-sdk';
+import { createClient } from '@launchdarkly/js-client-sdk';
 import Observability from '@launchdarkly/observability';
 import SessionReplay from '@launchdarkly/session-replay';
 import App from './App.tsx';
 import './index.css';
 
-initialize(
+createClient(
   import.meta.env.VITE_LD_CLIENT_ID,
   { kind: 'user', anonymous: true },
   {
