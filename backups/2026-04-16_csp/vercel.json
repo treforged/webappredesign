@@ -35,7 +35,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://js.stripe.com https://cdn.plaid.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://production.plaid.com https://sandbox.plaid.com https://events.launchdarkly.com https://clientsdk.launchdarkly.com https://sdk.launchdarkly.com https://pub.highlight.run https://*.highlight.run https://otlp.highlight.run; worker-src 'self' blob:; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://*.plaid.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com"
+          "value": "default-src 'self'; script-src 'self' https://js.stripe.com https://cdn.plaid.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://production.plaid.com https://sandbox.plaid.com; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://*.plaid.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com"
         }
       ]
     }
