@@ -160,10 +160,15 @@ export default function AiAdvisor() {
     setResult(null);
 
     try {
-      const { data, error: fnErr } = await tracedInvoke<AdviceResult>(supabase, 'ai-advisor', {
+      const { data, error: fnErr } = await tracedInvoke<any>(supabase, 'ai-advisor', {
         body: { ...snapshot, question: finalQ || undefined },
       });
       if (fnErr) throw new Error(fnErr.message);
+      // Diagnostic mode: surface raw Gemini response
+      if ((data as any)?.__diag) {
+        setError(`DIAG gemini_status=${(data as any).gemini_status} body=${JSON.stringify((data as any).gemini_body)}`);
+        return;
+      }
       setResult(data as AdviceResult);
       if (!q) setQuestion('');
     } catch (e) {
