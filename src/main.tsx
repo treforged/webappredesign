@@ -8,7 +8,7 @@ import './index.css';
 
 initialize(
   import.meta.env.VITE_LD_CLIENT_ID,
-  { anonymous: true },
+  { kind: 'user', anonymous: true },
   {
     plugins: [
       new Observability({
