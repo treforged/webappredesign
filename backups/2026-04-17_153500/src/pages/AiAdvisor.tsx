@@ -10,7 +10,7 @@ import { categorizeExpenses } from '@/lib/expense-filtering';
 import PremiumGate from '@/components/shared/PremiumGate';
 import {
   Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Loader2,
-  Send, ChevronRight, User, ArrowLeft,
+  Send, ChevronRight, User,
 } from 'lucide-react';
 
 interface Insight {
@@ -206,25 +206,23 @@ export default function AiAdvisor() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [thread, setThread] = useState<ChatEntry[]>([]);
-  const [history, setHistory] = useState<ChatEntry[]>([]);
-  const [selectedEntry, setSelectedEntry] = useState<ChatEntry | null>(null);
   const [usedToday, setUsedToday] = useState(0);
   const [cooldown, setCooldown] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastAskTime = useRef(0);
 
-  // Load history on mount — kept separate from the live thread
+  // Load history on mount
   useEffect(() => {
     if (!user || isDemo) return;
     (supabase as any)
       .from('ai_advisor_history')
       .select('id, question, result, created_at')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
+      .order('created_at', { ascending: true })
+      .limit(10)
       .then(({ data }: { data: ChatEntry[] | null }) => {
         if (!data) return;
-        setHistory(data);
+        setThread(data);
         const todayStr = new Date().toDateString();
         setUsedToday(data.filter(h => new Date(h.created_at).toDateString() === todayStr).length);
       });
@@ -321,7 +319,6 @@ export default function AiAdvisor() {
       };
 
       setThread(prev => [...prev, entry].slice(-10));
-      setHistory(prev => [entry, ...prev].slice(0, 20));
       if (typeof advice.usedToday === 'number') setUsedToday(advice.usedToday);
 
       // Brief cooldown after success
@@ -386,34 +383,6 @@ export default function AiAdvisor() {
         >
           <div />
         </PremiumGate>
-      </div>
-    );
-  }
-
-  // ── Detail view: a single past entry opened via history list ──────────────
-  if (selectedEntry) {
-    const ts = new Date(selectedEntry.created_at);
-    const dateStr = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
-        <div className="px-4 pt-4 pb-3 lg:px-8 lg:pt-6 border-b border-border/40 shrink-0 flex items-center gap-3">
-          <button
-            onClick={() => setSelectedEntry(null)}
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary hover:bg-secondary/80 border border-border/60 transition-colors shrink-0"
-          >
-            <ArrowLeft size={15} className="text-foreground" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">
-              {selectedEntry.question || 'General Analysis'}
-            </p>
-            <p className="text-[10px] text-muted-foreground">{dateStr} · {timeStr}</p>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4">
-          <ResultCard entry={selectedEntry} />
-        </div>
       </div>
     );
   }
@@ -509,41 +478,6 @@ export default function AiAdvisor() {
           <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 text-xs text-destructive" style={{ borderRadius: 'var(--radius)' }}>
             <AlertTriangle size={13} className="shrink-0" />
             {error}
-          </div>
-        )}
-
-        {/* ── History list ── */}
-        {history.length > 0 && (
-          <div className="pt-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-2 px-1">
-              Recent Questions
-            </p>
-            <div className="space-y-0.5">
-              {history.map(entry => {
-                const ts = new Date(entry.created_at);
-                const timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                const dateStr = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const isToday = ts.toDateString() === new Date().toDateString();
-                return (
-                  <button
-                    key={entry.id}
-                    onClick={() => setSelectedEntry(entry)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg hover:bg-secondary/70 border border-transparent hover:border-border/40 transition-all group"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <Sparkles size={9} className="text-primary" />
-                    </div>
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground flex-1 truncate transition-colors">
-                      {entry.question || 'General Analysis'}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/50 shrink-0 tabular-nums">
-                      {isToday ? timeStr : dateStr}
-                    </span>
-                    <ChevronRight size={12} className="text-muted-foreground/30 group-hover:text-muted-foreground/70 shrink-0 transition-colors" />
-                  </button>
-                );
-              })}
-            </div>
           </div>
         )}
 
