@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTransactions, useDebts, useSavingsGoals, useAccounts, useProfile, useBudgetItems } from '@/hooks/useSupabaseData';
+import { useTransactions, useDebts, useSavingsGoals, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/lib/supabase';
 import { tracedInvoke } from '@/lib/tracer';
@@ -91,8 +91,6 @@ export default function AiAdvisor() {
   const { data: debts = [] } = useDebts();
   const { data: goals = [] } = useSavingsGoals();
   const { data: accounts = [] } = useAccounts();
-  const { data: profile } = useProfile();
-  const { data: budgetItems = [] } = useBudgetItems();
 
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,19 +103,13 @@ export default function AiAdvisor() {
     const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const thisMonth = allTxns.filter((t: any) => t.date?.startsWith(currentMonthStr));
 
-    const txnIncome = thisMonth
+    const monthlyIncome = thisMonth
       .filter((t: any) => t.type === 'income')
       .reduce((s: number, t: any) => s + Number(t.amount ?? 0), 0);
-    // Fall back to profile default when no income transactions exist this month
-    const profileIncome = Number((profile as any)?.monthly_income_default ?? 0);
-    const monthlyIncome = txnIncome > 0 ? txnIncome : profileIncome;
 
-    const txnExpenses = thisMonth
+    const monthlyExpenses = thisMonth
       .filter((t: any) => t.type === 'expense' && t.category !== 'Debt Payment')
       .reduce((s: number, t: any) => s + Number(t.amount ?? 0), 0);
-    // Fall back to budget items sum when no expense transactions exist this month
-    const budgetExpenses = (budgetItems as any[]).reduce((s: number, b: any) => s + Number(b.amount ?? 0), 0);
-    const monthlyExpenses = txnExpenses > 0 ? txnExpenses : budgetExpenses;
 
     const totalDebt = debts.reduce((s: number, d: any) => s + Number(d.balance ?? 0), 0);
 
