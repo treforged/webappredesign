@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTransactions, useDebts, useSavingsGoals, useAccounts, useRecurringRules } from '@/hooks/useSupabaseData';
-import { mergeWithGeneratedTransactions } from '@/lib/pay-schedule';
+import { useTransactions, useDebts, useSavingsGoals, useAccounts, useProfile, useBudgetItems } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/lib/supabase';
 import { tracedInvoke } from '@/lib/tracer';
@@ -88,17 +87,12 @@ function InsightCard({ insight }: { insight: Insight }) {
 export default function AiAdvisor() {
   const { user, isDemo } = useAuth();
   const { isPremium } = useSubscription();
-  const { data: rawTxns = [] } = useTransactions();
-  const { data: rules = [] } = useRecurringRules();
+  const { data: allTxns = [] } = useTransactions();
   const { data: debts = [] } = useDebts();
   const { data: goals = [] } = useSavingsGoals();
   const { data: accounts = [] } = useAccounts();
-
-  // Mirror Transactions.tsx: merge actual + generated transactions from recurring rules
-  const allTxns = useMemo(
-    () => mergeWithGeneratedTransactions(rawTxns, rules, accounts),
-    [rawTxns, rules, accounts],
-  );
+  const { data: profile } = useProfile();
+  const { data: budgetItems = [] } = useBudgetItems();
 
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -111,14 +105,19 @@ export default function AiAdvisor() {
     const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const thisMonth = allTxns.filter((t: any) => t.date?.startsWith(currentMonthStr));
 
-    // Mirror Transactions.tsx totals exactly: exclude Balance Adjustment, no category filter on expenses
-    const monthlyIncome = thisMonth
-      .filter((t: any) => t.type === 'income' && t.category !== 'Balance Adjustment')
+    const txnIncome = thisMonth
+      .filter((t: any) => t.type === 'income')
       .reduce((s: number, t: any) => s + Number(t.amount ?? 0), 0);
+    // Fall back to profile default when no income transactions exist this month
+    const profileIncome = Number((profile as any)?.monthly_income_default ?? 0);
+    const monthlyIncome = txnIncome > 0 ? txnIncome : profileIncome;
 
-    const monthlyExpenses = thisMonth
-      .filter((t: any) => t.type === 'expense' && t.category !== 'Balance Adjustment')
+    const txnExpenses = thisMonth
+      .filter((t: any) => t.type === 'expense' && t.category !== 'Debt Payment')
       .reduce((s: number, t: any) => s + Number(t.amount ?? 0), 0);
+    // Fall back to budget items sum when no expense transactions exist this month
+    const budgetExpenses = (budgetItems as any[]).reduce((s: number, b: any) => s + Number(b.amount ?? 0), 0);
+    const monthlyExpenses = txnExpenses > 0 ? txnExpenses : budgetExpenses;
 
     const totalDebt = debts.reduce((s: number, d: any) => s + Number(d.balance ?? 0), 0);
 

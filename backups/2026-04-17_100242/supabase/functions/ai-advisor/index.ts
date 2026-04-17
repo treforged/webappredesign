@@ -51,18 +51,16 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Verify JWT using service-role client's admin getUser(token)
+  // Verify JWT using service role client (avoids double-client overhead)
   const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    console.error("ai-advisor: missing or malformed Authorization header");
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!token) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  const token = authHeader.replace("Bearer ", "");
   const { data: { user }, error: jwtErr } = await supabase.auth.getUser(token);
   if (jwtErr || !user) {
-    console.error("ai-advisor: getUser failed:", jwtErr?.message ?? "no user");
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
