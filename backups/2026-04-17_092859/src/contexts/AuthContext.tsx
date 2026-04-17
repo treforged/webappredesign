@@ -4,10 +4,9 @@ import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000;    // 10 minutes
-const IDLE_WARNING_MS =  8 * 60 * 1000;    // warn at 8 minutes
-const IDLE_CHECK_INTERVAL_MS = 30 * 1000;  // check every 30 seconds
-const LAST_ACTIVITY_KEY = 'forged:last_activity';
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;    // 30 minutes
+const IDLE_WARNING_MS = 25 * 60 * 1000;    // warn at 25 minutes
+const IDLE_CHECK_INTERVAL_MS = 60 * 1000;  // check every minute
 
 type AuthContextType = {
   user: User | null;
@@ -118,68 +117,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOutWithBroadcast = useCallback(async () => {
-    localStorage.removeItem(LAST_ACTIVITY_KEY);
     broadcastSignOut();
     await supabase.auth.signOut();
     setIsDemo(false);
   }, [broadcastSignOut]);
 
   // ── Idle session timeout ─────────────────────────────────────────────────
-  // Last activity is stored in localStorage so it survives tab close/reopen.
-  // On visibilitychange (user returns to the app) we check immediately — this
-  // is how we enforce the timeout even when the app was backgrounded or closed.
+  const lastActivityRef = useRef(Date.now());
   const warnedRef = useRef(false);
 
   const resetActivity = useCallback(() => {
-    localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    lastActivityRef.current = Date.now();
     warnedRef.current = false;
-  }, []);
-
-  const getIdleMs = useCallback(() => {
-    const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
-    return Date.now() - (stored ? parseInt(stored, 10) : Date.now());
   }, []);
 
   useEffect(() => {
     if (!user || isDemo) return;
 
-    // Seed the key if not yet set so the timer starts from login
-    if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
-      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-    }
-
-    const checkIdle = () => {
-      const idleMs = getIdleMs();
-      if (idleMs >= IDLE_TIMEOUT_MS) {
-        toast.info('You were signed out due to 10 minutes of inactivity.');
-        localStorage.removeItem(LAST_ACTIVITY_KEY);
-        signOutWithBroadcast();
-      } else if (idleMs >= IDLE_WARNING_MS && !warnedRef.current) {
-        warnedRef.current = true;
-        toast.warning('Your session will expire in 2 minutes due to inactivity.');
-      }
-    };
-
-    // Check immediately when the user returns to the tab / app
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') checkIdle();
-    };
-
     const events = ['mousemove', 'keydown', 'touchstart', 'click', 'scroll'] as const;
     const opts: AddEventListenerOptions = { passive: true };
     events.forEach(e => window.addEventListener(e, resetActivity, opts));
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleVisibility);
 
-    const interval = setInterval(checkIdle, IDLE_CHECK_INTERVAL_MS);
+    const interval = setInterval(() => {
+      const idleMs = Date.now() - lastActivityRef.current;
+      if (idleMs >= IDLE_TIMEOUT_MS) {
+        toast.info('You were signed out due to 30 minutes of inactivity.');
+        signOutWithBroadcast();
+      } else if (idleMs >= IDLE_WARNING_MS && !warnedRef.current) {
+        warnedRef.current = true;
+        toast.warning('Your session will expire in 5 minutes due to inactivity. Move your mouse or press a key to stay signed in.');
+      }
+    }, IDLE_CHECK_INTERVAL_MS);
 
     return () => {
       events.forEach(e => window.removeEventListener(e, resetActivity));
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleVisibility);
       clearInterval(interval);
     };
-  }, [user, isDemo, resetActivity, getIdleMs, signOutWithBroadcast]);
+  }, [user, isDemo, resetActivity, signOutWithBroadcast]);
 
   return (
     <AuthContext.Provider value={{ user, loading, isDemo, setIsDemo, signOut: signOutWithBroadcast }}>
