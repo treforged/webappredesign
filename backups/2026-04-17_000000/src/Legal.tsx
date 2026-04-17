@@ -394,64 +394,10 @@ function TermsContent() {
   );
 }
 
-function RefundContent() {
-  return (
-    <div className="space-y-8 text-sm">
-      <p className="text-xs text-muted-foreground">Effective date: April 17, 2026 · Last updated: April 2026</p>
-
-      <section className="space-y-3">
-        <h2 className="font-display font-semibold text-base">1. All Sales Are Final</h2>
-        <p className="text-muted-foreground leading-relaxed">
-          All purchases of Forged Premium subscriptions are <strong className="text-foreground">final and non-refundable</strong>.
-          By subscribing, you acknowledge and agree that TRE Forged LLC does not offer refunds or credits for any
-          subscription fees, partial billing periods, unused time, or any other amounts paid.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-display font-semibold text-base">2. Cancellation</h2>
-        <p className="text-muted-foreground leading-relaxed">
-          You may cancel your subscription at any time via the billing portal accessible from the Settings page.
-          Cancellation stops future charges. You retain access to Premium features through the end of the current
-          paid billing period. No refund is issued for the remainder of that period.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-display font-semibold text-base">3. Exceptions Required by Law</h2>
-        <p className="text-muted-foreground leading-relaxed">
-          Notwithstanding the above, TRE Forged LLC will issue refunds where required by applicable law. If you
-          believe you are entitled to a refund under your local consumer protection laws, please contact us with
-          details of your request and we will evaluate it in accordance with our legal obligations.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-display font-semibold text-base">4. Disputes and Chargebacks</h2>
-        <p className="text-muted-foreground leading-relaxed">
-          If you believe a charge was made in error, contact us before initiating a chargeback with your bank or
-          card issuer. Unauthorized chargebacks may result in immediate account suspension. We are committed to
-          resolving billing issues fairly and promptly.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-display font-semibold text-base">5. Contact Us</h2>
-        <p className="text-muted-foreground leading-relaxed">
-          For billing questions or to submit a refund request under applicable law, contact TRE Forged LLC at:
-          <br />
-          <a href="mailto:support@treforged.com" className="text-primary hover:underline">support@treforged.com</a>
-        </p>
-      </section>
-    </div>
-  );
-}
-
 export default function Legal() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isPrivacy = pathname === '/privacy';
-  const isRefund = pathname === '/refund';
 
   return (
     <div className="min-h-screen bg-background">
@@ -484,24 +430,13 @@ export default function Legal() {
             <Link
               to="/terms"
               className={`block px-3 py-2 text-xs font-medium transition-colors ${
-                !isPrivacy && !isRefund
+                !isPrivacy
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
               }`}
               style={{ borderRadius: 'var(--radius)' }}
             >
               Terms of Service
-            </Link>
-            <Link
-              to="/refund"
-              className={`block px-3 py-2 text-xs font-medium transition-colors ${
-                isRefund
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
-              }`}
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              Refund Policy
             </Link>
           </nav>
         </aside>
@@ -518,29 +453,18 @@ export default function Legal() {
               }`}
               style={{ borderRadius: 'var(--radius)' }}
             >
-              Privacy
+              Privacy Policy
             </Link>
             <Link
               to="/terms"
               className={`flex-1 text-center px-3 py-2 text-xs font-medium border transition-colors ${
-                !isPrivacy && !isRefund
+                !isPrivacy
                   ? 'border-primary text-primary bg-primary/5'
                   : 'border-border text-muted-foreground hover:text-foreground'
               }`}
               style={{ borderRadius: 'var(--radius)' }}
             >
-              Terms
-            </Link>
-            <Link
-              to="/refund"
-              className={`flex-1 text-center px-3 py-2 text-xs font-medium border transition-colors ${
-                isRefund
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-border text-muted-foreground hover:text-foreground'
-              }`}
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              Refunds
+              Terms of Service
             </Link>
           </div>
         </div>
@@ -548,9 +472,9 @@ export default function Legal() {
         {/* Content */}
         <main className="flex-1 min-w-0">
           <h1 className="font-display font-bold text-2xl tracking-tight mb-8">
-            {isPrivacy ? 'Privacy Policy' : isRefund ? 'Refund Policy' : 'Terms of Service'}
+            {isPrivacy ? 'Privacy Policy' : 'Terms of Service'}
           </h1>
-          {isPrivacy ? <PrivacyContent /> : isRefund ? <RefundContent /> : <TermsContent />}
+          {isPrivacy ? <PrivacyContent /> : <TermsContent />}
         </main>
       </div>
     </div>

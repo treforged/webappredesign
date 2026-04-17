@@ -1,0 +1,17 @@
+{
+  "name": "Forged",
+  "short_name": "Forged",
+  "description": "Budget with precision. Eliminate debt. Stack savings. Forged is the financial cockpit for people who take their money seriously.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
