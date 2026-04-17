@@ -24,6 +24,7 @@ const Forecast = lazy(() => import("@/pages/Forecast"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
+const AiAdvisor = lazy(() => import("@/pages/AiAdvisor"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/net-worth" element={<Suspense fallback={<PageLoader />}><NetWorth /></Suspense>} />
         <Route path="/forecast" element={<Suspense fallback={<PageLoader />}><Forecast /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
+        <Route path="/ai" element={<Suspense fallback={<PageLoader />}><AiAdvisor /></Suspense>} />
         <Route path="/premium" element={<Suspense fallback={<PageLoader />}><Premium /></Suspense>} />
         <Route path="/premium/success" element={<Suspense fallback={<PageLoader />}><PremiumSuccess /></Suspense>} />
         <Route path="/premium/cancel" element={<Suspense fallback={<PageLoader />}><PremiumCancel /></Suspense>} />

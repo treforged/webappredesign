@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ArrowLeftRight, Landmark, PiggyBank,
   Settings, Crown, LogOut, ChevronLeft, ChevronRight, Wallet,
-  Sliders, TrendingUp, Building2, Home,
+  Sliders, TrendingUp, Building2, Home, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/savings', icon: PiggyBank, label: 'Savings Goals' },
   { to: '/net-worth', icon: Wallet, label: 'Net Worth' },
   { to: '/forecast', icon: TrendingUp, label: 'Forecast' },
+  { to: '/ai', icon: Sparkles, label: 'AI Advisor' },
   { to: '/settings', icon: Settings, label: 'Settings' },
   { to: '/premium', icon: Crown, label: 'Upgrade' },
 ];
