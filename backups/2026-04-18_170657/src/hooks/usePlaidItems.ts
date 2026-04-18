@@ -42,14 +42,17 @@ export function usePlaidItems() {
 
   const remove = async (plaidItemId: string) => {
     if (!user) return;
-    // Call edge function to revoke access token on Plaid before cleaning up locally
-    const { error } = await supabase.functions.invoke('plaid-sync', {
-      body: { action: 'delink', plaid_item_id: plaidItemId },
-    });
-    if (error) {
-      console.error('Plaid delink failed:', error);
-      // Fall through — still invalidate queries so UI reflects any partial cleanup
-    }
+    await (supabase as any)
+      .from('plaid_items')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('plaid_item_id', plaidItemId);
+    // Also deactivate linked accounts
+    await (supabase as any)
+      .from('accounts')
+      .update({ active: false })
+      .eq('user_id', user.id)
+      .eq('plaid_item_id', plaidItemId);
     qc.invalidateQueries({ queryKey: ['plaid_items'] });
     qc.invalidateQueries({ queryKey: ['accounts'] });
   };

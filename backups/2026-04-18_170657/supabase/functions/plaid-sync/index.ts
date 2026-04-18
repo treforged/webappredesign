@@ -90,65 +90,6 @@ Deno.serve(async (req) => {
     }
     const userId = user.id;
 
-    // ── Delink action — revoke access token on Plaid then clean up locally ──────
-    // No premium check: users must always be able to revoke bank access.
-    const body = await req.json().catch(() => ({}));
-    if (body?.action === "delink") {
-      const plaidItemId = body?.plaid_item_id as string | undefined;
-      if (!plaidItemId) {
-        return new Response(JSON.stringify({ error: "plaid_item_id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: item } = await supabase
-        .from("plaid_items")
-        .select("id, access_token")
-        .eq("user_id", userId)
-        .eq("plaid_item_id", plaidItemId)
-        .maybeSingle();
-
-      if (!item) {
-        return new Response(JSON.stringify({ error: "Item not found" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Call Plaid /item/remove — best-effort, don't fail the delink if Plaid errors
-      try {
-        const removeRes = await fetch(`${plaidBase}/item/remove`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            client_id: PLAID_CLIENT_ID,
-            secret: PLAID_SECRET,
-            access_token: item.access_token,
-          }),
-        });
-        if (!removeRes.ok) {
-          const errBody = await removeRes.json().catch(() => ({}));
-          console.error("Plaid /item/remove non-OK:", JSON.stringify(errBody));
-        }
-      } catch (err) {
-        console.error("Plaid /item/remove fetch failed:", err);
-      }
-
-      // Delete the item row — access_token no longer valid
-      await supabase.from("plaid_items").delete().eq("id", item.id);
-
-      // Deactivate + unlink all accounts tied to this Plaid item
-      await supabase
-        .from("accounts")
-        .update({ active: false, plaid_account_id: null, plaid_item_id: null } as any)
-        .eq("user_id", userId)
-        .eq("plaid_item_id", plaidItemId);
-
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Sync action (default) — requires active premium subscription ─────────
     const { data: sub } = await supabase
       .from("user_subscriptions")
       .select("plan, subscription_status")
