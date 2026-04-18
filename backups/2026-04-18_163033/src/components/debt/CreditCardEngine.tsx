@@ -352,7 +352,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     }
 
     const sim = simulateVariablePayoff(
-      cards, fundingBalance, cashFloor, strategy,
+      cards, liquidCash, cashFloor, strategy,
       monthlyTakeHome, monthlyRecurringExpenses, 36,
       monthEvents, undefined, augmentedCCPurchases,
       month0Income, month0Expenses,
@@ -362,7 +362,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
     // Return augmentedCCPurchases alongside the sim so projections can use it
     // to pass per-month purchase amounts to projectCardVariable.
     return { ...sim, augmentedCCPurchases };
-  }, [cards, fundingBalance, cashFloor, strategy, monthlyTakeHome,
+  }, [cards, liquidCash, cashFloor, strategy, monthlyTakeHome,
       monthlyRecurringExpenses, allTransactions, accounts, ccPurchasesPerMonth, monthEvents]);
 
   const recommendations: RecommendationSummary = useMemo(
