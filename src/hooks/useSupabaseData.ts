@@ -565,6 +565,15 @@ const DEFAULT_PROFILE = {
   paycheck_day: 5,
   default_deposit_account: null,
   auto_generate_recurring: true,
+  paycheck_deductions: [
+    { id: 'federal',  label: 'Federal Withholding',              value: 12,   mode: 'pct',  preTax: false },
+    { id: 'oasdi',   label: 'Fed OASDI / Social Security',       value: 6.2,  mode: 'pct',  preTax: false },
+    { id: 'fica',    label: 'Fed FICA Medicare',                  value: 1.45, mode: 'pct',  preTax: false },
+    { id: 'state',   label: 'State Income Tax',                   value: 3.5,  mode: 'pct',  preTax: false },
+    { id: '401k',    label: '401(k) Traditional',                 value: 5,    mode: 'pct',  preTax: true  },
+    { id: 'medical', label: 'Medical Insurance',                  value: 48,   mode: 'flat', preTax: true  },
+    { id: 'dental',  label: 'Dental & Vision',                    value: 12,   mode: 'flat', preTax: true  },
+  ],
 };
 
 export function useProfile() {

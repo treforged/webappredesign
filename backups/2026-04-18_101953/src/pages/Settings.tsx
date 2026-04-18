@@ -3,8 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2, Fingerprint, KeyRound, Hash } from 'lucide-react';
-import { useAppLock, type LockType } from '@/hooks/useAppLock';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2 } from 'lucide-react';
 import { LinkedAccounts } from '@/components/settings/LinkedAccounts';
 import { TwoFactorAuth } from '@/components/settings/TwoFactorAuth';
 import { getDayName } from '@/lib/scheduling';
@@ -120,13 +119,6 @@ export default function SettingsPage() {
   const [defaultDepositAccount, setDefaultDepositAccount] = useState('');
   const [autoGenerateRecurring, setAutoGenerateRecurring] = useState(true);
   const [dirty, setDirty] = useState(false);
-
-  // Quick Access (lock) state
-  const appLock = useAppLock();
-  const [pinSetupStep, setPinSetupStep] = useState<'idle' | 'entry' | 'confirm'>('idle');
-  const [pinEntry, setPinEntry] = useState('');
-  const [pinConfirm, setPinConfirm] = useState('');
-  const [lockBusy, setLockBusy] = useState(false);
 
   // Account security state
   const [newEmail, setNewEmail] = useState('');
@@ -476,177 +468,6 @@ export default function SettingsPage() {
                   {passwordLoading ? 'Updating…' : 'Update Password'}
                 </button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Access — mobile PIN / biometric / passkey */}
-      {!isDemo && (
-        <div className="card-forged p-5 space-y-4">
-          <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Shield size={12} /> Quick Access
-          </h2>
-          <p className="text-[10px] text-muted-foreground">
-            Lock the app and require a PIN, biometric, or passkey to re-open.
-            {appLock.isNative ? '' : ' PIN and biometric are mobile-only; passkeys work everywhere.'}
-          </p>
-
-          {/* Current status */}
-          {appLock.lockEnabled ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={13} className="text-primary" />
-                <span className="text-xs font-medium text-primary capitalize">
-                  {appLock.lockType === 'pin' ? 'PIN' : appLock.lockType === 'biometric' ? 'Face ID / Touch ID' : 'Passkey'} enabled
-                </span>
-              </div>
-              <button
-                onClick={() => { appLock.disableLock(); setPinSetupStep('idle'); }}
-                className="text-[10px] text-destructive hover:underline"
-              >
-                Disable
-              </button>
-            </div>
-          ) : (
-            <p className="text-[10px] text-muted-foreground">No lock set — select one below to enable.</p>
-          )}
-
-          {/* Options */}
-          <div className="space-y-2">
-
-            {/* PIN — mobile only */}
-            {(appLock.isNative || appLock.lockType === 'pin') && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setPinSetupStep(s => s === 'idle' ? 'entry' : 'idle')}
-                  className="w-full flex items-center justify-between bg-secondary border border-border px-3 py-2.5 hover:border-primary/40 transition-colors btn-press"
-                  style={{ borderRadius: 'var(--radius)' }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Hash size={14} className="text-muted-foreground" />
-                    <div className="text-left">
-                      <p className="text-xs font-medium">PIN</p>
-                      <p className="text-[9px] text-muted-foreground">4–6 digit quick access code</p>
-                    </div>
-                  </div>
-                  {appLock.lockEnabled && appLock.lockType === 'pin' && <CheckCircle size={13} className="text-primary" />}
-                </button>
-
-                {pinSetupStep !== 'idle' && (
-                  <div className="space-y-2 pl-1">
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={pinEntry}
-                      onChange={e => setPinEntry(e.target.value.replace(/\D/g, ''))}
-                      placeholder={pinSetupStep === 'entry' ? 'Enter new PIN (4–6 digits)' : 'Confirm PIN'}
-                      className="w-full bg-secondary border border-border px-3 py-2 text-xs text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-ring"
-                      style={{ borderRadius: 'var(--radius)' }}
-                      autoFocus
-                    />
-                    {pinSetupStep === 'confirm' && (
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={pinConfirm}
-                        onChange={e => setPinConfirm(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Confirm PIN"
-                        className="w-full bg-secondary border border-border px-3 py-2 text-xs text-foreground text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-ring"
-                        style={{ borderRadius: 'var(--radius)' }}
-                      />
-                    )}
-                    <div className="flex gap-2">
-                      {pinSetupStep === 'entry' ? (
-                        <button
-                          disabled={pinEntry.length < 4}
-                          onClick={() => { setPinConfirm(''); setPinSetupStep('confirm'); }}
-                          className="flex-1 py-1.5 text-xs font-medium bg-primary text-primary-foreground btn-press disabled:opacity-50"
-                          style={{ borderRadius: 'var(--radius)' }}
-                        >
-                          Next
-                        </button>
-                      ) : (
-                        <button
-                          disabled={lockBusy || pinConfirm.length < 4 || pinEntry !== pinConfirm}
-                          onClick={async () => {
-                            setLockBusy(true);
-                            await appLock.setupPin(pinEntry);
-                            setLockBusy(false);
-                            setPinSetupStep('idle');
-                            setPinEntry('');
-                            setPinConfirm('');
-                            toast.success('PIN set — app will lock on next launch');
-                          }}
-                          className="flex-1 py-1.5 text-xs font-medium bg-primary text-primary-foreground btn-press disabled:opacity-50"
-                          style={{ borderRadius: 'var(--radius)' }}
-                        >
-                          {lockBusy ? 'Saving…' : pinEntry !== pinConfirm && pinConfirm.length >= 4 ? "PINs don't match" : 'Save PIN'}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => { setPinSetupStep('idle'); setPinEntry(''); setPinConfirm(''); }}
-                        className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Biometric — mobile only */}
-            {appLock.isNative && (
-              <button
-                onClick={async () => {
-                  setLockBusy(true);
-                  const ok = await appLock.setupBiometric();
-                  setLockBusy(false);
-                  if (ok) toast.success('Biometric lock enabled');
-                  else toast.error('Biometric not available on this device');
-                }}
-                disabled={lockBusy}
-                className="w-full flex items-center justify-between bg-secondary border border-border px-3 py-2.5 hover:border-primary/40 transition-colors btn-press disabled:opacity-50"
-                style={{ borderRadius: 'var(--radius)' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Fingerprint size={14} className="text-muted-foreground" />
-                  <div className="text-left">
-                    <p className="text-xs font-medium">Face ID / Touch ID</p>
-                    <p className="text-[9px] text-muted-foreground">Use your device biometrics</p>
-                  </div>
-                </div>
-                {appLock.lockEnabled && appLock.lockType === 'biometric' && <CheckCircle size={13} className="text-primary" />}
-              </button>
-            )}
-
-            {/* Passkey */}
-            {typeof window !== 'undefined' && window.PublicKeyCredential && (
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  setLockBusy(true);
-                  const ok = await appLock.registerPasskey(user.id, user.email ?? '');
-                  setLockBusy(false);
-                  if (ok) toast.success('Passkey registered — use it to unlock next time');
-                  else toast.error('Passkey registration failed or was cancelled');
-                }}
-                disabled={lockBusy}
-                className="w-full flex items-center justify-between bg-secondary border border-border px-3 py-2.5 hover:border-primary/40 transition-colors btn-press disabled:opacity-50"
-                style={{ borderRadius: 'var(--radius)' }}
-              >
-                <div className="flex items-center gap-2.5">
-                  <KeyRound size={14} className="text-muted-foreground" />
-                  <div className="text-left">
-                    <p className="text-xs font-medium">Device passkey</p>
-                    <p className="text-[9px] text-muted-foreground">Unlock with your device's built-in authenticator</p>
-                  </div>
-                </div>
-                {appLock.lockEnabled && appLock.lockType === 'passkey' && <CheckCircle size={13} className="text-primary" />}
-              </button>
             )}
           </div>
         </div>

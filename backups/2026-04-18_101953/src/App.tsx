@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CookieBanner from "@/components/shared/CookieBanner";
-import AppLockScreen from "@/components/shared/AppLockScreen";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -103,7 +102,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppLockScreen />
           <AppRoutes />
           <CookieBanner />
         </AuthProvider>

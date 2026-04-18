@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   DollarSign, CreditCard, PiggyBank, Target, ChevronRight,
-  ChevronLeft, Check, Crown, Zap, BarChart3, Shield, Loader2, Car,
+  ChevronLeft, Check, Crown, Zap, BarChart3, Shield, Loader2, Car, Fingerprint,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 type Step = 'welcome' | 'income' | 'expenses' | 'debts' | 'savings' | 'goals' | 'finish';
 
@@ -679,6 +680,17 @@ export default function Onboarding() {
                     {saving ? <Loader2 size={10} className="animate-spin inline" /> : 'Continue free'}
                   </button>
                 </div>
+
+              {/* Quick Access hint */}
+              {(Capacitor.isNativePlatform() || typeof window !== 'undefined') && (
+                <div className="flex items-start gap-2 bg-secondary border border-border px-3 py-2.5" style={{ borderRadius: 'var(--radius)' }}>
+                  <Fingerprint size={13} className="text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Add a PIN or biometric lock</strong> for quick, secure access.{' '}
+                    Find it in <strong className="text-foreground">Settings → Quick Access</strong> anytime.
+                  </p>
+                </div>
+              )}
               </div>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type TourVariant = 'new-user' | 'premium';
 
@@ -75,7 +76,14 @@ const PREMIUM_STEPS: TourStep[] = [
   },
 ];
 
-const STORAGE_KEY: Record<TourVariant, string> = {
+// Flag keys stored in profiles.tour_flags JSONB — account-based, cross-device
+const FLAG_KEY: Record<TourVariant, string> = {
+  'new-user': 'new_user_done',
+  'premium': 'premium_done',
+};
+
+// localStorage cache key (device-level fast check to avoid DB round-trip on every load)
+const LOCAL_KEY: Record<TourVariant, string> = {
   'new-user': 'forged:tour_done_new_user',
   'premium': 'forged:tour_done_premium',
 };
@@ -90,18 +98,46 @@ export default function AppTour({ variant, onDone }: AppTourProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY[variant])) {
-      setVisible(true);
-    }
+    // Fast path: device cache says it's done — skip DB call
+    if (localStorage.getItem(LOCAL_KEY[variant])) return;
+
+    // Authoritative check: read from profiles.tour_flags (account-based, cross-device)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('profiles')
+        .select('tour_flags')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          const flags = ((data as any)?.tour_flags as Record<string, boolean>) ?? {};
+          if (flags[FLAG_KEY[variant]]) {
+            // DB says done — populate device cache and stay hidden
+            localStorage.setItem(LOCAL_KEY[variant], '1');
+          } else {
+            setVisible(true);
+          }
+        });
+    });
   }, [variant]);
 
   const steps = variant === 'premium' ? PREMIUM_STEPS : NEW_USER_STEPS;
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
-  const dismiss = () => {
-    localStorage.setItem(STORAGE_KEY[variant], '1');
+  const dismiss = async () => {
     setVisible(false);
+    // Write to device cache immediately
+    localStorage.setItem(LOCAL_KEY[variant], '1');
+    // Persist to DB so other devices see it too
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('profiles').select('tour_flags').eq('user_id', user.id).maybeSingle();
+      const existing = ((data as any)?.tour_flags as Record<string, boolean>) ?? {};
+      await supabase.from('profiles').update({
+        tour_flags: { ...existing, [FLAG_KEY[variant]]: true },
+      } as any).eq('user_id', user.id);
+    }
     onDone?.();
   };
 
