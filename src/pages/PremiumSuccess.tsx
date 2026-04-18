@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { premiumSuccessParamsSchema } from '@/lib/schemas';
+import AppTour from '@/components/shared/AppTour';
 
 export default function PremiumSuccess() {
   const { refetch } = useSubscription();
@@ -61,6 +62,7 @@ export default function PremiumSuccess() {
 
   return (
     <div className="p-4 lg:p-6 max-w-md mx-auto text-center space-y-6 mt-12">
+      <AppTour variant="premium" />
       <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
         <CheckCircle className="text-primary" size={32} />
       </div>

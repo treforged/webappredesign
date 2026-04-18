@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { formatCurrency } from '@/lib/calculations';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import InstructionsModal from '@/components/shared/InstructionsModal';
@@ -61,6 +62,7 @@ function ForecastTooltip({ active, payload, label }: any) {
 
 export default function Forecast() {
   const { isDemo } = useAuth();
+  const { isPremium } = useSubscription();
   const { data: debts } = useDebts();
   const { data: goals } = useSavingsGoals();
   const { data: carFunds } = useCarFunds();
@@ -844,7 +846,8 @@ export default function Forecast() {
 
   const gridStroke = 'hsl(0, 0%, 18%)';
   const tickStyle = { fontSize: 10, fill: 'hsl(240, 4%, 50%)' };
-  const xInterval = filterYear === 'all' ? 2 : 0;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const xInterval = filterYear === 'all' ? (isMobile ? 5 : 2) : (isMobile ? 2 : 0);
 
   // Helper to check visibility — a series is visible if NOT in hiddenSeries
   const isVisible = (key: string) => !hiddenSeries.includes(key);
@@ -879,26 +882,36 @@ export default function Forecast() {
           <button onClick={() => setShowAssumptions(!showAssumptions)} className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <Settings2 size={12} /> Assumptions
           </button>
-          <button
-            onClick={() => {
-              const label = filterYear === 'all' ? 'All 36 Months' : `Year ${filterYear}`;
-              exportForecastPdf(filteredData.map((r: any) => ({
-                month: r.month,
-                takeHome: r.takeHome ?? 0,
-                totalExpenses: r.totalExpenses ?? 0,
-                debtPayment: r.debtPayment ?? 0,
-                liquidCash: r.liquidCash ?? 0,
-                endingCash: r.endingCash ?? 0,
-                netWorth: r.netWorth ?? 0,
-                debtBalance: r.debtBalance ?? 0,
-                savingsBalance: r.savingsBalance ?? 0,
-              } as ForecastRow)), label);
-            }}
-            className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
-            style={{ borderRadius: 'var(--radius)' }}
-          >
-            <FileDown size={12} /> PDF
-          </button>
+          {(isPremium || isDemo) ? (
+            <button
+              onClick={() => {
+                const label = filterYear === 'all' ? 'All 36 Months' : `Year ${filterYear}`;
+                exportForecastPdf(filteredData.map((r: any) => ({
+                  month: r.month,
+                  takeHome: r.takeHome ?? 0,
+                  totalExpenses: r.totalExpenses ?? 0,
+                  debtPayment: r.debtPayment ?? 0,
+                  liquidCash: r.liquidCash ?? 0,
+                  endingCash: r.endingCash ?? 0,
+                  netWorth: r.netWorth ?? 0,
+                  debtBalance: r.debtBalance ?? 0,
+                  savingsBalance: r.savingsBalance ?? 0,
+                } as ForecastRow)), label);
+              }}
+              className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
+              style={{ borderRadius: 'var(--radius)' }}
+            >
+              <FileDown size={12} /> PDF
+            </button>
+          ) : (
+            <Link
+              to="/premium"
+              className="flex items-center gap-1 sm:gap-1.5 border border-primary/30 text-primary/70 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press hover:bg-primary/5 transition-colors"
+              style={{ borderRadius: 'var(--radius)' }}
+            >
+              <FileDown size={12} /> PDF
+            </Link>
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRetirementAutoUpdate } from '@/hooks/useRetirementAutoUpdate';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import MetricCard from '@/components/shared/MetricCard';
+import AppTour from '@/components/shared/AppTour';
 import ProgressBar from '@/components/shared/ProgressBar';
 import CategoryIcon from '@/components/shared/CategoryIcon';
 import PremiumGate from '@/components/shared/PremiumGate';
@@ -434,6 +435,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+      {!isDemo && <AppTour variant="new-user" />}
       <AccountUpdateReminder />
 
       {/* Security nudge — shown when user has no MFA enrolled */}

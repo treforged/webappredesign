@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       initialized.current = true;
 
       if (event === 'SIGNED_IN') {
+        setIsDemo(false);
         if (session?.user?.email === 'reviewer@treforged.com') {
           localStorage.removeItem(`forged:onboarding_done_${session.user.id}`);
         }

@@ -33,9 +33,16 @@ async function loadPlaidScript(): Promise<void> {
 }
 
 async function getAuthHeader(): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('Not authenticated');
+  // Refresh the session to ensure the token isn't close to expiry before calling edge functions
+  const { data: refreshData } = await supabase.auth.refreshSession();
+  const token = refreshData.session?.access_token;
+  if (!token) {
+    // Fallback: try current session
+    const { data } = await supabase.auth.getSession();
+    const fallback = data.session?.access_token;
+    if (!fallback) throw new Error('Not authenticated. Please sign in again.');
+    return `Bearer ${fallback}`;
+  }
   return `Bearer ${token}`;
 }
 
@@ -68,7 +75,7 @@ export default function PlaidLinkButton({ onSuccess, disabled }: PlaidLinkButton
         body: JSON.stringify({ redirect_uri: OAUTH_REDIRECT_URI }),
       });
       const tokenBody = await tokenRes.json();
-      if (!tokenRes.ok) throw new Error(tokenBody.error ?? 'Failed to create link token');
+      if (!tokenRes.ok) throw new Error(tokenBody.error ?? tokenBody.message ?? 'Failed to create link token');
 
       const { link_token } = tokenBody;
 
