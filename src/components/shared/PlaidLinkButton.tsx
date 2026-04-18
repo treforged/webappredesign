@@ -89,9 +89,11 @@ export default function PlaidLinkButton({ onSuccess, disabled }: PlaidLinkButton
           try {
             localStorage.removeItem(LINK_TOKEN_KEY);
             const institution = metadata?.institution ?? {};
+            // Get a fresh token — the original may be stale after time spent in Plaid Link UI
+            const freshAuth = await getAuthHeader();
             const exchangeRes = await fetch(`${FN_BASE}/plaid-exchange-token`, {
               method: 'POST',
-              headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+              headers: { Authorization: freshAuth, 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 public_token,
                 institution_id:   institution.institution_id ?? null,
@@ -99,7 +101,7 @@ export default function PlaidLinkButton({ onSuccess, disabled }: PlaidLinkButton
               }),
             });
             const exchangeBody = await exchangeRes.json();
-            if (!exchangeRes.ok) throw new Error(exchangeBody.error ?? 'Exchange failed');
+            if (!exchangeRes.ok) throw new Error(exchangeBody.error ?? exchangeBody.message ?? 'Exchange failed');
 
             const name = exchangeBody.institution_name ?? 'Your bank';
             toast.success(`${name} linked successfully`);
@@ -107,7 +109,7 @@ export default function PlaidLinkButton({ onSuccess, disabled }: PlaidLinkButton
             // Immediately sync balances
             const syncRes = await fetch(`${FN_BASE}/plaid-sync`, {
               method: 'POST',
-              headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+              headers: { Authorization: freshAuth, 'Content-Type': 'application/json' },
             });
             const syncBody = syncRes.ok ? await syncRes.json() : { accounts: [] };
 
