@@ -45,6 +45,9 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
+      - name: Set build number
+        run: xcrun agvtool new-version -all ${{ github.run_number }}
+
       - name: Import distribution certificate
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
