@@ -45,7 +45,7 @@ jobs:
           VITE_LD_CLIENT_ID: ${{ secrets.VITE_LD_CLIENT_ID }}
 
       - name: Sync Capacitor
-        run: npx cap sync ios
+        run: npx cap sync ios && echo "=== public/ contents ===" && ls ios/App/App/public/ && echo "=== index.html check ===" && head -5 ios/App/App/public/index.html
 
       - name: Set build number
         run: cd ios/App && xcrun agvtool new-version -all ${{ github.run_number }}

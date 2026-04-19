@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, MemoryRouter, Route, Routes, Navigate } from "react-router-dom";
+import { Capacitor } from '@capacitor/core';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -101,13 +102,23 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppLockScreen />
-          <AppRoutes />
-          <CookieBanner />
-        </AuthProvider>
-      </BrowserRouter>
+      {Capacitor.isNativePlatform() ? (
+        <MemoryRouter initialEntries={['/']}>
+          <AuthProvider>
+            <AppLockScreen />
+            <AppRoutes />
+            <CookieBanner />
+          </AuthProvider>
+        </MemoryRouter>
+      ) : (
+        <BrowserRouter>
+          <AuthProvider>
+            <AppLockScreen />
+            <AppRoutes />
+            <CookieBanner />
+          </AuthProvider>
+        </BrowserRouter>
+      )}
     </TooltipProvider>
   </QueryClientProvider>
 );
