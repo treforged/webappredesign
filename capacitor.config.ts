@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Forged',
   webDir: 'dist',
   server: {
+    url: 'https://app.treforged.com',
+    cleartext: true,
     androidScheme: 'https',
   },
   plugins: {
