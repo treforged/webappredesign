@@ -1,14 +1,7 @@
 name: iOS Build & Upload to App Store
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'ios/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-  workflow_dispatch:
+  workflow_dispatch: # manual trigger only — auto-build disabled until App Store publishing is ready
 
 jobs:
   build-ios:
