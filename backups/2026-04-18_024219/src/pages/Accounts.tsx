@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import InstructionsModal from '@/components/shared/InstructionsModal';
 import { formatCurrency } from '@/lib/calculations';
 import { useAccounts, useDebts, useAccountReconciliations } from '@/hooks/useSupabaseData';
@@ -70,7 +69,6 @@ export default function Accounts() {
   const { data: debts, update: updateDebt, add: addDebt } = useDebts();
   const { add: addReconciliation } = useAccountReconciliations();
   const { items: plaidItems, loading: plaidLoading, remove: removePlaidItem, invalidate: invalidatePlaid } = usePlaidItems();
-  const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -79,58 +77,38 @@ export default function Accounts() {
   const [matchEntries, setMatchEntries] = useState<MatchEntry[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchSaving, setMatchSaving] = useState(false);
-  const [plaidSyncing, setPlaidSyncing] = useState(false);
-  const [unlinkConfirm, setUnlinkConfirm] = useState<string | null>(null);
-  const [plaidLinkedName, setPlaidLinkedName] = useState<string | null>(null);
 
-  const handlePlaidSuccess = useCallback((syncedAccounts: PlaidSyncedAccount[], institutionName?: string) => {
+  const handlePlaidSuccess = useCallback((syncedAccounts: PlaidSyncedAccount[]) => {
     invalidatePlaid();
-    qc.invalidateQueries({ queryKey: ['accounts'] });
-    const name = institutionName ?? 'Your bank';
-    setPlaidLinkedName(name);
     // Only prompt matching if there are manual (non-Plaid) accounts to match against
     const manualAccounts = accounts.filter((a: any) => !a.plaid_account_id && a.active);
     if (syncedAccounts.length > 0 && manualAccounts.length > 0) {
       setMatchEntries(syncedAccounts.map(a => ({ plaidAccount: a, matchedAccountId: null })));
-      // Match modal appears when user dismisses the success overlay
+      setShowMatchModal(true);
     }
-  }, [invalidatePlaid, qc, accounts]);
+  }, [invalidatePlaid, accounts]);
 
   const handleConfirmMatch = useCallback(async () => {
     const toMatch = matchEntries.filter(e => e.matchedAccountId !== null);
     if (toMatch.length === 0) { setShowMatchModal(false); return; }
     setMatchSaving(true);
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) throw new Error('Not authenticated');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
 
-      // Fetch all Plaid-created accounts (have plaid_account_id set) including fields to merge
-      const { data: allAccountsRaw } = await supabase
-        .from('accounts')
-        .select('id, name, institution, plaid_account_id, plaid_item_id')
-        .eq('user_id', currentUser.id);
+      // For each matched pair: find the newly-created Plaid account by name, copy plaid_account_id to the existing account, delete the Plaid-created one
+      const { data: allAccountsRaw } = await supabase.from('accounts').select('id, name, plaid_account_id').eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '');
       const allAccounts = (allAccountsRaw ?? []) as any[];
-      const plaidCreatedAccounts = allAccounts.filter((a: any) => a.plaid_account_id);
 
       for (const entry of toMatch) {
         const existingAccount = accounts.find((a: any) => a.id === entry.matchedAccountId);
-        if (!existingAccount) continue;
+        const plaidCreated = allAccounts.find((a: any) => a.name === entry.plaidAccount.name && a.plaid_account_id);
+        if (!existingAccount || !plaidCreated) continue;
 
-        // Match by plaid_account_id (if sync returned it) first, then fall back to name
-        const plaidAccountId = (entry.plaidAccount as any).plaid_account_id;
-        const plaidCreated = plaidAccountId
-          ? plaidCreatedAccounts.find((a: any) => a.plaid_account_id === plaidAccountId)
-          : plaidCreatedAccounts.find((a: any) => a.name === entry.plaidAccount.name);
-
-        if (!plaidCreated) continue;
-
-        // Merge Plaid data onto existing account: update name, institution, balance, and sync IDs.
-        // All other user-defined fields (notes, APR, credit_limit, etc.) are preserved.
+        // Copy plaid_account_id + balance onto existing account
         await supabase.from('accounts').update({
-          name: plaidCreated.name,
-          institution: plaidCreated.institution,
           plaid_account_id: plaidCreated.plaid_account_id,
-          plaid_item_id: plaidCreated.plaid_item_id,
           balance: entry.plaidAccount.balance,
         } as any).eq('id', existingAccount.id);
 
@@ -140,14 +118,13 @@ export default function Accounts() {
 
       toast.success(`Matched ${toMatch.length} account${toMatch.length !== 1 ? 's' : ''}`);
       invalidatePlaid();
-      qc.invalidateQueries({ queryKey: ['accounts'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Match failed');
     } finally {
       setMatchSaving(false);
       setShowMatchModal(false);
     }
-  }, [matchEntries, accounts, invalidatePlaid, qc]);
+  }, [matchEntries, accounts, invalidatePlaid]);
 
   const activeAccounts = useMemo(() => accounts.filter((a: any) => a.active), [accounts]);
 
@@ -243,17 +220,11 @@ export default function Accounts() {
   const isLiability = (type: string) => LIABILITY_TYPES.includes(type);
 
   const handleUnlinkAccount = async (accountId: string) => {
-    if (unlinkConfirm !== accountId) {
-      setUnlinkConfirm(accountId);
-      setTimeout(() => setUnlinkConfirm(null), 4000);
-      return;
-    }
-    setUnlinkConfirm(null);
     try {
       const { error } = await supabase.from('accounts').update({ plaid_account_id: null, plaid_item_id: null } as any).eq('id', accountId);
       if (error) throw error;
-      qc.invalidateQueries({ queryKey: ['accounts'] });
-      toast.success('Account unlinked. Balance will no longer auto-sync.');
+      update.mutate({ id: accountId, plaid_account_id: null, plaid_item_id: null } as any);
+      toast.success('Account unlinked from Plaid. Balance will no longer auto-sync.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Unlink failed');
     }
@@ -261,39 +232,6 @@ export default function Accounts() {
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
-      {/* Plaid link success overlay */}
-      {plaidLinkedName && !plaidSyncing && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm p-4">
-          <div className="card-forged w-full max-w-sm p-6 flex flex-col items-center text-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center">
-              <Link2 size={24} className="text-success" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{plaidLinkedName} linked!</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Balances synced successfully. Your accounts are ready.</p>
-            </div>
-            <button
-              onClick={() => {
-                setPlaidLinkedName(null);
-                if (matchEntries.length > 0) setShowMatchModal(true);
-              }}
-              className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              {matchEntries.length > 0 ? 'Match Accounts →' : 'Done'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Plaid exchange/sync loading overlay */}
-      {plaidSyncing && (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-background/85 backdrop-blur-sm gap-3">
-          <Loader2 size={28} className="animate-spin text-primary" />
-          <p className="text-sm font-semibold text-foreground">Linking your bank…</p>
-          <p className="text-xs text-muted-foreground">Exchanging token and syncing balances</p>
-        </div>
-      )}
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -404,11 +342,10 @@ export default function Accounts() {
                   {a.plaid_account_id && (
                     <button
                       onClick={() => handleUnlinkAccount(a.id)}
-                      className={`text-[10px] font-medium px-1.5 py-0.5 border transition-colors ${unlinkConfirm === a.id ? 'text-destructive border-destructive/40 bg-destructive/5' : 'text-muted-foreground border-transparent hover:text-destructive'}`}
-                      style={{ borderRadius: 'var(--radius)' }}
-                      title={unlinkConfirm === a.id ? 'Click again to confirm unlink' : 'Unlink from Plaid auto-sync'}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Unlink from Plaid auto-sync"
                     >
-                      {unlinkConfirm === a.id ? 'Confirm unlink?' : <Unlink size={12} />}
+                      <Unlink size={14} />
                     </button>
                   )}
                   <button onClick={() => toggleActive(a)} className="icon-btn text-muted-foreground hover:text-foreground" title={a.active ? 'Deactivate' : 'Activate'}>
@@ -433,21 +370,9 @@ export default function Accounts() {
               <p className="text-[10px] text-muted-foreground mt-0.5">Auto-sync balances from your bank accounts (premium)</p>
             </div>
             {isPremium && plaidItems.length < 3 && (
-              <PlaidLinkButton
-                onSuccess={handlePlaidSuccess}
-                onProcessing={setPlaidSyncing}
-              />
+              <PlaidLinkButton onSuccess={handlePlaidSuccess} />
             )}
           </div>
-
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Bank connections are powered by{' '}
-            <a href="https://plaid.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Plaid</a>
-            , a trusted financial data platform used by thousands of apps. We never see your bank login credentials — Plaid handles authentication securely.{' '}
-            <a href="https://plaid.com/legal/#end-user-privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Privacy Policy</a>
-            {' · '}
-            <a href="https://plaid.com/legal/#end-user-services-agreement" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terms</a>
-          </p>
 
           {!isPremium ? (
             <PremiumGate
@@ -542,7 +467,7 @@ export default function Accounts() {
         <FormModal
           title={editId ? 'Edit Account' : 'Add Account'}
           fields={[
-            { key: 'name', label: 'Account Name', type: 'text', placeholder: 'e.g., Chase Checking', required: true, disabled: editingPlaidLinked },
+            { key: 'name', label: 'Account Name', type: 'text', placeholder: 'e.g., Chase Checking', required: true },
             { key: 'account_type', label: 'Account Type', type: 'select', options: ACCOUNT_TYPES, disabled: editingPlaidLinked },
             { key: 'institution', label: 'Institution', type: 'text', placeholder: 'e.g., Chase, Fidelity', disabled: editingPlaidLinked, hint: editingPlaidLinked ? 'Managed by Plaid' : undefined },
             { key: 'balance', label: 'Current Balance', type: 'number' as const, placeholder: '0.00', step: '0.01', required: true, disabled: editingPlaidLinked, hint: editingPlaidLinked ? 'Balance is managed by Plaid auto-sync' : undefined },
@@ -564,7 +489,6 @@ export default function Accounts() {
           onClose={() => { setShowForm(false); setEditId(null); setEditingPlaidLinked(false); }}
           saving={add.isPending || update.isPending}
           saveLabel={editId ? 'Update Account' : 'Add Account'}
-          notice={editingPlaidLinked ? 'Balance, name, type, and institution are managed by Plaid auto-sync. You can still edit APR, credit limit, minimum payment, and notes.' : undefined}
         />
       )}
     </div>

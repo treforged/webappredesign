@@ -9,7 +9,7 @@ import { useDebts, useSavingsGoals, useCarFunds, useAccounts, useSubscriptions, 
 import { generateScheduledEvents, aggregateByMonth } from '@/lib/scheduling';
 import { simulateVariablePayoff, buildCardData, projectCardVariable, getCurrentMonthDebtRecommendations, CC_DEFAULT_CATEGORIES } from '@/lib/credit-card-engine';
 import { getDebtPaymentsByMonth, getDebtBalancesByMonth } from '@/lib/debt-transaction-generator';
-import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions, getRemainingTransactionIncomeByDay, getRemainingTransactionExpensesByDay } from '@/lib/pay-schedule';
+import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions, getRemainingTransactionIncomeByDay } from '@/lib/pay-schedule';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   Bar, ComposedChart, ReferenceLine,
@@ -344,12 +344,22 @@ export default function Forecast() {
       // Month 0 income = all remaining income to end of month (day 31), not just to
       // the primary due day. Month 0 expenses exclude CC-charged and debt payments.
       const allTxnsForM0 = mergeWithGeneratedTransactions(transactions, rules, accounts);
+      const ccIdsForM0 = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
+      const nowForM0 = new Date();
+      const m0MonthStr = `${nowForM0.getFullYear()}-${String(nowForM0.getMonth() + 1).padStart(2, '0')}`;
+      const m0TodayStr = nowForM0.toISOString().split('T')[0];
       const m0Income = getRemainingTransactionIncomeByDay(allTxnsForM0, 31);
-      // Use the same expense filter as the recommendations panel (includes CC-tagged expenses)
-      // so month 0 payments stay consistent with what Safe to Pay shows.
-      const m0Expenses = getRemainingTransactionExpensesByDay(allTxnsForM0, 31, true);
-      // Apply the same pre-paycheck bill floor used by the CC engine recommendations.
-      const m0SafeFloor = getMinSafeCash(rules, payConfig, debtPayoffOptions.cashFloor, null, new Date());
+      const m0Expenses = (allTxnsForM0 as any[])
+        .filter((t: any) => {
+          if (t.type !== 'expense') return false;
+          if (!t.date || !t.date.startsWith(m0MonthStr)) return false;
+          if (t.date < m0TodayStr) return false;
+          if (t.category === 'Debt Payments') return false;
+          if (t.category === 'Balance Adjustment') return false;
+          if (t.payment_source && ccIdsForM0.has(t.payment_source)) return false;
+          return true;
+        })
+        .reduce((s: number, t: any) => s + Number(t.amount), 0);
 
       const projs = (() => {
         const sim = simulateVariablePayoff(
@@ -357,7 +367,6 @@ export default function Forecast() {
           monthlyTakeHome, monthlyExpenses, 36,
           adjustedMonthEvents, undefined, cardPurchasesPerMonth,
           m0Income, m0Expenses, oneTimeArr,
-          m0SafeFloor,
         );
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];

@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
 import { formatCurrency } from '@/lib/calculations';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import InstructionsModal from '@/components/shared/InstructionsModal';
@@ -9,12 +8,12 @@ import { useDebts, useSavingsGoals, useCarFunds, useAccounts, useSubscriptions, 
 import { generateScheduledEvents, aggregateByMonth } from '@/lib/scheduling';
 import { simulateVariablePayoff, buildCardData, projectCardVariable, getCurrentMonthDebtRecommendations, CC_DEFAULT_CATEGORIES } from '@/lib/credit-card-engine';
 import { getDebtPaymentsByMonth, getDebtBalancesByMonth } from '@/lib/debt-transaction-generator';
-import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions, getRemainingTransactionIncomeByDay, getRemainingTransactionExpensesByDay } from '@/lib/pay-schedule';
+import { buildPayConfig, getMonthNetIncome, getPaychecksInMonth, getMinSafeCash, mergeWithGeneratedTransactions, getRemainingTransactionIncomeByDay } from '@/lib/pay-schedule';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   Bar, ComposedChart, ReferenceLine,
 } from 'recharts';
-import { Settings2, List, BarChart3, TrendingUp, CreditCard, Info, X, FileDown, Crown } from 'lucide-react';
+import { Settings2, List, BarChart3, TrendingUp, CreditCard, Info, X, FileDown } from 'lucide-react';
 import { exportForecastPdf, type ForecastRow } from '@/lib/exportPdf';
 
 function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: () => void; title: string; lines: { label: string; value: string; op?: string }[] }) {
@@ -62,7 +61,6 @@ function ForecastTooltip({ active, payload, label }: any) {
 
 export default function Forecast() {
   const { isDemo } = useAuth();
-  const { isPremium } = useSubscription();
   const { data: debts } = useDebts();
   const { data: goals } = useSavingsGoals();
   const { data: carFunds } = useCarFunds();
@@ -344,12 +342,22 @@ export default function Forecast() {
       // Month 0 income = all remaining income to end of month (day 31), not just to
       // the primary due day. Month 0 expenses exclude CC-charged and debt payments.
       const allTxnsForM0 = mergeWithGeneratedTransactions(transactions, rules, accounts);
+      const ccIdsForM0 = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
+      const nowForM0 = new Date();
+      const m0MonthStr = `${nowForM0.getFullYear()}-${String(nowForM0.getMonth() + 1).padStart(2, '0')}`;
+      const m0TodayStr = nowForM0.toISOString().split('T')[0];
       const m0Income = getRemainingTransactionIncomeByDay(allTxnsForM0, 31);
-      // Use the same expense filter as the recommendations panel (includes CC-tagged expenses)
-      // so month 0 payments stay consistent with what Safe to Pay shows.
-      const m0Expenses = getRemainingTransactionExpensesByDay(allTxnsForM0, 31, true);
-      // Apply the same pre-paycheck bill floor used by the CC engine recommendations.
-      const m0SafeFloor = getMinSafeCash(rules, payConfig, debtPayoffOptions.cashFloor, null, new Date());
+      const m0Expenses = (allTxnsForM0 as any[])
+        .filter((t: any) => {
+          if (t.type !== 'expense') return false;
+          if (!t.date || !t.date.startsWith(m0MonthStr)) return false;
+          if (t.date < m0TodayStr) return false;
+          if (t.category === 'Debt Payments') return false;
+          if (t.category === 'Balance Adjustment') return false;
+          if (t.payment_source && ccIdsForM0.has(t.payment_source)) return false;
+          return true;
+        })
+        .reduce((s: number, t: any) => s + Number(t.amount), 0);
 
       const projs = (() => {
         const sim = simulateVariablePayoff(
@@ -357,7 +365,6 @@ export default function Forecast() {
           monthlyTakeHome, monthlyExpenses, 36,
           adjustedMonthEvents, undefined, cardPurchasesPerMonth,
           m0Income, m0Expenses, oneTimeArr,
-          m0SafeFloor,
         );
         return cards.map(c => {
           const pays = sim.monthlyPayments.get(c.id) || [];
@@ -837,14 +844,10 @@ export default function Forecast() {
 
   const gridStroke = 'hsl(0, 0%, 18%)';
   const tickStyle = { fontSize: 10, fill: 'hsl(240, 4%, 50%)' };
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const xInterval = filterYear === 'all' ? (isMobile ? 5 : 2) : (isMobile ? 2 : 0);
+  const xInterval = filterYear === 'all' ? 2 : 0;
 
   // Helper to check visibility — a series is visible if NOT in hiddenSeries
   const isVisible = (key: string) => !hiddenSeries.includes(key);
-
-  const freePreview = !isPremium && !isDemo;
-  const displayData = freePreview ? filteredData.slice(0, 3) : filteredData;
 
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
@@ -876,36 +879,26 @@ export default function Forecast() {
           <button onClick={() => setShowAssumptions(!showAssumptions)} className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <Settings2 size={12} /> Assumptions
           </button>
-          {(isPremium || isDemo) ? (
-            <button
-              onClick={() => {
-                const label = filterYear === 'all' ? 'All 36 Months' : `Year ${filterYear}`;
-                exportForecastPdf(filteredData.map((r: any) => ({
-                  month: r.month,
-                  takeHome: r.takeHome ?? 0,
-                  totalExpenses: r.totalExpenses ?? 0,
-                  debtPayment: r.debtPayment ?? 0,
-                  liquidCash: r.liquidCash ?? 0,
-                  endingCash: r.endingCash ?? 0,
-                  netWorth: r.netWorth ?? 0,
-                  debtBalance: r.debtBalance ?? 0,
-                  savingsBalance: r.savingsBalance ?? 0,
-                } as ForecastRow)), label);
-              }}
-              className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              <FileDown size={12} /> PDF
-            </button>
-          ) : (
-            <Link
-              to="/premium"
-              className="flex items-center gap-1 sm:gap-1.5 border border-primary/30 text-primary/70 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press hover:bg-primary/5 transition-colors"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              <FileDown size={12} /> PDF
-            </Link>
-          )}
+          <button
+            onClick={() => {
+              const label = filterYear === 'all' ? 'All 36 Months' : `Year ${filterYear}`;
+              exportForecastPdf(filteredData.map((r: any) => ({
+                month: r.month,
+                takeHome: r.takeHome ?? 0,
+                totalExpenses: r.totalExpenses ?? 0,
+                debtPayment: r.debtPayment ?? 0,
+                liquidCash: r.liquidCash ?? 0,
+                endingCash: r.endingCash ?? 0,
+                netWorth: r.netWorth ?? 0,
+                debtBalance: r.debtBalance ?? 0,
+                savingsBalance: r.savingsBalance ?? 0,
+              } as ForecastRow)), label);
+            }}
+            className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
+            style={{ borderRadius: 'var(--radius)' }}
+          >
+            <FileDown size={12} /> PDF
+          </button>
         </div>
       </div>
 
@@ -961,16 +954,14 @@ export default function Forecast() {
         </div>
       )}
 
-      {/* Year Filter — premium only */}
-      {!freePreview && (
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto">
-          {(['all', '1', '2', '3'] as const).map(yr => (
-            <button key={yr} onClick={() => setFilterYear(yr)} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium border btn-press whitespace-nowrap ${filterYear === yr ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
-              {yr === 'all' ? 'All 36 Months' : `Year ${yr}`}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Year Filter */}
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto">
+        {(['all', '1', '2', '3'] as const).map(yr => (
+          <button key={yr} onClick={() => setFilterYear(yr)} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium border btn-press whitespace-nowrap ${filterYear === yr ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
+            {yr === 'all' ? 'All 36 Months' : `Year ${yr}`}
+          </button>
+        ))}
+      </div>
 
       {/* Milestones */}
       {projections.milestones.length > 0 && (
@@ -990,13 +981,10 @@ export default function Forecast() {
         <>
           {/* Net Worth Chart */}
           <div className="card-forged p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Worth & Assets Projection</h3>
-              {freePreview && <span className="text-[9px] text-muted-foreground">Showing 3 of 36 months</span>}
-            </div>
+            <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Net Worth & Assets Projection</h3>
             <ResponsiveContainer width="100%" height={280}>
               {chartMode === 'combo' ? (
-                <ComposedChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <ComposedChart data={filteredData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={tickStyle} interval={xInterval} />
                   <YAxis tick={tickStyle} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
@@ -1011,7 +999,7 @@ export default function Forecast() {
                   <Line type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
                 </ComposedChart>
               ) : (
-                <LineChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <LineChart data={filteredData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={tickStyle} interval={xInterval} />
                   <YAxis tick={tickStyle} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
@@ -1029,28 +1017,8 @@ export default function Forecast() {
             </ResponsiveContainer>
           </div>
 
-          {/* Premium upgrade CTA — free users only */}
-          {freePreview && (
-            <div className="card-forged p-5 sm:p-6 flex flex-col items-center text-center gap-3 border border-primary/20">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Crown size={18} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">See your full 36-month forecast</p>
-                <p className="text-[11px] text-muted-foreground mt-1 max-w-xs">Upgrade to Premium to unlock all 36 months, the CC debt payoff trajectory chart, the monthly breakdown table, and PDF export.</p>
-              </div>
-              <Link
-                to="/premium"
-                className="bg-primary text-primary-foreground px-5 py-2 text-xs font-semibold btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-              >
-                Unlock Full Forecast
-              </Link>
-            </div>
-          )}
-
-          {/* Debt Projection Chart — premium only */}
-          {!freePreview && cardProjectionData && (
+          {/* Debt Projection Chart */}
+          {cardProjectionData && (
             <div className="card-forged p-3 sm:p-5">
               <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2"><CreditCard size={12} /> Credit Card Debt Payoff Trajectory</h3>
               <ResponsiveContainer width="100%" height={220}>
@@ -1068,8 +1036,8 @@ export default function Forecast() {
             </div>
           )}
 
-          {/* Monthly Cash Flow Table — premium only */}
-          {!freePreview && <div className="card-forged p-3 sm:p-5 overflow-x-auto">
+          {/* Monthly Cash Flow Table */}
+          <div className="card-forged p-3 sm:p-5 overflow-x-auto">
             <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Monthly Breakdown</h3>
             <div className="min-w-0">
               <table className="w-full text-[10px] sm:text-xs">
@@ -1085,7 +1053,7 @@ export default function Forecast() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayData.map((row: any, i: number) => (
+                  {filteredData.map((row: any, i: number) => (
                     <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 cursor-pointer" onClick={() => setCalcDrawer({
                       title: `${row.month} Breakdown`,
                       lines: [
@@ -1123,7 +1091,7 @@ export default function Forecast() {
                 </tbody>
               </table>
             </div>
-          </div>}
+          </div>
         </>
       ) : (
         <div className="card-forged p-3 sm:p-5">
