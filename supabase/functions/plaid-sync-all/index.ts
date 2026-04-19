@@ -1,7 +1,7 @@
 /**
  * plaid-sync-all
  *
- * Called by pg_cron daily at 9am EST (14:00 UTC).
+ * Called by pg_cron daily at 8am EST (13:00 UTC) / 8am EDT (12:00 UTC).
  * Syncs Plaid balances for ALL premium users who have linked items.
  * Secured by CRON_SECRET header — no user JWT required.
  */
