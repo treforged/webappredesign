@@ -22,8 +22,8 @@
           "value": "nosniff"
         },
         {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
+          "key": "Upgrade-Insecure-Requests",
+          "value": "1"
         },
         {
           "key": "Referrer-Policy",
