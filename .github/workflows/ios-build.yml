@@ -104,14 +104,13 @@ jobs:
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: |
-          KEY_PATH=$RUNNER_TEMP/AuthKey.p8
-          echo -n "$APP_STORE_CONNECT_API_KEY_CONTENT" | base64 --decode -o $KEY_PATH
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo -n "$APP_STORE_CONNECT_API_KEY_CONTENT" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
           xcrun altool --upload-app \
-            -f $RUNNER_TEMP/ipa/Forged.ipa \
+            -f $RUNNER_TEMP/ipa/App.ipa \
             --type ios \
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID" \
-            --apiKeyPath $KEY_PATH
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
 
       - name: Clean up keychain
         if: always()
