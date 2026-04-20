@@ -67,7 +67,7 @@ export default function Auth() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/dashboard` },
+        options: { redirectTo: 'com.treforged.forged://auth-callback' },
       });
       if (error) {
         const msg = error.message.toLowerCase();
@@ -119,7 +119,8 @@ export default function Auth() {
       }));
 
       toast.success('Signed in with passkey');
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
+      return; // stop here → prevents any further auth/MFA logic
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       const lower = msg.toLowerCase();
@@ -309,7 +310,13 @@ export default function Auth() {
     const isExpiring = mfaFactorType === 'totp' && totpCountdown <= 5;
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div
+  className="min-h-screen bg-background flex items-center justify-center px-4"
+  style={{
+    paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)'
+  }}
+>
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
@@ -339,14 +346,16 @@ export default function Auth() {
             )}
 
             <input
-              type="text"
-              inputMode="numeric"
-              maxLength={mfaFactorType === 'totp' ? 6 : 8}
-              value={mfaCode}
-              onChange={e => { setMfaError(''); setMfaCode(e.target.value.replace(/\D/g, '')); }}
-              placeholder={mfaFactorType === 'totp' ? '000000' : 'Verification code'}
-              autoFocus
-              autoComplete="one-time-code"
+  type="text"
+  inputMode="numeric"
+  pattern="[0-9]*"
+  name="one-time-code"
+  autoComplete="one-time-code"
+  maxLength={mfaFactorType === 'totp' ? 6 : 8}
+  value={mfaCode}
+  onChange={e => { setMfaError(''); setMfaCode(e.target.value.replace(/\D/g, '')); }}
+  placeholder={mfaFactorType === 'totp' ? '000000' : 'Verification code'}
+  autoFocus
               className={`w-full bg-secondary border px-3 py-3 text-lg text-foreground text-center tracking-[0.4em] focus:outline-none focus:ring-1 ${mfaError ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-ring'}`}
               style={{ borderRadius: 'var(--radius)' }}
             />
@@ -366,7 +375,7 @@ export default function Auth() {
               <button
                 onClick={handleMfaVerify}
                 disabled={!mfaCode.trim()}
-                className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
+                className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
                 style={{ borderRadius: 'var(--radius)' }}
               >
                 Verify
@@ -376,7 +385,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => { setMode('login'); setMfaCode(''); setMfaError(''); }}
-              className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="w-full py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               ← Back to Sign In
             </button>
@@ -408,7 +417,7 @@ export default function Auth() {
                 minLength={6}
                 maxLength={128}
                 placeholder="At least 6 characters"
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full mt-1 bg-secondary border border-border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 style={{ borderRadius: 'var(--radius)' }}
               />
             </div>
@@ -423,7 +432,7 @@ export default function Auth() {
                 minLength={6}
                 maxLength={128}
                 placeholder="Re-enter your new password"
-                className={`w-full mt-1 bg-secondary border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${
+                className={`w-full mt-1 bg-secondary border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${
                   mismatch ? 'border-destructive focus:ring-destructive' : 'border-border'
                 }`}
                 style={{ borderRadius: 'var(--radius)' }}
@@ -436,7 +445,7 @@ export default function Auth() {
             <button
               type="submit"
               disabled={loading || mismatch}
-              className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
               style={{ borderRadius: 'var(--radius)' }}
             >
               {loading ? 'Updating…' : 'Set New Password'}
@@ -456,7 +465,7 @@ export default function Auth() {
             <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
           </div>
           <div className="card-forged p-6 space-y-4 text-center">
-            <p className="text-sm font-semibold text-foreground">Check your inbox</p>
+            <p className="text-base font-semibold text-foreground">Check your inbox</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               We sent a password reset link to{' '}
               <span className="text-foreground font-medium">{email}</span>.
@@ -465,7 +474,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="w-full py-2 text-xs font-semibold border border-border text-muted-foreground hover:text-foreground transition-colors btn-press"
+              className="w-full py-3 text-xs font-semibold border border-border text-muted-foreground hover:text-foreground transition-colors btn-press"
               style={{ borderRadius: 'var(--radius)' }}
             >
               Back to Sign In
@@ -507,7 +516,7 @@ export default function Auth() {
                 placeholder="Your name"
                 maxLength={50}
                 autoComplete="name"
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full mt-1 bg-secondary border border-border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 style={{ borderRadius: 'var(--radius)' }}
               />
             </div>
@@ -522,7 +531,7 @@ export default function Auth() {
               required
               maxLength={254}
               autoComplete={mode === 'signup' ? 'email' : 'username'}
-              className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full mt-1 bg-secondary border border-border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               style={{ borderRadius: 'var(--radius)' }}
             />
           </div>
@@ -549,7 +558,7 @@ export default function Auth() {
                 minLength={6}
                 maxLength={128}
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                className="w-full mt-1 bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full mt-1 bg-secondary border border-border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 style={{ borderRadius: 'var(--radius)' }}
               />
             </div>
@@ -567,7 +576,7 @@ export default function Auth() {
                 maxLength={128}
                 placeholder="Re-enter your password"
                 autoComplete="new-password"
-                className={`w-full mt-1 bg-secondary border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${
+                className={`w-full mt-1 bg-secondary border px-3 py-3 text-base text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${
                   confirmPassword && confirmPassword !== password
                     ? 'border-destructive focus:ring-destructive'
                     : 'border-border'
@@ -583,7 +592,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading || (mode === 'signup' && !!confirmPassword && confirmPassword !== password)}
-            className="w-full bg-primary text-primary-foreground py-2 text-xs font-semibold btn-press disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
             style={{ borderRadius: 'var(--radius)' }}
           >
             {loading
@@ -600,7 +609,7 @@ export default function Auth() {
               <button
                 type="button"
                 onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                className="w-full py-2 text-xs font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-colors btn-press"
+                className="w-full py-3 text-xs font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-colors btn-press"
                 style={{ borderRadius: 'var(--radius)' }}
               >
                 {mode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
@@ -612,7 +621,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="w-full py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               ← Back to Sign In
             </button>
@@ -630,7 +639,7 @@ export default function Auth() {
               type="button"
               disabled={loading}
               onClick={handlePasskeySignIn}
-              className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-colors btn-press disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold border border-primary/40 text-primary hover:bg-primary/10 transition-colors btn-press disabled:opacity-50"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -660,7 +669,7 @@ export default function Auth() {
               type="button"
               disabled={loading}
               onClick={() => handleOAuthSignIn('google')}
-              className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors btn-press disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors btn-press disabled:opacity-50"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
@@ -676,7 +685,7 @@ export default function Auth() {
               type="button"
               disabled={loading}
               onClick={() => handleOAuthSignIn('apple')}
-              className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors btn-press disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors btn-press disabled:opacity-50"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <svg width="14" height="14" viewBox="0 0 814 1000" aria-hidden="true" fill="currentColor">

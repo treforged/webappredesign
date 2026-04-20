@@ -1,10 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, MemoryRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, MemoryRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { Capacitor } from '@capacitor/core';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useEffect } from 'react';
+import { App as CapApp } from '@capacitor/app';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CookieBanner from "@/components/shared/CookieBanner";
 import AppLockScreen from "@/components/shared/AppLockScreen";
@@ -98,6 +100,36 @@ function AppRoutes() {
   );
 }
 
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+  if (!Capacitor.isNativePlatform()) return;
+
+  let listener: { remove: () => void } | null = null;
+
+  CapApp.addListener('appUrlOpen', (event) => {
+    const url = event.url;
+
+    if (url.includes('auth-callback')) {
+      navigate('/dashboard', { replace: true });
+    }
+
+    if (url.includes('/oauth')) {
+      navigate('/oauth', { replace: true });
+    }
+  }).then((handle) => {
+    listener = handle;
+  });
+
+  return () => {
+    listener?.remove();
+  };
+}, [navigate]);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -106,6 +138,7 @@ const App = () => (
         <MemoryRouter initialEntries={[window.location.pathname || '/']}>
           <AuthProvider>
             <AppLockScreen />
+            <DeepLinkHandler />
             <AppRoutes />
             <CookieBanner />
           </AuthProvider>
@@ -114,6 +147,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <AppLockScreen />
+            <DeepLinkHandler />
             <AppRoutes />
             <CookieBanner />
           </AuthProvider>
