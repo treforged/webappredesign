@@ -55,6 +55,37 @@ export default function Auth() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+  let mounted = true;
+
+  // Check if session already exists (OAuth redirect case)
+  supabase.auth.getSession().then(({ data }) => {
+    if (!mounted) return;
+    if (data.session) {
+      navigate('/dashboard', { replace: true });
+    }
+  });
+
+  // Listen for auth changes (Google/Apple login finishing)
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (!mounted) return;
+
+    if (
+      session &&
+      (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')
+    ) {
+      navigate('/dashboard', { replace: true });
+    }
+  });
+
+  return () => {
+    mounted = false;
+    subscription.unsubscribe();
+  };
+}, [navigate]);
+
   const switchMode = (next: Mode) => {
     setMode(next);
     setPassword('');
