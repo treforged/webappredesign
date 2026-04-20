@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { loginSchema, signUpSchema } from '@/lib/schemas';
+import { Capacitor } from '@capacitor/core';
 
 const PASSKEY_CRED_KEY   = 'forged:signin_passkey';
 const PASSKEY_TOKENS_KEY = 'forged:signin_passkey_tokens';
@@ -63,26 +64,31 @@ export default function Auth() {
   };
 
   const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: 'com.treforged.forged://auth-callback' },
-      });
-      if (error) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes('already registered') || msg.includes('email already in use')) {
-          toast.error('An account already exists with this email. Sign in with your password or reset it using "Forgot password?".');
-        } else {
-          toast.error(error.message);
-        }
+  setLoading(true);
+  try {
+    const redirectTo = Capacitor.isNativePlatform()
+  ? 'com.treforged.forged://auth-callback'
+  : `${window.location.origin}/auth`;
+
+const { error } = await supabase.auth.signInWithOAuth({
+  provider,
+  options: { redirectTo },
+});
+
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('email already in use')) {
+        toast.error('An account already exists with this email. Sign in with your password or reset it using "Forgot password?".');
+      } else {
+        toast.error(error.message);
       }
-    } catch {
-      toast.error('OAuth sign-in failed. Please try again.');
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch {
+    toast.error('OAuth sign-in failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handlePasskeySignIn = async () => {
     setLoading(true);
