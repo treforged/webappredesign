@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app';
+import { supabase } from '@/lib/supabase';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CookieBanner from "@/components/shared/CookieBanner";
 import AppLockScreen from "@/components/shared/AppLockScreen";
@@ -104,28 +105,77 @@ function DeepLinkHandler() {
   const navigate = useNavigate();
 
   useEffect(() => {
-  if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform()) return;
 
-  let listener: { remove: () => void } | null = null;
+    let listener: { remove: () => void } | null = null;
 
-  CapApp.addListener('appUrlOpen', (event) => {
-    const url = event.url;
+    CapApp.addListener('appUrlOpen', async (event) => {
+      try {
+        const incoming = new URL(event.url);
+        const host = incoming.host;
+        const path = incoming.pathname;
 
-    if (url.includes('auth-callback')) {
-      navigate('/dashboard', { replace: true });
-    }
+        // OAuth callback from Google / Apple
+        if (host === 'auth-callback' || path.includes('auth-callback')) {
+          const code = incoming.searchParams.get('code');
 
-    if (url.includes('/oauth')) {
-      navigate('/oauth', { replace: true });
-    }
-  }).then((handle) => {
-    listener = handle;
-  });
+          // PKCE flow
+          if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) {
+              console.error('OAuth code exchange failed:', error);
+              navigate('/auth', { replace: true });
+              return;
+            }
 
-  return () => {
-    listener?.remove();
-  };
-}, [navigate]);
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+
+          // Token/hash fallback
+          const hash = incoming.hash.startsWith('#')
+            ? incoming.hash.slice(1)
+            : incoming.hash;
+
+          const hashParams = new URLSearchParams(hash);
+          const access_token = hashParams.get('access_token');
+          const refresh_token = hashParams.get('refresh_token');
+
+          if (access_token && refresh_token) {
+            const { error } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+
+            if (error) {
+              console.error('OAuth session set failed:', error);
+              navigate('/auth', { replace: true });
+              return;
+            }
+
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+
+          navigate('/auth', { replace: true });
+          return;
+        }
+
+        // Plaid OAuth return
+        if (host === 'oauth' || path.includes('/oauth')) {
+          navigate('/oauth', { replace: true });
+        }
+      } catch (err) {
+        console.error('Deep link handling failed:', err);
+      }
+    }).then((handle) => {
+      listener = handle;
+    });
+
+    return () => {
+      listener?.remove();
+    };
+  }, [navigate]);
 
   return null;
 }
