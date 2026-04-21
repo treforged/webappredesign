@@ -85,9 +85,14 @@ function CalcDrawer({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-background/80 z-[60] flex items-end sm:items-center justify-center sm:p-4" onClick={onClose}>
+    <div
+  className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 ${
+    open ? 'bg-background/80 pointer-events-auto' : 'pointer-events-none'
+  }`}
+  onClick={onClose}
+>
       <div
-        className="card-forged p-4 sm:p-6 w-full sm:max-w-md space-y-3 max-h-[70dvh] sm:max-h-[80vh] overflow-y-auto rounded-b-none sm:rounded-b-[var(--radius)]"
+        className="card-forged p-4 sm:p-6 w-full sm:max-w-md space-y-3 max-h-[65vh] sm:max-h-[80vh] overflow-y-auto rounded-b-none sm:rounded-b-[var(--radius)]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
