@@ -132,9 +132,9 @@ function EntryView({ entry }: { entry: ChatEntry }) {
       {/* Question bubble */}
       {question && (
         <div className="flex justify-end">
-          <div className="flex items-center gap-2 max-w-[90%] sm:max-w-[85%]">
+          <div className="flex items-center gap-2 max-w-[90%] sm:max-w-[85%] min-w-0">
             <div
-              className="text-[12px] px-3 py-2 bg-primary text-primary-foreground font-medium leading-snug"
+              className="text-[12px] px-3 py-2 bg-primary text-primary-foreground font-medium leading-snug break-words"
               style={{ borderRadius: 'var(--radius)' }}
             >
               {question}
@@ -154,7 +154,7 @@ function EntryView({ entry }: { entry: ChatEntry }) {
         <div className="flex-1 min-w-0 space-y-3">
 
           {/* Score + summary */}
-          <div className="flex gap-4 p-4 bg-secondary/50 border border-border/40" style={{ borderRadius: 'var(--radius)' }}>
+          <div className="flex gap-4 p-4 bg-secondary/50 border border-border/40 min-w-0 overflow-hidden" style={{ borderRadius: 'var(--radius)' }}>
             <ScoreRing score={result.score ?? 0} size={88} />
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Financial Health</p>
@@ -594,7 +594,7 @@ export default function AiAdvisor() {
 
   if (view === 'list') {
     return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
+      <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full overflow-x-hidden">
         <SharedHeader />
 
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5 overflow-x-hidden">
@@ -610,7 +610,7 @@ export default function AiAdvisor() {
               <button
                 key={convo.id}
                 onClick={() => openConversation(convo)}
-                className="w-full flex items-center gap-3 p-3.5 text-left bg-secondary/30 hover:bg-secondary/70 border border-border/30 hover:border-border/60 transition-all group"
+                className="w-full flex items-center gap-3 p-3.5 overflow-hidden text-left bg-secondary/30 hover:bg-secondary/70 border border-border/30 hover:border-border/60 transition-all group"
                 style={{ borderRadius: 'var(--radius)' }}
               >
                 <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
@@ -638,13 +638,13 @@ export default function AiAdvisor() {
   const showBackInChat = conversations.length > 0;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full overflow-x-hidden">
 
       <SharedHeader showBack={showBackInChat} title={activeTitle ?? undefined} />
       {isNewChat && <SnapshotBar />}
 
       {/* Thread */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 lg:px-6 py-4 space-y-6">
 
         {/* Empty state */}
         {activeEntries.length === 0 && !loading && (
@@ -656,7 +656,7 @@ export default function AiAdvisor() {
               <p className="text-sm font-semibold">Ask Forge anything about your finances</p>
               <p className="text-xs text-muted-foreground mt-1">Personalized advice based on your live data</p>
             </div>
-            <div className="flex flex-wrap justify-center gap-2 max-w-sm">
+            <div className="flex flex-wrap justify-center gap-2 max-w-sm w-full">
               {QUICK_QUESTIONS.map(q => (
                 <button
                   key={q}

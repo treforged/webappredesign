@@ -798,12 +798,12 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
             const hasOverrides = Object.keys(cardOverrides).length > 0;
 
             return (
-              <div key={proj.card.id} className="card-forged overflow-hidden w-full max-w-full">
+              <div key={proj.card.id} className="card-forged overflow-hidden w-full max-w-full min-w-0">
                 <button onClick={() => setExpandedCard(isExpanded ? null : proj.card.id)}
-                  className="w-full p-3 sm:p-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between text-left hover:bg-muted/10 transition-colors">
+                  className="w-full p-3 sm:p-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between text-left hover:bg-muted/10 transition-colors overflow-hidden">
                   <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                     <span className="w-3 sm:w-4 h-3 sm:h-4 rounded-sm shrink-0" style={{ backgroundColor: proj.card.color }} />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <h4 className="text-xs sm:text-sm font-semibold">{proj.card.name}</h4>
                         {proj.card.autopayFullBalance && (
@@ -918,11 +918,11 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
                       )}
                     </div>
                     <div className="w-full overflow-x-auto">
-                      <table className="w-full text-[10px] sm:text-[11px] min-w-[600px] sm:min-w-0">
+                      <table className="w-full text-[10px] sm:text-[11px] min-w-[720px] sm:min-w-0">
                         <thead>
                           <tr className="border-b border-border">
                             {['Month', 'Start', 'Purch.', 'Interest', 'Payment', 'End Bal', 'Util', ''].map(h => (
-                              <th key={h} className="py-2 px-1.5 sm:px-2 text-left text-muted-foreground uppercase tracking-wider font-medium whitespace-nowrap">{h}</th>
+                              <th key={h} className="py-2 px-1.5 sm:px-2 text-left text-muted-foreground uppercase tracking-wider font-medium text-[9px] sm:text-[11px] whitespace-nowrap">{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -933,10 +933,10 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
                             return (
                               <tr key={row.month} className={`border-b border-border/30 hover:bg-muted/10 ${isOverridden ? 'bg-primary/5' : ''}`}>
                                 <td className="py-1.5 px-1.5 sm:px-2 font-medium">{row.label}</td>
-                                <td className="py-1.5 px-1.5 sm:px-2">{formatCurrency(row.startBalance, false)}</td>
+                                <td className="py-1.5 px-1.5 sm:px-2 whitespace-nowrap">{formatCurrency(row.startBalance, false)}</td>
                                 <td className="py-1.5 px-1.5 sm:px-2 text-destructive">{row.newPurchases > 0 ? `+${formatCurrency(row.newPurchases, false)}` : '—'}</td>
                                 <td className="py-1.5 px-1.5 sm:px-2 text-destructive">{row.interest > 0 ? `+${formatCurrency(row.interest, true)}` : '—'}</td>
-                                <td className="py-1.5 px-1.5 sm:px-2">
+                                <td className="py-1.5 px-1.5 sm:px-2 whitespace-nowrap">
                                   {isEditingThis ? (
                                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                       <input type="number" value={monthPayInput} onChange={e => setMonthPayInput(e.target.value)}

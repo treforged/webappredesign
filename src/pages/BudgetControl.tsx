@@ -723,7 +723,7 @@ export default function BudgetControl() {
   );
 
   return (
-    <div className="w-full max-w-none space-y-6 sm:space-y-8 overflow-x-hidden">
+    <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 overflow-x-hidden px-4">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3">
         <div className="min-w-0">
           <h1 className="font-display font-bold text-xl sm:text-2xl lg:text-3xl tracking-tight">Budget Control</h1>
@@ -1085,26 +1085,56 @@ export default function BudgetControl() {
             </>
           )}
         </div>
-        <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'hsl(0, 65%, 45%)' }} /> Fixed ({monthlyTakeHome > 0 ? ((totalFixedExpenses / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'hsl(35, 85%, 50%)' }} /> Variable ({monthlyTakeHome > 0 ? ((totalVariableExpenses / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'hsl(210, 70%, 50%)' }} /> Debt ({monthlyTakeHome > 0 ? ((totalDebtPayments / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'hsl(280, 60%, 55%)' }} /> Transfers ({monthlyTakeHome > 0 ? ((totalTransfers / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'hsl(142, 50%, 40%)' }} /> Remaining ({monthlyTakeHome > 0 ? ((remaining / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: 'hsl(0, 65%, 45%)' }} />
+            <span className="truncate">Fixed ({monthlyTakeHome > 0 ? ((totalFixedExpenses / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: 'hsl(35, 85%, 50%)' }} />
+            <span className="truncate">Variable ({monthlyTakeHome > 0 ? ((totalVariableExpenses / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: 'hsl(210, 70%, 50%)' }} />
+            <span className="truncate">Debt ({monthlyTakeHome > 0 ? ((totalDebtPayments / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: 'hsl(280, 60%, 55%)' }} />
+            <span className="truncate">Transfers ({monthlyTakeHome > 0 ? ((totalTransfers / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: 'hsl(142, 50%, 40%)' }} />
+            <span className="truncate">Remaining ({monthlyTakeHome > 0 ? ((remaining / monthlyTakeHome) * 100).toFixed(0) : 0}%)</span>
+          </div>
         </div>
-      </div>
 
       {/* Tabbed Rule Management */}
       <Tabs defaultValue="income" className="space-y-4">
-        <div className="overflow-x-auto w-full">
-        <TabsList className="bg-secondary border border-border w-max sm:w-full justify-start flex-nowrap h-auto gap-1 p-1 min-w-full sm:min-w-0">
-          <TabsTrigger value="income" className="text-sm data-[state=active]:bg-background">Income ({incomeRules.length})</TabsTrigger>
-          <TabsTrigger value="fixed" className="text-sm data-[state=active]:bg-background">Fixed ({billsRules.length})</TabsTrigger>
-          <TabsTrigger value="subscriptions" className="text-sm data-[state=active]:bg-background">Subscriptions ({subscriptionRules.length})</TabsTrigger>
-          <TabsTrigger value="variable" className="text-sm data-[state=active]:bg-background">Variable ({variableRules.length})</TabsTrigger>
-          <TabsTrigger value="debt" className="text-sm data-[state=active]:bg-background">Debt ({debtRules.length})</TabsTrigger>
-          <TabsTrigger value="transfers" className="text-sm data-[state=active]:bg-background">Transfers ({transferRules.length})</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto pb-1">
+          <TabsList className="bg-secondary border border-border w-max min-w-full sm:min-w-0 sm:w-full justify-start flex-nowrap h-auto gap-1 p-1">
+            <TabsTrigger value="income" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Income ({incomeRules.length})
+            </TabsTrigger>
+            <TabsTrigger value="fixed" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Fixed ({billsRules.length})
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Subscriptions ({subscriptionRules.length})
+            </TabsTrigger>
+            <TabsTrigger value="variable" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Variable ({variableRules.length})
+            </TabsTrigger>
+            <TabsTrigger value="debt" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Debt ({debtRules.length})
+            </TabsTrigger>
+            <TabsTrigger value="transfers" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+              Transfers ({transferRules.length})
+            </TabsTrigger>
+          </TabsList>
         </div>
 
         <TabsContent value="income">
