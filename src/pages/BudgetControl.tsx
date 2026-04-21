@@ -772,9 +772,9 @@ export default function BudgetControl() {
       <div className="card-forged p-3 sm:p-5 space-y-3 sm:space-y-4">
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm sm:text-base font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Income & Taxes</h3>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             {incomeRules.length > 0 && (
-              <div className="flex items-center gap-1 min-w-0">
+              <div className="flex w-full items-center gap-1 sm:w-auto">
                 <span className="text-[9px] text-muted-foreground uppercase shrink-0">Rule:</span>
                 <select
                   value={paycheckRuleId ?? ''}
@@ -783,7 +783,7 @@ export default function BudgetControl() {
                     setPaycheckRuleId(id);
                     updateProfile.mutate({ paycheck_rule_id: id } as any);
                   }}
-                  className="bg-secondary border border-border px-2 py-0.5 text-xs sm:text-sm text-foreground max-w-[130px] truncate"
+                  className="bg-secondary border border-border px-2 py-1 text-sm text-foreground w-full sm:w-auto max-w-full sm:max-w-[130px]"
                   style={{ borderRadius: 'var(--radius)' }}
                 >
                   <option value="">— none —</option>
@@ -846,46 +846,46 @@ export default function BudgetControl() {
               const isTaxItem = TAX_CATALOG_LABELS.has(d.label.toLowerCase());
               const fromCatalog = isCatalogItem(d.label);
               return (
-                <div key={d.id} className="border-b border-border/30 last:border-0 pb-1.5">
+                <div key={d.id} className="border-b border-border/30 last:border-0 pb-2 pt-1">
                   {/* Row 1: label + remove */}
                   <div className="flex items-center gap-2 pt-1 pb-0.5">
                     {fromCatalog ? (
-                      <span className="flex-1 min-w-0 text-sm font-medium text-foreground px-0.5 truncate">{d.label}</span>
+                      <span className="flex-1 min-w-0 text-sm font-semibold text-foreground px-0.5 truncate">{d.label}</span>
                     ) : (
                       <input
                         type="text"
                         value={d.label}
                         onChange={e => updateDeduction(d.id, { label: e.target.value })}
-                        className="flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-border focus:border-primary text-sm font-medium text-foreground px-0.5 outline-none transition-colors"
+                        className="flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-border focus:border-primary text-sm font-semibold text-foreground px-0.5 outline-none transition-colors"
                       />
                     )}
                     <button onClick={() => removeDeduction(d.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X size={12} /></button>
                   </div>
                   {/* Row 2: controls */}
-                  <div className="flex flex-col gap-2 pb-1 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center">
                     {/* Value input */}
                     <input
                       type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
                       value={d.value}
                       onChange={e => updateDeduction(d.id, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-full sm:w-24 bg-secondary border border-border px-2 py-2 text-sm sm:text-base text-foreground font-display font-bold text-left sm:text-right shrink-0"
+                      className="w-full sm:w-24 bg-secondary border border-border px-3 py-2 text-base text-foreground font-display font-bold text-left sm:text-right"
                       style={{ borderRadius: 'var(--radius)' }}
                     />
                     {/* $/% toggle */}
-                    <div className="flex gap-0.5 shrink-0">
+                    <div className="flex gap-1 w-full sm:w-auto">
                       <button onClick={() => updateDeduction(d.id, { mode: 'flat' })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.mode === 'flat' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>$</button>
                       <button onClick={() => updateDeduction(d.id, { mode: 'pct' })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.mode === 'pct' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>%</button>
                     </div>
                     {/* Pre/post-tax toggle */}
                     {!isTaxItem && (
-                      <div className="flex gap-0.5 shrink-0">
+                      <div className="flex gap-1 w-full sm:w-auto">
                         <button onClick={() => updateDeduction(d.id, { preTax: true })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Pre</button>
                         <button onClick={() => updateDeduction(d.id, { preTax: false })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${!d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Post</button>
                       </div>
                     )}
                     {/* Resolved amount hint */}
                     {d.value > 0 && (
-                      <span className="text-[9px] text-muted-foreground shrink-0">
+                      <span className="text-[10px] text-muted-foreground w-full sm:w-auto"
                         {d.mode === 'pct' ? formatCurrency(d.flatAmt, false) : `${paycheckGross > 0 ? ((d.value / paycheckGross) * 100).toFixed(1) : '0'}%`}
                       </span>
                     )}
@@ -1000,13 +1000,41 @@ export default function BudgetControl() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-2 border-t border-border">
-          <div className="text-center"><p className="text-sm text-muted-foreground">Per Paycheck (Net)</p><p className="text-sm sm:text-base font-display font-bold text-success">{formatCurrency(paycheckNet, false)}</p></div>
-          <div className="text-center"><p className="text-sm text-muted-foreground">Monthly Gross</p><p className="text-sm sm:text-base font-display font-bold text-foreground">{formatCurrency(monthlyGross, false)}</p></div>
-          <div className="text-center"><p className="text-sm text-muted-foreground">Monthly Take-Home</p><p className="text-sm sm:text-base font-display font-bold text-success">{formatCurrency(monthlyTakeHome, false)}</p></div>
-          <div className="text-center"><p className="text-sm text-muted-foreground">Annual Gross</p><p className="text-sm sm:text-base font-display font-bold text-foreground">{formatCurrency(annualGross, false)}</p></div>
-          <div className="text-center"><p className="text-sm text-muted-foreground">Annual Take-Home</p><p className="text-sm sm:text-base font-display font-bold text-success">{formatCurrency(annualTakeHome, false)}</p></div>
-        </div>
+        <div className="grid grid-cols-1 gap-3 pt-2 border-t border-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="card-forged p-3 text-left">
+  <p className="text-xs sm:text-sm text-muted-foreground">Per Paycheck (Net)</p>
+  <p className="mt-1 text-base sm:text-lg font-display font-bold text-success break-words">
+    {formatCurrency(paycheckNet, false)}
+  </p>
+</div>
+
+<div className="card-forged p-3 text-left">
+  <p className="text-xs sm:text-sm text-muted-foreground">Monthly Gross</p>
+  <p className="mt-1 text-base sm:text-lg font-display font-bold text-foreground break-words">
+    {formatCurrency(monthlyGross, false)}
+  </p>
+</div>
+
+<div className="card-forged p-3 text-left">
+  <p className="text-xs sm:text-sm text-muted-foreground">Monthly Take-Home</p>
+  <p className="mt-1 text-base sm:text-lg font-display font-bold text-success break-words">
+    {formatCurrency(monthlyTakeHome, false)}
+  </p>
+</div>
+
+<div className="card-forged p-3 text-left">
+  <p className="text-xs sm:text-sm text-muted-foreground">Annual Gross</p>
+  <p className="mt-1 text-base sm:text-lg font-display font-bold text-foreground break-words">
+    {formatCurrency(annualGross, false)}
+  </p>
+</div>
+
+<div className="card-forged p-3 text-left">
+  <p className="text-xs sm:text-sm text-muted-foreground">Annual Take-Home</p>
+  <p className="mt-1 text-base sm:text-lg font-display font-bold text-success break-words">
+    {formatCurrency(annualTakeHome, false)}
+  </p>
+</div>
       </div>
 
       {/* KPI Summary + Remaining Cash On Hand */}
@@ -1208,7 +1236,7 @@ export default function BudgetControl() {
             </div>
 
             {/* Benefits */}
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Benefits</p>
               <div className="flex flex-wrap gap-1.5">
                 {DEDUCTION_CATALOG.slice(0, 7).map(item => <CatalogBtn key={item.label} item={item} />)}
@@ -1216,7 +1244,7 @@ export default function BudgetControl() {
             </div>
 
             {/* Retirement & Savings */}
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Retirement & Savings</p>
               <div className="flex flex-wrap gap-1.5">
                 {DEDUCTION_CATALOG.slice(7, 13).map(item => <CatalogBtn key={item.label} item={item} />)}
@@ -1224,7 +1252,7 @@ export default function BudgetControl() {
             </div>
 
             {/* Taxes */}
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Taxes</p>
               <div className="flex flex-wrap gap-1.5">
                 {DEDUCTION_CATALOG.slice(13, 17).map(item => <CatalogBtn key={item.label} item={item} />)}
@@ -1232,7 +1260,7 @@ export default function BudgetControl() {
             </div>
 
             {/* Other */}
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Other</p>
               <div className="flex flex-wrap gap-1.5">
                 {DEDUCTION_CATALOG.slice(17).map(item => <CatalogBtn key={item.label} item={item} />)}

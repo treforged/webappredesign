@@ -129,7 +129,7 @@ export default function MobileNav() {
       )}
 
       <nav
-        className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 supports-[backdrop-filter]:bg-card/80 backdrop-blur"
+        className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="grid grid-cols-5 items-stretch px-2 py-2 min-h-[72px]">
