@@ -658,39 +658,73 @@ export default function BudgetControl() {
   };
 
   const RuleRow = ({ r, color = 'text-destructive' }: { r: any; color?: string }) => (
-    <div className={`flex items-center justify-between py-2.5 border-b border-border/50 last:border-0 ${!r.active ? 'opacity-40' : ''}`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm sm:text-base font-medium truncate">{r.name}</p>
-          {r.isSub && <span className="text-[9px] px-1 py-0.5 bg-accent/20 text-accent-foreground border border-accent/30" style={{ borderRadius: 'var(--radius)' }}>sub</span>}
-          {r.isDebtSync && <span className="text-[9px] px-1 py-0.5 bg-primary/20 text-primary border border-primary/30" style={{ borderRadius: 'var(--radius)' }}>from payoff</span>}
-        </div>
-        <p className="text-sm text-muted-foreground truncate">
-          {freqLabel(r.frequency)} · Day {r.due_day}
-          {r.due_month ? ` / Month ${r.due_month}` : ''}
-          {r.start_date ? ` · Starts ${r.start_date}` : ''}
-          {r.payment_source ? ` · From: ${getAccountName(r.payment_source)}` : ''}
-          {r.deposit_account ? ` · To: ${getAccountName(r.deposit_account)}` : ''}
-        </p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-3">
-        <span className={`text-sm sm:text-base font-display font-bold ${color}`}>{formatCurrency(Number(r.amount), false)}</span>
-        <span className="text-sm text-muted-foreground">/mo {formatCurrency(toMonthly(r), false)}</span>
-        {!r.isSub && !r.isDebtSync && (
-          <>
-            <button onClick={() => handleDuplicate(r)} className="icon-btn text-muted-foreground hover:text-primary" title="Duplicate"><Copy size={11} /></button>
-            <button onClick={() => toggleActive(r)} className="icon-btn text-muted-foreground hover:text-foreground">{r.active ? <Pause size={11} /> : <Play size={11} />}</button>
-            <button onClick={() => openEdit(r)} className="icon-btn text-muted-foreground hover:text-foreground"><Edit2 size={11} /></button>
-            <button onClick={() => handleDelete(r.id)} className={`icon-btn ${deleteConfirm === r.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={11} /></button>
-          </>
-        )}
-      </div>
+  <div className={`flex flex-col gap-2 py-3 border-b border-border/50 last:border-0 sm:flex-row sm:items-center sm:justify-between ${!r.active ? 'opacity-40' : ''}`}>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-1.5 flex-wrap">
+      <p className="text-sm sm:text-base font-medium break-words">{r.name}</p>
+      {r.isSub && (
+        <span
+          className="text-[9px] px-1 py-0.5 bg-accent/20 text-accent-foreground border border-accent/30 shrink-0"
+          style={{ borderRadius: 'var(--radius)' }}
+        >
+          sub
+        </span>
+      )}
+      {r.isDebtSync && (
+        <span
+          className="text-[9px] px-1 py-0.5 bg-primary/20 text-primary border border-primary/30 shrink-0"
+          style={{ borderRadius: 'var(--radius)' }}
+        >
+          from payoff
+        </span>
+      )}
     </div>
+
+    <p className="mt-1 text-xs sm:text-sm text-muted-foreground break-words">
+      {freqLabel(r.frequency)} · Day {r.due_day}
+      {r.due_month ? ` / Month ${r.due_month}` : ''}
+      {r.start_date ? ` · Starts ${r.start_date}` : ''}
+      {r.payment_source ? ` · From: ${getAccountName(r.payment_source)}` : ''}
+      {r.deposit_account ? ` · To: ${getAccountName(r.deposit_account)}` : ''}
+    </p>
+  </div>
+
+  <div className="flex flex-col gap-2 sm:items-end">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className={`text-sm sm:text-base font-display font-bold ${color}`}>
+        {formatCurrency(Number(r.amount), false)}
+      </span>
+      <span className="text-xs sm:text-sm text-muted-foreground">
+        /mo {formatCurrency(toMonthly(r), false)}
+      </span>
+    </div>
+
+    {!r.isSub && !r.isDebtSync && (
+      <div className="flex flex-wrap items-center gap-1">
+        <button onClick={() => handleDuplicate(r)} className="icon-btn text-muted-foreground hover:text-primary" title="Duplicate">
+          <Copy size={13} />
+        </button>
+        <button onClick={() => toggleActive(r)} className="icon-btn text-muted-foreground hover:text-foreground">
+          {r.active ? <Pause size={13} /> : <Play size={13} />}
+        </button>
+        <button onClick={() => openEdit(r)} className="icon-btn text-muted-foreground hover:text-foreground">
+          <Edit2 size={13} />
+        </button>
+        <button
+          onClick={() => handleDelete(r.id)}
+          className={`icon-btn ${deleteConfirm === r.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+    )}
+  </div>
+</div>
   );
 
   return (
-    <div className="px-4 pt-safe pb-safe max-w-5xl mx-auto space-y-6 sm:space-y-8">
-      <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-wrap">
+    <div className="w-full max-w-none space-y-6 sm:space-y-8">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3">
         <div className="min-w-0">
           <h1 className="font-display font-bold text-xl sm:text-2xl lg:text-3xl tracking-tight">Budget Control</h1>
           <p className="text-sm text-muted-foreground mt-0.5 sm:mt-1">Your single source of truth for income, expenses, and automation</p>
@@ -736,9 +770,9 @@ export default function BudgetControl() {
 
       {/* Income & Taxes — auto-saves */}
       <div className="card-forged p-3 sm:p-5 space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm sm:text-base font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Income & Taxes</h3>
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {incomeRules.length > 0 && (
               <div className="flex items-center gap-1 min-w-0">
                 <span className="text-[9px] text-muted-foreground uppercase shrink-0">Rule:</span>
@@ -828,13 +862,13 @@ export default function BudgetControl() {
                     <button onClick={() => removeDeduction(d.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X size={12} /></button>
                   </div>
                   {/* Row 2: controls */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-1">
+                  <div className="flex flex-col gap-2 pb-1 sm:flex-row sm:flex-wrap sm:items-center">
                     {/* Value input */}
                     <input
                       type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
                       value={d.value}
                       onChange={e => updateDeduction(d.id, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-full sm:w-20 bg-secondary border border-border px-2 py-1 text-sm sm:text-base text-foreground font-display font-bold text-right shrink-0"
+                      className="w-full sm:w-24 bg-secondary border border-border px-2 py-2 text-sm sm:text-base text-foreground font-display font-bold text-left sm:text-right shrink-0"
                       style={{ borderRadius: 'var(--radius)' }}
                     />
                     {/* $/% toggle */}
@@ -989,7 +1023,7 @@ export default function BudgetControl() {
 
       {/* Remaining Cash On Hand — prominent */}
       <div className="card-forged p-4 sm:p-5 cursor-pointer hover:border-primary/20 transition-colors group" onClick={openCashCalc}>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Wallet size={14} className="text-primary shrink-0" />
@@ -1001,7 +1035,7 @@ export default function BudgetControl() {
               {fundingAccount && <span className="font-medium"> · {fundingAccount.name}</span>}
             </p>
           </div>
-          <p className={`text-xl sm:text-2xl font-display font-bold shrink-0 ${remainingCashOnHand >= 0 ? 'text-success' : 'text-destructive'}`}>
+          <p className={`text-xl sm:text-2xl font-display font-bold ${remainingCashOnHand >= 0 ? 'text-success' : 'text-destructive'}`}>
             {formatCurrency(remainingCashOnHand, false)}
           </p>
         </div>

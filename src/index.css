@@ -83,16 +83,39 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: hsl(var(--background));
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    min-height: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
-  /* Eliminate 300ms tap delay on all interactive elements */
+
   button, a, select, input, textarea, [role="button"], [role="tab"], [role="switch"] {
     touch-action: manipulation;
   }
@@ -102,28 +125,53 @@
   .font-display {
     font-family: var(--font-display);
   }
+
   .font-body {
     font-family: var(--font-body);
   }
+
   .text-gold {
     color: hsl(var(--gold));
   }
+
   .card-forged {
     @apply bg-card border border-border;
     border-radius: var(--radius);
   }
+
   .btn-press {
     @apply active:scale-[0.98] transition-transform duration-75;
   }
+
   .safe-area-pb {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
+
   .pt-safe {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(0.75rem, env(safe-area-inset-top));
   }
+
   .pb-safe {
     padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
   }
+
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .mobile-page-gutter {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-page-gutter {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
   /* 44px minimum tap target for icon-only buttons */
   .icon-btn {
     @apply flex items-center justify-center min-h-[44px] min-w-[44px];
