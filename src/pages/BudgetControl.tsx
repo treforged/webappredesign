@@ -885,7 +885,7 @@ export default function BudgetControl() {
                     )}
                     {/* Resolved amount hint */}
                     {d.value > 0 && (
-                      <span className="text-[10px] text-muted-foreground w-full sm:w-auto"
+                      <span className="text-[10px] text-muted-foreground w-full sm:w-auto">
                         {d.mode === 'pct' ? formatCurrency(d.flatAmt, false) : `${paycheckGross > 0 ? ((d.value / paycheckGross) * 100).toFixed(1) : '0'}%`}
                       </span>
                     )}
