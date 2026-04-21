@@ -336,7 +336,7 @@ export default function Accounts() {
           <p className="text-xs text-muted-foreground">Exchanging token and syncing balances</p>
         </div>
       )}
-      <div className="flex items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-display font-bold text-2xl lg:text-3xl tracking-tight">Accounts</h1>
@@ -349,7 +349,7 @@ export default function Accounts() {
           </div>
           <p className="text-sm text-muted-foreground mt-1">Manage all financial accounts in one place</p>
         </div>
-        <button onClick={openAdd} className="shrink-0 flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press" style={{ borderRadius: 'var(--radius)' }}>
+        <button onClick={openAdd} className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-1.5 bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold btn-press" style={{ borderRadius: 'var(--radius)' }}>
           <Plus size={14} /> Add Account
         </button>
       </div>

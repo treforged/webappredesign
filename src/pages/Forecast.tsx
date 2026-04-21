@@ -20,8 +20,11 @@ import { exportForecastPdf, type ForecastRow } from '@/lib/exportPdf';
 function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: () => void; title: string; lines: { label: string; value: string; op?: string }[] }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-background/80 z-[60] flex items-end sm:items-center justify-center sm:p-4" onClick={onClose}>
-      <div className="card-forged p-4 sm:p-6 w-full sm:max-w-md space-y-3 max-h-[70dvh] sm:max-h-[85vh] overflow-y-auto rounded-b-none sm:rounded-b-[var(--radius)]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-background/80 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+  <div
+    className="card-forged p-4 sm:p-6 w-full sm:max-w-md mx-2 sm:mx-0 space-y-3 max-h-[65vh] sm:max-h-[85vh] overflow-y-auto rounded-b-none sm:rounded-b-[var(--radius)]"
+    onClick={e => e.stopPropagation()}
+  >
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-display font-semibold text-sm flex items-center gap-2 min-w-0"><Info size={14} className="text-primary shrink-0" /> <span className="truncate">{title}</span></h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0 p-1"><X size={16} /></button>
@@ -48,7 +51,7 @@ function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: (
 function ForecastTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border p-2 sm:p-3 text-[10px] sm:text-xs space-y-1 max-w-[200px] sm:max-w-xs" style={{ borderRadius: 'var(--radius)' }}>
+    <div className="bg-card border border-border p-2 sm:p-3 text-[10px] sm:text-xs space-y-1 max-w-[140px] sm:max-w-xs" style={{ borderRadius: 'var(--radius)' }}>
       <p className="font-display font-bold text-foreground mb-1">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-2 sm:gap-3">
@@ -196,216 +199,235 @@ export default function Forecast() {
   }, [accounts, rules, scheduledEvents, pauseSavings]);
 
   const cardProjectionData = useMemo(() => {
-    try {
-      const cards = buildCardData(accounts, transactions, rules, debts);
-      if (cards.length === 0) return null;
+  try {
+    const cards = buildCardData(accounts, transactions, rules, debts);
+    if (cards.length === 0) return null;
 
-      const liquidTypes = ['checking', 'business_checking', 'cash'];
-      const liquidCash = accounts.filter((a: any) => a.active && liquidTypes.includes(a.account_type))
-        .reduce((s: number, a: any) => s + Number(a.balance), 0);
-      // Scalar fallbacks (used only when monthEvents not provided by legacy callers)
-      const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
-      const taxRate = Number(profile?.tax_rate) || 22;
-      const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
-      const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
-        .reduce((s: number, r: any) => {
-          const amt = Number(r.amount);
-          if (r.frequency === 'weekly') return s + amt * 4.33;
-          if (r.frequency === 'yearly') return s + amt / 12;
-          return s + amt;
-        }, 0);
-
-      // ── Build cardPurchasesPerMonth using shared forecastMonthEvents ──
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-
-      // Default-card rules: no payment_source, category in CC_DEFAULT_CATEGORIES
-      // These go to the highest-APR card by convention
-      const highestAprCardId = cards.length > 0
-        ? [...cards].sort((a, b) => b.apr - a.apr)[0].id : '';
-      const ccDefaultRuleIds = new Set<string>(
-        rules.filter((r: any) =>
-          r.active && r.rule_type === 'expense' &&
-          !r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category),
-        ).map((r: any) => r.id),
-      );
-
-      // Per-card rule ID map for purchase tracking
-      const cardRuleIdMap = new Map<string, Set<string>>(
-        cards.map(c => {
-          const cKey = `account:${c.id}`;
-          const ids = new Set<string>(
-            rules.filter((r: any) =>
-              r.active && r.rule_type === 'expense' &&
-              (r.payment_source === c.id || r.payment_source === cKey),
-            ).map((r: any) => r.id),
-          );
-          if (c.id === highestAprCardId) {
-            ccDefaultRuleIds.forEach(id => ids.add(id));
-          }
-          return [c.id, ids];
-        }),
-      );
-
-      const cardPurchasesPerMonth: { [cardId: string]: number }[] = [];
-
-      for (let i = 0; i < 36; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-        const eventsInMonth = scheduledEvents.filter(e =>
-          e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr),
-        );
-
-        // Per-card purchases: month 0 = 0 (already in live card.balance), months 1+ compute
-        // Include BOTH recurring scheduled purchases AND one-time CC transactions so the
-        // CC balance simulation matches the Debt Payoff tab (which uses augmentedCCPurchases).
-        const cardPurchases: { [cardId: string]: number } = {};
-        if (i > 0) {
-          for (const card of cards) {
-            const ruleIds = cardRuleIdMap.get(card.id) ?? new Set<string>();
-            const scheduledAmt = eventsInMonth
-              .filter(e => e.type === 'expense' && e.ruleId && ruleIds.has(e.ruleId))
-              .reduce((s, e) => s + e.amount, 0);
-            // One-time CC transactions for this card (not rule-generated)
-            const oneTimeCCAmt = (transactions as any[])
-              .filter((t: any) =>
-                !(t as any).isGenerated &&
-                t.date?.startsWith(monthKey) &&
-                t.type === 'expense' &&
-                (t.payment_source === card.id || t.payment_source === `account:${card.id}`),
-              )
-              .reduce((s: number, t: any) => s + Number(t.amount), 0);
-            cardPurchases[card.id] = scheduledAmt + oneTimeCCAmt;
-          }
-        }
-        cardPurchasesPerMonth.push(cardPurchases);
-      }
-
-      // Build adjusted month events that include ALL liquid-cash outflows, not just
-      // non-CC expense rules. The three missing categories are:
-      //   1. Savings goal monthly contributions (from goals.monthly_contribution, not rules)
-      //   2. Car fund contributions (from carFunds, not rules)
-      //   3. Transfer/investment rules (produce 'transfer'/'investment' events — not 'expense')
-      // Without these, availableCash is overstated and the chart shows faster payoff than reality.
-      const monthlySavingsContribCC = goals.reduce((s: number, g: any) => s + Number(g.monthly_contribution), 0);
-      const monthlyCarContribCC = carFunds.reduce((s: number, c: any) => {
-        const rem = Number(c.down_payment_goal) - Number(c.current_saved);
-        return s + (rem > 0 ? Math.min(rem / 12, 500) : 0);
+    const liquidTypes = ['checking', 'business_checking', 'cash'];
+    const liquidCash = accounts.filter((a: any) => a.active && liquidTypes.includes(a.account_type))
+      .reduce((s: number, a: any) => s + Number(a.balance), 0);
+    // Scalar fallbacks (used only when monthEvents not provided by legacy callers)
+    const weeklyGross = Number(profile?.weekly_gross_income) || 1875;
+    const taxRate = Number(profile?.tax_rate) || 22;
+    const monthlyTakeHome = weeklyGross * (1 - taxRate / 100) * 4.33;
+    const monthlyExpenses = rules.filter((r: any) => r.active && r.rule_type === 'expense')
+      .reduce((s: number, r: any) => {
+        const amt = Number(r.amount);
+        if (r.frequency === 'weekly') return s + amt * 4.33;
+        if (r.frequency === 'yearly') return s + amt / 12;
+        return s + amt;
       }, 0);
-      const transferRulesCC = rules.filter((r: any) => r.active && (r.rule_type === 'transfer' || r.rule_type === 'investment'));
-      const nowCC = new Date();
-      const adjustedMonthEvents = forecastMonthEvents.map((me, i) => {
-        const d = new Date(nowCC.getFullYear(), nowCC.getMonth() + i, 1);
-        let monthTransfersCC = 0;
-        for (const tr of transferRulesCC) {
-          if (tr.start_date && new Date(tr.start_date) > d) continue;
-          if (tr.end_date && new Date(tr.end_date) < d) continue;
-          const amt = Number(tr.amount);
-          let monthAmt = amt;
-          if (tr.frequency === 'weekly') monthAmt = amt * 4.33;
-          else if (tr.frequency === 'yearly') monthAmt = amt / 12;
-          monthTransfersCC += monthAmt;
-        }
-        return {
-          income: me.income,
-          expenses: me.expenses + monthlySavingsContribCC + monthlyCarContribCC + monthTransfersCC,
-        };
-      });
 
-      // Build one-time cash items per month so the CC balance simulation knows to hold back
-      // cash in months with large one-time cash expenses (e.g. a $3,000 down payment in June).
-      // Without this, the simulation over-allocates to debt and shows payoff months too early.
-      // CC-funded expenses are excluded (they don't reduce liquid cash).
-      const ccSourceIds = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
-      const oneTimeArr: { income: number; expenses: number }[] = [{ income: 0, expenses: 0 }];
-      for (let oi = 1; oi < 36; oi++) {
-        const od = new Date(now.getFullYear(), now.getMonth() + oi, 1);
-        const omk = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
-        const txns = (transactions as any[]).filter((t: any) =>
-          t.date && t.date.startsWith(omk) && !(t as any).isGenerated,
+    // ── Build cardPurchasesPerMonth using shared forecastMonthEvents ──
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Default-card rules: no payment_source, category in CC_DEFAULT_CATEGORIES
+    // These go to the highest-APR card by convention
+    const highestAprCardId = cards.length > 0
+      ? [...cards].sort((a, b) => b.apr - a.apr)[0].id : null;
+    const ccDefaultRuleIds = new Set<string>(
+      rules.filter((r: any) =>
+        r.active && r.rule_type === 'expense' &&
+        !r.payment_source && CC_DEFAULT_CATEGORIES.has(r.category),
+      ).map((r: any) => r.id),
+    );
+
+    // Per-card rule ID map for purchase tracking
+    const cardRuleIdMap = new Map<string, Set<string>>(
+      cards.map(c => {
+        const cKey = `account:${c.id}`;
+        const ids = new Set<string>(
+          rules.filter((r: any) =>
+            r.active && r.rule_type === 'expense' &&
+            (r.payment_source === c.id || r.payment_source === cKey),
+          ).map((r: any) => r.id),
         );
-        const inc = txns
-          .filter((t: any) => t.type === 'income')
-          .reduce((s: number, t: any) => s + Number(t.amount), 0);
-        const exp = txns
-          .filter((t: any) => {
-            if (t.type !== 'expense') return false;
-            if (t.payment_source && ccSourceIds.has(t.payment_source)) return false;
-            return true;
-          })
-          .reduce((s: number, t: any) => s + Number(t.amount), 0);
-        oneTimeArr.push({ income: inc, expenses: exp });
+        if (c.id === highestAprCardId) {
+          ccDefaultRuleIds.forEach(id => ids.add(id));
+        }
+        return [c.id, ids];
+      }),
+    );
+
+    const cardPurchasesPerMonth: { [cardId: string]: number }[] = [];
+
+    for (let i = 0; i < 36; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+      const eventsInMonth = scheduledEvents.filter(e =>
+        e.date.startsWith(monthKey) && (i > 0 || e.date >= todayStr),
+      );
+
+      const cardPurchases: { [cardId: string]: number } = {};
+      if (i > 0) {
+        for (const card of cards) {
+          const ruleIds = cardRuleIdMap.get(card.id) ?? new Set<string>();
+          const scheduledAmt = eventsInMonth
+            .filter(e => e.type === 'expense' && e.ruleId && ruleIds.has(e.ruleId))
+            .reduce((s, e) => s + e.amount, 0);
+
+          const oneTimeCCAmt = (transactions as any[])
+            .filter((t: any) =>
+              !(t as any).isGenerated &&
+              t.date?.startsWith(monthKey) &&
+              t.type === 'expense' &&
+              (t.payment_source === card.id || t.payment_source === `account:${card.id}`),
+            )
+            .reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+          cardPurchases[card.id] = scheduledAmt + oneTimeCCAmt;
+        }
+      }
+      cardPurchasesPerMonth.push(cardPurchases);
+    }
+
+    const monthlySavingsContribCC = goals.reduce((s: number, g: any) => s + Number(g.monthly_contribution), 0);
+    const monthlyCarContribCC = carFunds.reduce((s: number, c: any) => {
+      const rem = Number(c.down_payment_goal) - Number(c.current_saved);
+      return s + (rem > 0 ? Math.min(rem / 12, 500) : 0);
+    }, 0);
+
+    const transferRulesCC = rules.filter((r: any) => r.active && (r.rule_type === 'transfer' || r.rule_type === 'investment'));
+    const nowCC = new Date();
+    const adjustedMonthEvents = forecastMonthEvents.map((me, i) => {
+      const d = new Date(nowCC.getFullYear(), nowCC.getMonth() + i, 1);
+      let monthTransfersCC = 0;
+      for (const tr of transferRulesCC) {
+        if (tr.start_date && new Date(tr.start_date) > d) continue;
+        if (tr.end_date && new Date(tr.end_date) < d) continue;
+        const amt = Number(tr.amount);
+        let monthAmt = amt;
+        if (tr.frequency === 'weekly') monthAmt = amt * 4.33;
+        else if (tr.frequency === 'yearly') monthAmt = amt / 12;
+        monthTransfersCC += monthAmt;
+      }
+      return {
+        income: me.income,
+        expenses: me.expenses + monthlySavingsContribCC + monthlyCarContribCC + monthTransfersCC,
+      };
+    });
+
+    const ccSourceIds = new Set(cards.flatMap(c => [c.id, `account:${c.id}`]));
+    const oneTimeArr: { income: number; expenses: number }[] = [{ income: 0, expenses: 0 }];
+
+    for (let oi = 1; oi < 36; oi++) {
+      const od = new Date(now.getFullYear(), now.getMonth() + oi, 1);
+      const omk = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
+      const txns = (transactions as any[]).filter((t: any) =>
+        t.date && t.date.startsWith(omk) && !(t as any).isGenerated,
+      );
+
+      const inc = txns
+        .filter((t: any) => t.type === 'income')
+        .reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+      const exp = txns
+        .filter((t: any) => {
+          if (t.type !== 'expense') return false;
+          if (t.payment_source && ccSourceIds.has(t.payment_source)) return false;
+          return true;
+        })
+        .reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+      oneTimeArr.push({ income: inc, expenses: exp });
+    }
+
+    const allTxnsForM0 = mergeWithGeneratedTransactions(transactions, rules, accounts);
+    const m0Income = getRemainingTransactionIncomeByDay(allTxnsForM0, 31);
+    const m0Expenses = getRemainingTransactionExpensesByDay(allTxnsForM0, 31, true);
+    const m0SafeFloor = getMinSafeCash(rules, payConfig, debtPayoffOptions.cashFloor, null, new Date());
+
+    const projs = (() => {
+      const sim = simulateVariablePayoff(
+        cards,
+        liquidCash,
+        debtPayoffOptions.cashFloor,
+        'avalanche',
+        monthlyTakeHome,
+        monthlyExpenses,
+        36,
+        adjustedMonthEvents,
+        undefined,
+        cardPurchasesPerMonth,
+        m0Income,
+        m0Expenses,
+        oneTimeArr,
+        m0SafeFloor,
+      );
+
+      return cards.map(c => {
+        const pays = sim.monthlyPayments.get(c.id) || [];
+        return projectCardVariable(c, pays, 36, true);
+      });
+    })();
+
+    const totalLimit = cards.reduce((s, c) => s + c.creditLimit, 0);
+    const data = Array.from({ length: 36 }, (_, i) => {
+      const now = new Date();
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const row: any = {
+        month: d.toLocaleString('en', { month: 'short', year: '2-digit' }),
+        totalCCBalance: 0,
+        totalInterest: 0,
+      };
+
+      for (const p of projs) {
+        const m = p.months[i];
+        if (m) {
+          row[p.card.name] = Math.round(m.endBalance);
+          row.totalCCBalance += m.endBalance;
+          row.totalInterest += m.interest;
+        }
       }
 
-      // ── Month 0 remaining income/expenses ───────────────────────────────────
-      // Uses merged transactions (same source as CreditCardEngine variableSim) so
-      // the Forecast popup and trajectory chart match the Debt Payoff tab for April.
-      // Month 0 income = all remaining income to end of month (day 31), not just to
-      // the primary due day. Month 0 expenses exclude CC-charged and debt payments.
-      const allTxnsForM0 = mergeWithGeneratedTransactions(transactions, rules, accounts);
-      const m0Income = getRemainingTransactionIncomeByDay(allTxnsForM0, 31);
-      // Use the same expense filter as the recommendations panel (includes CC-tagged expenses)
-      // so month 0 payments stay consistent with what Safe to Pay shows.
-      const m0Expenses = getRemainingTransactionExpensesByDay(allTxnsForM0, 31, true);
-      // Apply the same pre-paycheck bill floor used by the CC engine recommendations.
-      const m0SafeFloor = getMinSafeCash(rules, payConfig, debtPayoffOptions.cashFloor, null, new Date());
+      row.totalCCBalance = Math.round(Math.max(0, row.totalCCBalance));
+      row.totalInterest = Math.round(row.totalInterest);
+      row.utilization = totalLimit > 0 ? Math.round((row.totalCCBalance / totalLimit) * 100) : 0;
+      return row;
+    });
 
-      const projs = (() => {
-        const sim = simulateVariablePayoff(
-          cards, liquidCash, debtPayoffOptions.cashFloor, 'avalanche',
-          monthlyTakeHome, monthlyExpenses, 36,
-          adjustedMonthEvents, undefined, cardPurchasesPerMonth,
-          m0Income, m0Expenses, oneTimeArr,
-          m0SafeFloor,
-        );
-        return cards.map(c => {
-          const pays = sim.monthlyPayments.get(c.id) || [];
-          return projectCardVariable(c, pays, 36, true);
-        });
-      })();
+    const debtPaymentTotals = Array.from({ length: 36 }, (_, i) =>
+      projs.reduce((total, proj) => {
+        const m = proj.months[i];
+        if (!m || m.startBalance <= 0) return total;
+        return total + m.payment;
+      }, 0),
+    );
 
-      const totalLimit = cards.reduce((s, c) => s + c.creditLimit, 0);
-      const data = Array.from({ length: 36 }, (_, i) => {
-        const now = new Date();
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const row: any = { month: d.toLocaleString('en', { month: 'short', year: '2-digit' }), totalCCBalance: 0, totalInterest: 0 };
-        for (const p of projs) {
-          const m = p.months[i];
-          if (m) {
-            row[p.card.name] = Math.round(m.endBalance);
-            row.totalCCBalance += m.endBalance;
-            row.totalInterest += m.interest;
-          }
-        }
-        row.totalCCBalance = Math.round(Math.max(0, row.totalCCBalance));
-        row.totalInterest = Math.round(row.totalInterest);
-        row.utilization = totalLimit > 0 ? Math.round((row.totalCCBalance / totalLimit) * 100) : 0;
-        return row;
-      });
-      // debtPaymentTotals: real debt-reducing payments only (startBalance > 0).
-      // Used as rawDebtPayment in PASS 1 so PASS 2 can reduce them for floor protection.
-      const debtPaymentTotals = Array.from({ length: 36 }, (_, i) =>
-        projs.reduce((total, proj) => {
-          const m = proj.months[i];
-          if (!m || m.startBalance <= 0) return total;
-          return total + m.payment;
-        }, 0),
-      );
+    const allPaymentTotals = Array.from({ length: 36 }, (_, i) =>
+      projs.reduce((total, proj) => {
+        const m = proj.months[i];
+        if (!m) return total;
+        return total + m.payment;
+      }, 0),
+    );
 
-      // allPaymentTotals: ALL card payments including post-payoff autopay.
-      // Used for popup display so "Debt Payment" matches the Debt Payoff tab's per-card totals.
-      const allPaymentTotals = Array.from({ length: 36 }, (_, i) =>
-        projs.reduce((total, proj) => {
-          const m = proj.months[i];
-          if (!m) return total;
-          return total + m.payment;
-        }, 0),
-      );
-
-      return { data, cards: projs.map(p => ({ name: p.card.name, color: p.card.color })), debtPaymentTotals, allPaymentTotals };
-    } catch { return null; }
-  }, [accounts, transactions, rules, debts, profile, debtPayoffOptions, payConfig, scheduledEvents, pauseSavings, forecastMonthEvents, goals, carFunds]);
+    return {
+      data,
+      cards: projs.map(p => ({ name: p.card.name, color: p.card.color })),
+      debtPaymentTotals,
+      allPaymentTotals,
+    };
+  } catch (e) {
+    console.error('Forecast projection failed:', e);
+    return null;
+  }
+}, [
+  accounts,
+  transactions,
+  rules,
+  debts,
+  profile,
+  debtPayoffOptions,
+  payConfig,
+  scheduledEvents,
+  pauseSavings,
+  forecastMonthEvents,
+  goals,
+  carFunds,
+]);
 
   // One-time manual transactions for forecast.
   // CC-tagged expenses are excluded — they increase CC balance (tracked by the debt
@@ -866,14 +888,14 @@ export default function Forecast() {
         </div>
         <div className="flex gap-1.5 sm:gap-2 flex-wrap">
           <button onClick={() => setChartMode(chartMode === 'combo' ? 'line' : 'combo')}
-            className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+            className="w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <TrendingUp size={12} /> {chartMode === 'combo' ? 'Line' : 'Bars'}
           </button>
           <button onClick={() => setViewMode(viewMode === 'monthly' ? 'detailed' : 'monthly')}
-            className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+            className="w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             {viewMode === 'monthly' ? <List size={12} /> : <BarChart3 size={12} />} {viewMode === 'monthly' ? 'Detail' : 'Summary'}
           </button>
-          <button onClick={() => setShowAssumptions(!showAssumptions)} className="flex items-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+          <button onClick={() => setShowAssumptions(!showAssumptions)} className="w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <Settings2 size={12} /> Assumptions
           </button>
           {(isPremium || isDemo) ? (
@@ -925,7 +947,7 @@ export default function Forecast() {
               { label: 'Debt payoff trajectory', desc: 'The debt chart shows each card\'s balance declining month by month. Sapphire goes first (22.99% APR), then Discover gets the full surplus.' },
               { label: 'Assumptions panel', desc: 'Adjust income growth, expense inflation, investment return, and savings interest to model different scenarios over 3 years.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
@@ -990,11 +1012,11 @@ export default function Forecast() {
         <>
           {/* Net Worth Chart */}
           <div className="card-forged p-3 sm:p-5">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
               <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Worth & Assets Projection</h3>
               {freePreview && <span className="text-[9px] text-muted-foreground">Showing 3 of 36 months</span>}
             </div>
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 220 : 260}>
               {chartMode === 'combo' ? (
                 <ComposedChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
@@ -1031,7 +1053,7 @@ export default function Forecast() {
 
           {/* Premium upgrade CTA — free users only */}
           {freePreview && (
-            <div className="card-forged p-5 sm:p-6 flex flex-col items-center text-center gap-3 border border-primary/20">
+            <div className="card-forged p-4 sm:p-5 overflow-hidden sm:p-6 flex flex-col items-center text-center gap-3 border border-primary/20">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Crown size={18} className="text-primary" />
               </div>

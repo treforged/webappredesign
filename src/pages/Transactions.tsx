@@ -588,55 +588,86 @@ export default function Transactions() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="font-display font-bold text-xl tracking-tight">Transactions</h1>
-          <InstructionsModal pageTitle="Transactions Guide" sections={[
-            { title: 'What is this page?', body: 'Transactions shows your complete ledger — real transactions you enter plus auto-generated ones from your Budget Control recurring rules and debt payoff plan.' },
-            { title: 'Generated vs Real', body: 'Entries with badges (recurring, debt payment) are auto-generated from rules. Edit the occurrence to override just that instance, or edit the rule to change all future occurrences.' },
-            { title: 'Filters', body: 'Filter by type (income/expense), category, or payment source to find specific entries.' },
-            { title: 'How it affects the rest', body: 'Transactions feed the Dashboard monthly totals, Forecast projections, and spending breakdowns.' },
-          ]} />
-        </div>
-        <div className="flex items-center gap-2">
-          {(isPremium || isDemo) ? (
-            <>
-              <button
-                onClick={() => {
-                  const filename = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
-                  exportTransactionsCsv(filtered, filename);
-                }}
-                className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-                title="Export as CSV"
-              >
-                <Download size={12} /> CSV
-              </button>
-              <button
-                onClick={() => {
-                  const period = filterMonth === 'all' ? 'All Time' : filterMonth === 'forecast' ? 'Forecast Range' : filterMonth;
-                  exportTransactionsPdf(filtered, period);
-                }}
-                className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors btn-press"
-                style={{ borderRadius: 'var(--radius)' }}
-                title="Export as PDF"
-              >
-                <Download size={12} /> PDF
-              </button>
-            </>
-          ) : (
-            <Link to="/premium" className="flex items-center gap-1.5 bg-secondary border border-border px-3 py-1.5 text-xs font-medium text-primary/70 hover:text-primary hover:border-primary/40 transition-colors btn-press" style={{ borderRadius: 'var(--radius)' }}>
-              <Crown size={12} /> Export
-            </Link>
-          )}
+      {/* Header */}
+<div className="space-y-3">
+  {/* Title Row */}
+  <div className="flex items-center gap-3">
+    <h1 className="font-display font-bold text-xl tracking-tight">
+      Transactions
+    </h1>
 
-          {(isPremium || isDemo) ? (
-            <button onClick={openAdd} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}><Plus size={12} /> Add</button>
-          ) : (
-            <Link to="/premium" className="flex items-center gap-1.5 bg-primary/20 text-primary px-3 py-1.5 text-xs font-medium btn-press hover:bg-primary/30 transition-colors" style={{ borderRadius: 'var(--radius)' }}><Crown size={12} /> Add</Link>
-          )}
-        </div>
-      </div>
+    <InstructionsModal
+      pageTitle="Transactions Guide"
+      sections={[
+        { title: 'What is this page?', body: 'Transactions shows your complete ledger — real transactions you enter plus auto-generated ones from your Budget Control recurring rules and debt payoff plan.' },
+        { title: 'Generated vs Real', body: 'Entries with badges (recurring, debt payment) are auto-generated from rules. Edit the occurrence to override just that instance, or edit the rule to change all future occurrences.' },
+        { title: 'Filters', body: 'Filter by type (income/expense), category, or payment source to find specific entries.' },
+        { title: 'How it affects the rest', body: 'Transactions feed the Dashboard monthly totals, Forecast projections, and spending breakdowns.' },
+      ]}
+    />
+  </div>
+
+  {/* Action Buttons */}
+  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+    {(isPremium || isDemo) ? (
+      <>
+        <button
+          onClick={() => {
+            const filename = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+            exportTransactionsCsv(filtered, filename);
+          }}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-secondary border border-border px-4 py-2 text-sm font-medium hover:border-primary/40 hover:text-primary transition-colors"
+          style={{ borderRadius: 'var(--radius)' }}
+        >
+          <Download size={14} /> Export CSV
+        </button>
+
+        <button
+          onClick={() => {
+            const period =
+              filterMonth === 'all'
+                ? 'All Time'
+                : filterMonth === 'forecast'
+                ? 'Forecast Range'
+                : filterMonth;
+
+            exportTransactionsPdf(filtered, period);
+          }}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-secondary border border-border px-4 py-2 text-sm font-medium hover:border-primary/40 hover:text-primary transition-colors"
+          style={{ borderRadius: 'var(--radius)' }}
+        >
+          <Download size={14} /> Export PDF
+        </button>
+      </>
+    ) : (
+      <Link
+        to="/premium"
+        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-secondary border border-border px-4 py-2 text-sm font-medium text-primary/70 hover:text-primary hover:border-primary/40 transition-colors"
+        style={{ borderRadius: 'var(--radius)' }}
+      >
+        <Crown size={14} /> Export
+      </Link>
+    )}
+
+    {(isPremium || isDemo) ? (
+      <button
+        onClick={openAdd}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold"
+        style={{ borderRadius: 'var(--radius)' }}
+      >
+        <Plus size={14} /> Add Transaction
+      </button>
+    ) : (
+      <Link
+        to="/premium"
+        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary/20 text-primary px-4 py-2 text-sm font-semibold hover:bg-primary/30 transition-colors"
+        style={{ borderRadius: 'var(--radius)' }}
+      >
+        <Crown size={14} /> Add Transaction
+      </Link>
+    )}
+  </div>
+</div>
 
       {!isPremium && !isDemo && (
         <div className="card-forged p-4 border-primary/20 flex flex-col sm:flex-row sm:items-center gap-4">

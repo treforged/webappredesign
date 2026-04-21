@@ -8,7 +8,7 @@ import FormModal from '@/components/shared/FormModal';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Edit2, Trash2, Car, Copy, Link2, Crown } from 'lucide-react';
-import { getCurrentMonthDebtRecommendations } from '@/lib/credit-card-engine';
+import * as DebtEngine from '@/lib/credit-card-engine';
 import { mergeWithGeneratedTransactions, createDebtPaymentTransactions, mergeDebtPaymentsIntoStream, getAccountRemainingCashThisMonth } from '@/lib/pay-schedule';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'sonner';
@@ -50,15 +50,15 @@ function SavingsGrowthChart({ goals }: { goals: any[] }) {
 
   if (goals.length === 0) return null;
   return (
-    <div className="card-forged p-5">
+    <div className="card-forged p-4 sm:p-5 overflow-hidden">
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-5">Savings Growth Projection</h3>
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 200 : 260}>
         <LineChart data={chartData} margin={{ left: 0, right: 0, top: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 15%)" />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(240, 4%, 46%)' }} axisLine={false} tickLine={false} interval={window.innerWidth < 640 ? Math.ceil(chartData.length / 5) : 0} />
           <YAxis tick={{ fontSize: 11, fill: 'hsl(240, 4%, 46%)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
           <Tooltip contentStyle={{ background: 'hsl(0, 0%, 8%)', border: '1px solid hsl(0, 0%, 15%)', borderRadius: 'var(--radius)', fontSize: 12 }} formatter={(value: number) => formatCurrency(value, false)} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
           {goals.map((g, i) => <Line key={g.id} dataKey={g.name} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2.5} dot={{ r: 3 }} />)}
         </LineChart>
       </ResponsiveContainer>
@@ -84,7 +84,20 @@ export default function SavingsGoals() {
 
   // Build full transaction stream including debt payments for linked-account math
   const baseTxns = useMemo(() => mergeWithGeneratedTransactions(txns || [], rules, accounts), [txns, rules, accounts]);
-  const debtRecs = useMemo(() => getCurrentMonthDebtRecommendations(accounts, baseTxns, rules, debts, profile), [accounts, baseTxns, rules, debts, profile]);
+  const debtRecs = useMemo(() => {
+  try {
+    return DebtEngine.getCurrentMonthDebtRecommendations(
+      accounts,
+      baseTxns,
+      rules,
+      debts,
+      profile
+    );
+  } catch (e) {
+    console.error('Debt engine failed:', e);
+    return [];
+  }
+}, [accounts, baseTxns, rules, debts, profile]);
   const debtTxns = useMemo(() => {
     const fundId = (profile as any)?.default_deposit_account ||
       accounts.find((a: any) => a.account_type === 'checking' && a.active)?.id || null;
@@ -308,7 +321,7 @@ export default function SavingsGoals() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-display font-bold text-xl tracking-tight">Savings Goals</h1>
@@ -321,17 +334,17 @@ export default function SavingsGoals() {
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">Build your financial runway</p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:shrink-0">
           {(isPremium || isDemo || goals.length < 3) ? (
-            <button onClick={() => openAdd('Custom')} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}><Plus size={12} /> Add Goal</button>
+            <button onClick={() => openAdd('Custom')} className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}><Plus size={12} /> Add Goal</button>
           ) : (
-            <Link to="/premium" className="flex items-center gap-1.5 bg-primary/20 text-primary px-3 py-1.5 text-xs font-medium btn-press hover:bg-primary/30 transition-colors" style={{ borderRadius: 'var(--radius)' }}><Crown size={12} /> Add Goal</Link>
+            <Link to="/premium" className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-primary/20 text-primary px-3 py-1.5 text-xs font-medium btn-press hover:bg-primary/30 transition-colors" style={{ borderRadius: 'var(--radius)' }}><Crown size={12} /> Add Goal</Link>
           )}
 
           {(isPremium || isDemo) ? (
-            <button onClick={() => openAdd('Car Fund')} className="flex items-center gap-1.5 border border-border text-foreground px-3 py-1.5 text-xs font-medium btn-press hover:bg-muted/30" style={{ borderRadius: 'var(--radius)' }}><Car size={12} /> Car Fund</button>
+            <button onClick={() => openAdd('Car Fund')} className="w-full sm:w-auto flex items-center justify-center gap-1.5 border border-border text-foreground px-3 py-1.5 text-xs font-medium btn-press hover:bg-muted/30" style={{ borderRadius: 'var(--radius)' }}><Car size={12} /> Car Fund</button>
           ) : (
-            <Link to="/premium" className="flex items-center gap-1.5 border border-primary/30 text-primary/70 px-3 py-1.5 text-xs font-medium btn-press hover:bg-primary/5 transition-colors" style={{ borderRadius: 'var(--radius)' }}><Crown size={12} /> Car Fund</Link>
+            <Link to="/premium" className="w-full sm:w-auto flex items-center justify-center gap-1.5 border border-primary/30 text-primary/70 px-3 py-1.5 text-xs font-medium btn-press hover:bg-primary/5 transition-colors" style={{ borderRadius: 'var(--radius)' }}><Crown size={12} /> Car Fund</Link>
           )}
         </div>
       </div>
@@ -345,7 +358,7 @@ export default function SavingsGoals() {
               <p className="text-[11px] text-muted-foreground mt-0.5">Jordan is building an emergency fund while saving for a car. Goals link to real accounts and auto-sync balances.</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {[
               { label: 'Emergency Fund', desc: 'Linked to Marcus HYS — the $5,800 balance auto-syncs here. Monthly $300 contribution tracked against the $15,000 target.' },
               { label: 'Car Fund', desc: 'Models the full purchase: $28,000 target, $5,600 down payment goal, 5.9% APR loan. Shows estimated monthly payment after purchase.' },

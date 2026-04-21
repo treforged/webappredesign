@@ -772,7 +772,7 @@ export default function BudgetControl() {
       <div className="card-forged p-3 sm:p-5 space-y-3 sm:space-y-4">
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm sm:text-base font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Income & Taxes</h3>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             {incomeRules.length > 0 && (
               <div className="flex w-full items-center gap-1 sm:w-auto">
                 <span className="text-[9px] text-muted-foreground uppercase shrink-0">Rule:</span>
@@ -807,7 +807,7 @@ export default function BudgetControl() {
 
         {/* Paycheck Deductions */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider">Paycheck Deductions</h4>
             <button
               onClick={() => setShowCatalog(true)}
@@ -862,13 +862,13 @@ export default function BudgetControl() {
                     <button onClick={() => removeDeduction(d.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X size={12} /></button>
                   </div>
                   {/* Row 2: controls */}
-                  <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                     {/* Value input */}
                     <input
                       type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
                       value={d.value}
                       onChange={e => updateDeduction(d.id, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-full sm:w-24 bg-secondary border border-border px-3 py-2 text-base text-foreground font-display font-bold text-left sm:text-right"
+                      className="w-full sm:w-20 bg-secondary border border-border px-3 py-2 text-base text-foreground font-display font-bold text-left sm:text-right"
                       style={{ borderRadius: 'var(--radius)' }}
                     />
                     {/* $/% toggle */}
@@ -1052,7 +1052,7 @@ export default function BudgetControl() {
 
       {/* Remaining Cash On Hand — prominent */}
       <div className="card-forged p-4 sm:p-5 cursor-pointer hover:border-primary/20 transition-colors group" onClick={openCashCalc}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Wallet size={14} className="text-primary shrink-0" />
