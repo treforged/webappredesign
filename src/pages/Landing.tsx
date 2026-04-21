@@ -81,7 +81,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="h-screen overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Nav */}
       <motion.header
   className="border-b border-border sticky top-0 z-40 bg-background/90 backdrop-blur-sm"
