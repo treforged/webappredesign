@@ -1,5 +1,32 @@
 # CLAUDE.md
 
+## SYSTEM EXECUTION OVERRIDE
+
+Default to `/multi-plan` for any non-trivial task.
+
+Use multi-agent execution only when:
+- the task spans multiple files, systems, or concerns
+- work can be parallelized safely
+- specialist review is likely to improve outcome
+
+For focused work, prefer:
+- one plan
+- one executing agent
+- one reviewer if needed
+
+Never jump straight to implementation on complex work.
+If unsure, plan first.
+
+This rule overrides all other heuristics.
+
+You are ALWAYS running with the Everything Claude Code framework.
+
+- Use structured thinking (audit → plan → implement → verify)
+- Use multi-agent reasoning where applicable
+- Default to production-grade decisions, not quick patches
+- Always check for system-wide impact before making changes
+- Never solve issues in isolation if they affect other systems
+
 ## Purpose
 
 This is a real Git repository connected to GitHub. Treat it as a
@@ -8,7 +35,11 @@ working behavior unless explicitly asked to refactor, and prioritize
 safety, clarity, reviewability, secure defaults, and reliable local
 backups.
 
-Do not make any changes until you have 95% confidence in what you need to build. Ask me follow-up questions until you reach that confidence.
+Do not make any changes until you have high confidence in the solution.
+
+If confidence is below threshold:
+- first run a focused audit to gather missing information
+- ask follow-up questions only if the missing detail cannot be resolved from the codebase
 
 ---
 
@@ -30,6 +61,67 @@ Always plan first.
 
 ---
 
+## SYSTEM CONTEXT (ALWAYS CONSIDER)
+
+This application depends on tightly coupled systems:
+
+- Supabase (auth, RLS, database)
+- Stripe (subscriptions, checkout, webhooks)
+- Plaid (account connections, transaction syncing)
+- Mobile app (Capacitor / native behavior)
+- Web app (browser-based behavior)
+
+When making changes:
+- Always evaluate impact across ALL relevant systems
+- Never assume a change is isolated to one layer
+- Validate data flow end-to-end (client → API → DB → external service → back)
+
+---
+
+## ROOT-CAUSE ENFORCEMENT
+
+Before implementing any fix:
+
+1. Identify the symptom
+2. Trace upstream and downstream dependencies
+3. Identify the true root cause
+4. Verify whether other systems share the same issue
+
+Do NOT:
+- Patch symptoms
+- Add UI fixes for data problems
+- Add client logic for server issues
+
+Fix at the correct layer.
+
+---
+
+## PLATFORM SEPARATION RULE
+
+Mobile and Web must be treated as separate environments.
+
+- Do NOT mix mobile-only features into web flows
+  (biometrics, native storage, device auth)
+
+- Do NOT assume web behavior applies to mobile
+  (routing, auth persistence, viewport)
+
+- Always verify:
+  - mobile-specific UX
+  - web-specific UX
+  - shared logic boundaries
+
+---
+
+## EXECUTION STYLE
+
+- Prefer structured outputs over long explanations
+- Use concise, actionable steps
+- Minimize unnecessary verbosity
+- Optimize for fast iteration cycles with user review
+
+---
+
 ## Default workflow
 
 For every request, follow this sequence unless explicitly told otherwise:
@@ -43,13 +135,12 @@ For every request, follow this sequence unless explicitly told otherwise:
 5. Commit locally after all changes are complete.
 6. Do not push to GitHub, open a PR, merge branches, or rewrite history
    unless explicitly asked.
-7. After finishing, always summarize:
-   - Which files changed
-   - What changed and why
-   - Where the backup was saved
-   - The commit message used
-   - Any risks, follow-ups, or manual steps needed
-   - The exact command to push if I choose to
+7. After finishing, summarize only:
+    - files changed
+    - what changed and why
+    - backup path
+    - commit message
+    - manual follow-up steps
 
 ---
 
@@ -58,7 +149,7 @@ For every request, follow this sequence unless explicitly told otherwise:
 Backups exist so any file can be restored to a previous version at any
 time. Follow these rules strictly:
 
-- **Always back up before modifying.** Before touching any file, copy
+- **Back up all files for multi-file or high-risk changes. For trivial edits, backup is optional.** Copy
   the current version to `./backups/`.
 - **Folder structure:** `./backups/YYYY-MM-DD_HHMMSS/<original-path>/`
   Preserve the original relative path inside the timestamped folder so
@@ -119,10 +210,24 @@ to undo a change.
 
 ---
 
+## DATA INTEGRITY RULE
+
+This is a financial application.
+
+- Never assume data is up-to-date without verifying sync logic
+- Always check:
+  - last updated timestamps
+  - sync triggers (cron, webhook, manual)
+  - source of truth (Plaid vs database)
+
+If data appears stale:
+- investigate sync pipeline BEFORE touching UI
+
+---
+
 ## Immutability rule
 
-Always create new objects/files rather than mutating existing ones in
-place when there is ambiguity. Return new copies with changes applied.
+Prefer creating new objects/files when ambiguity exists. Use in-place edits when clearly safe and intended. Return new copies with changes applied.
 
 ---
 

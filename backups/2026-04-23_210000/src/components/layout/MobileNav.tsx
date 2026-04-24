@@ -50,7 +50,7 @@ export default function MobileNav() {
             onClick={e => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 More
               </span>
               <button
@@ -70,7 +70,7 @@ export default function MobileNav() {
                     to={item.to}
                     onClick={() => setShowMore(false)}
                     className={cn(
-                      'flex min-h-[72px] flex-col items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium transition-colors btn-press text-center',
+                      'flex min-h-[72px] flex-col items-center justify-center gap-1.5 px-2 py-3 text-[11px] font-medium transition-colors btn-press text-center',
                       active ? 'text-primary bg-primary/8' : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
                     )}
                     style={{ borderRadius: 'var(--radius)' }}
@@ -140,7 +140,7 @@ export default function MobileNav() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  'flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-1.5 text-xs font-medium transition-colors btn-press text-center',
+                  'flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-1.5 text-[11px] font-medium transition-colors btn-press text-center',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
@@ -152,7 +152,7 @@ export default function MobileNav() {
           <button
             onClick={() => setShowMore(!showMore)}
             className={cn(
-              'flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-1.5 text-xs font-medium transition-colors btn-press text-center',
+              'flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-1.5 text-[11px] font-medium transition-colors btn-press text-center',
               moreActive || showMore ? 'text-primary' : 'text-muted-foreground',
             )}
           >

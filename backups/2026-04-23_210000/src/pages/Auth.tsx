@@ -347,7 +347,7 @@ const { error } = await supabase.auth.signInWithOAuth({
             <p className="text-xs text-muted-foreground mt-1">Two-factor verification required.</p>
           </div>
           <div className="card-forged p-6 space-y-4">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
               {FACTOR_HINTS[mfaFactorType] ?? 'Enter your verification code.'}
             </p>
 
@@ -355,8 +355,8 @@ const { error } = await supabase.auth.signInWithOAuth({
             {mfaFactorType === 'totp' && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Code expires in</span>
-                  <span className={`text-xs font-semibold tabular-nums ${isExpiring ? 'text-destructive' : 'text-foreground'}`}>
+                  <span className="text-[10px] text-muted-foreground">Code expires in</span>
+                  <span className={`text-[10px] font-semibold tabular-nums ${isExpiring ? 'text-destructive' : 'text-foreground'}`}>
                     {totpCountdown}s
                   </span>
                 </div>
@@ -385,7 +385,7 @@ const { error } = await supabase.auth.signInWithOAuth({
             />
 
             {mfaError && (
-              <p className="text-xs text-destructive -mt-2">{mfaError}</p>
+              <p className="text-[10px] text-destructive -mt-2">{mfaError}</p>
             )}
 
             {loading && (
@@ -432,7 +432,7 @@ const { error } = await supabase.auth.signInWithOAuth({
 
           <form onSubmit={handleSubmit} className="card-forged p-6 space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground uppercase">New Password</label>
+              <label className="text-[10px] text-muted-foreground uppercase">New Password</label>
               <input
                 type="password"
                 value={password}
@@ -447,7 +447,7 @@ const { error } = await supabase.auth.signInWithOAuth({
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground uppercase">Confirm New Password</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -462,7 +462,7 @@ const { error } = await supabase.auth.signInWithOAuth({
                 style={{ borderRadius: 'var(--radius)' }}
               />
               {mismatch && (
-                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+                <p className="text-[10px] text-destructive mt-1">Passwords do not match</p>
               )}
             </div>
 
@@ -531,7 +531,7 @@ const { error } = await supabase.auth.signInWithOAuth({
         <form onSubmit={handleSubmit} className="card-forged p-6 space-y-4">
           {mode === 'signup' && (
             <div>
-              <label className="text-xs text-muted-foreground uppercase">Display Name</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Display Name</label>
               <input
                 type="text"
                 value={displayName}
@@ -547,7 +547,7 @@ const { error } = await supabase.auth.signInWithOAuth({
           )}
 
           <div>
-            <label className="text-xs text-muted-foreground uppercase">Email</label>
+            <label className="text-[10px] text-muted-foreground uppercase">Email</label>
             <input
               type="email"
               value={email}
@@ -563,12 +563,12 @@ const { error } = await supabase.auth.signInWithOAuth({
           {mode !== 'reset' && (
             <div>
               <div className="flex items-center justify-between">
-                <label className="text-xs text-muted-foreground uppercase">Password</label>
+                <label className="text-[10px] text-muted-foreground uppercase">Password</label>
                 {mode === 'login' && (
                   <button
                     type="button"
                     onClick={() => switchMode('reset')}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -590,7 +590,7 @@ const { error } = await supabase.auth.signInWithOAuth({
 
           {mode === 'signup' && (
             <div>
-              <label className="text-xs text-muted-foreground uppercase">Confirm Password</label>
+              <label className="text-[10px] text-muted-foreground uppercase">Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -608,7 +608,7 @@ const { error } = await supabase.auth.signInWithOAuth({
                 style={{ borderRadius: 'var(--radius)' }}
               />
               {confirmPassword && confirmPassword !== password && (
-                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+                <p className="text-[10px] text-destructive mt-1">Passwords do not match</p>
               )}
             </div>
           )}
@@ -656,7 +656,7 @@ const { error } = await supabase.auth.signInWithOAuth({
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">or</span>
               <div className="flex-1 h-px bg-border" />
             </div>
             <button
@@ -674,7 +674,7 @@ const { error } = await supabase.auth.signInWithOAuth({
             <button
               type="button"
               onClick={() => { localStorage.removeItem(PASSKEY_CRED_KEY); localStorage.removeItem(PASSKEY_TOKENS_KEY); setHasSigninPasskey(false); }}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+              className="w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors py-1"
             >
               Remove saved passkey
             </button>
@@ -685,7 +685,7 @@ const { error } = await supabase.auth.signInWithOAuth({
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">or</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 
@@ -721,7 +721,7 @@ const { error } = await supabase.auth.signInWithOAuth({
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <p className="text-[10px] text-muted-foreground text-center mt-4">
           <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Privacy Policy</Link>
           {' · '}
           <Link to="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Terms of Service</Link>

@@ -211,7 +211,7 @@ export default function Premium() {
         <div className="card-forged p-6 space-y-4">
           <div>
             <h3 className="font-display font-semibold text-sm">Free</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Get started with the basics</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Get started with the basics</p>
           </div>
           <p className="font-display font-bold text-3xl tracking-tight">
             $0<span className="text-sm text-muted-foreground font-normal">/mo</span>
@@ -270,11 +270,11 @@ export default function Premium() {
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-display font-bold text-lg text-gold/90">$7.50<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
-                <span className="bg-gold/15 border border-gold/40 text-gold text-xs font-bold tracking-wide px-2.5 py-1 rounded-full uppercase">
+                <span className="bg-gold/15 border border-gold/40 text-gold text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full uppercase">
                   2 months free
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Billed as $89.99 once per year</p>
+              <p className="text-[10px] text-muted-foreground">Billed as $89.99 once per year</p>
             </div>
           ) : !isPremium ? (
             <p className="font-display font-bold text-3xl tracking-tight text-gold">
@@ -312,7 +312,7 @@ export default function Premium() {
               >
                 {selectedPlan === 'yearly' ? 'Get Yearly — $89.99' : 'Get Monthly — $9.99/mo'}
               </button>
-              <p className="text-xs text-muted-foreground text-center mt-1">
+              <p className="text-[10px] text-muted-foreground text-center mt-1">
                 Activated instantly after checkout
               </p>
             </>
