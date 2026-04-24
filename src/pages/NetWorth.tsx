@@ -270,7 +270,7 @@ export default function NetWorth() {
     <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-5 sm:space-y-8 overflow-x-hidden">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl lg:text-3xl tracking-tight">Net Worth</h1>
+          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Net Worth</h1>
           <p className="text-sm text-muted-foreground mt-1">Auto-calculated from your live accounts & manual entries</p>
         </div>
         <InstructionsModal pageTitle="Net Worth Guide" sections={[
@@ -287,7 +287,7 @@ export default function NetWorth() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">Tracking Jordan's wealth trajectory — from negative to positive</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Started at −$7,800 in January. Crossed zero in early March. Every debt payment and contribution moved this number.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Started at −$7,800 in January. Crossed zero in early March. Every debt payment and contribution moved this number.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -297,15 +297,15 @@ export default function NetWorth() {
               { label: 'Student loan', desc: 'The $8,000 federal student loan is a manual liability. It reduces net worth but isn\'t part of the CC avalanche payoff plan.' },
               { label: 'Connects to Forecast', desc: 'The Forecast page projects where net worth goes over 36 months as debt is eliminated and savings grow.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
@@ -328,7 +328,7 @@ export default function NetWorth() {
           <div className="flex flex-col items-center justify-center h-[200px] text-center">
             <Wallet size={28} className="text-primary mb-3" />
             <p className="text-2xl font-display font-bold text-primary whitespace-nowrap">{formatCurrency(netWorth, false)}</p>
-            <p className="text-[10px] text-muted-foreground mt-2">{snapshots.length > 0 ? 'First snapshot saved — chart will populate over the coming weeks.' : 'Historical chart will appear once monthly snapshots are saved. Only real recorded data is shown — see Forecast for projected net worth trends.'}</p>
+            <p className="text-xs text-muted-foreground mt-2">{snapshots.length > 0 ? 'First snapshot saved — chart will populate over the coming weeks.' : 'Historical chart will appear once monthly snapshots are saved. Only real recorded data is shown — see Forecast for projected net worth trends.'}</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
@@ -348,7 +348,7 @@ export default function NetWorth() {
         <div className="card-forged p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assets Breakdown</h3>
-            <button onClick={openAddAsset} className="flex items-center gap-1 text-[10px] text-primary font-medium hover:underline">
+            <button onClick={openAddAsset} className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
               <Plus size={12} /> Add Manual Asset
             </button>
           </div>
@@ -371,7 +371,7 @@ export default function NetWorth() {
                   <div className="flex items-center gap-1.5 min-w-0">
                     <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLORS[assetsByType.findIndex(t => t.name === a.type) % COLORS.length] }} />
                     <span className="font-medium truncate">{a.name}</span>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline shrink-0">{a.type}</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">{a.type}</span>
                     {(a as any).isLive && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5 shrink-0" style={{ borderRadius: 'var(--radius)' }}>live</span>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -385,7 +385,7 @@ export default function NetWorth() {
                   </div>
                 </div>
               ))}
-              {allAssets.length === 0 && <p className="text-[10px] text-muted-foreground">No assets yet.</p>}
+              {allAssets.length === 0 && <p className="text-xs text-muted-foreground">No assets yet.</p>}
             </div>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function NetWorth() {
         <div className="card-forged p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Liabilities Breakdown</h3>
-            <button onClick={openAddLiability} className="flex items-center gap-1 text-[10px] text-primary font-medium hover:underline">
+            <button onClick={openAddLiability} className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
               <Plus size={12} /> Add Manual Liability
             </button>
           </div>
@@ -417,7 +417,7 @@ export default function NetWorth() {
                   <div className="flex items-center gap-1.5 min-w-0">
                     <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ['hsl(0, 73%, 35%)', 'hsl(30, 80%, 55%)', 'hsl(0, 50%, 50%)'][liabilitiesByType.findIndex(t => t.name === l.type) % 3] }} />
                     <span className="font-medium truncate">{l.name}</span>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline shrink-0">{l.type}</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">{l.type}</span>
                     {(l as any).isLive && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5 shrink-0" style={{ borderRadius: 'var(--radius)' }}>live</span>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -431,7 +431,7 @@ export default function NetWorth() {
                   </div>
                 </div>
               ))}
-              {allLiabilities.length === 0 && <p className="text-[10px] text-muted-foreground">No liabilities yet.</p>}
+              {allLiabilities.length === 0 && <p className="text-xs text-muted-foreground">No liabilities yet.</p>}
             </div>
           </div>
         </div>
@@ -450,7 +450,7 @@ export default function NetWorth() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-xs font-semibold text-foreground">{account.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {account.account_type.toUpperCase().replace('_', ' ')} · {apyRate}% APY
                       {monthlyContrib > 0 && ` · +${formatCurrency(monthlyContrib, false)}/mo contributions`}
                     </p>
@@ -461,7 +461,7 @@ export default function NetWorth() {
                   {([['1yr', milestones.year1], ['5yr', milestones.year5], ['10yr', milestones.year10], ['20yr', milestones.year20]] as [string, number][]).map(([label, val]) => (
                     <div key={label} className="bg-muted/30 border border-border/30 px-2 py-1.5 text-center rounded-sm">
                       <p className="text-[9px] text-muted-foreground uppercase">{label}</p>
-                      <p className="text-[11px] font-bold font-display text-success">{formatCurrency(val, false)}</p>
+                      <p className="text-xs font-bold font-display text-success">{formatCurrency(val, false)}</p>
                     </div>
                   ))}
                 </div>
@@ -469,7 +469,7 @@ export default function NetWorth() {
             ))}
             {retirementProjections.length > 1 && (
               <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                <p className="text-[10px] text-muted-foreground font-medium">Combined projected retirement (10yr)</p>
+                <p className="text-xs text-muted-foreground font-medium">Combined projected retirement (10yr)</p>
                 <p className="text-sm font-bold font-display text-success">
                   {formatCurrency(retirementProjections.reduce((s, p) => s + p.milestones.year10, 0), false)}
                 </p>
@@ -490,7 +490,7 @@ export default function NetWorth() {
                   <Building2 size={16} className="text-muted-foreground" />
                   <div>
                     <p className="text-xs font-semibold">{a.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{a.type} {(a as any).isLive ? '· Live' : ''} {a.notes ? `· ${a.notes}` : ''}</p>
+                    <p className="text-xs text-muted-foreground">{a.type} {(a as any).isLive ? '· Live' : ''} {a.notes ? `· ${a.notes}` : ''}</p>
                   </div>
                 </div>
                 <span className="text-sm font-bold font-display text-success">{formatCurrency(Number(a.value), false)}</span>

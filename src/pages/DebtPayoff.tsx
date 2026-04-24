@@ -112,8 +112,8 @@ export default function DebtPayoff() {
       <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="min-w-0">
-            <h1 className="font-display font-bold text-lg sm:text-xl tracking-tight">Debt Payoff Planner</h1>
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">Eliminate debt with realistic, due-date-aware projections</p>
+            <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Debt Payoff Planner</h1>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">Eliminate debt with realistic, due-date-aware projections</p>
           </div>
           <InstructionsModal pageTitle="Debt Payoff Guide" sections={[
             { title: 'What is this page?', body: 'The Debt Payoff Planner helps you eliminate credit card and other debt using proven strategies. The engine uses due-date-aware cash estimation and always prioritizes minimum payments first.' },
@@ -147,7 +147,7 @@ export default function DebtPayoff() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">Avalanche engine — eliminate $12,700 using every spare dollar</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Jordan has two credit cards. The engine targets the highest APR first, pays minimums on the rest, and never drops below the $1,000 cash floor.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Jordan has two credit cards. The engine targets the highest APR first, pays minimums on the rest, and never drops below the $1,000 cash floor.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -157,15 +157,15 @@ export default function DebtPayoff() {
               { label: 'Monthly projection table', desc: 'Shows exact payment, interest, and remaining balance each month. Click any payment to override the recommended amount.' },
               { label: 'Connects to Forecast', desc: 'These exact payment amounts feed the 36-month Forecast — debt payoff progress and end cash are synchronized.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
@@ -175,12 +175,12 @@ export default function DebtPayoff() {
         <button onClick={() => setActiveTab('cards')}
           className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium border btn-press ${activeTab === 'cards' ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`}
           style={{ borderRadius: 'var(--radius)' }}>
-          <CreditCard size={13} /> Credit Card Payoff {hasCreditCards && <span className="ml-1 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5" style={{ borderRadius: 'var(--radius)' }}>{accounts?.filter((a: any) => a.account_type === 'credit_card' && a.active).length ?? 0}</span>}
+          <CreditCard size={13} /> Credit Card Payoff {hasCreditCards && <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5" style={{ borderRadius: 'var(--radius)' }}>{accounts?.filter((a: any) => a.account_type === 'credit_card' && a.active).length ?? 0}</span>}
         </button>
         <button onClick={() => setActiveTab('other')}
           className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium border btn-press ${activeTab === 'other' ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`}
           style={{ borderRadius: 'var(--radius)' }}>
-          <Landmark size={13} /> Other Debts {otherDebts.length > 0 && <span className="ml-1 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5" style={{ borderRadius: 'var(--radius)' }}>{otherDebts.length}</span>}
+          <Landmark size={13} /> Other Debts {otherDebts.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5" style={{ borderRadius: 'var(--radius)' }}>{otherDebts.length}</span>}
         </button>
       </div>
 
@@ -188,7 +188,7 @@ export default function DebtPayoff() {
         <div className="flex items-center justify-between p-3 bg-secondary border border-border" style={{ borderRadius: 'var(--radius)' }}>
           <div className="min-w-0">
             <p className="text-xs font-medium">Pause optional savings transfers during payoff</p>
-            <p className="text-[10px] text-muted-foreground">Excludes Savings &amp; Investing transfers from available cash calculation</p>
+            <p className="text-xs text-muted-foreground">Excludes Savings &amp; Investing transfers from available cash calculation</p>
           </div>
           <button
             onClick={() => setPauseSavings((v: boolean) => !v)}
@@ -206,9 +206,9 @@ export default function DebtPayoff() {
         <>
           {/* Other Debts Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="card-forged p-4 text-center"><p className="text-[10px] text-muted-foreground uppercase">Total Owed</p><p className="text-lg font-display font-bold text-destructive">{formatCurrency(totalBalance, false)}</p></div>
-            <div className="card-forged p-4 text-center"><p className="text-[10px] text-muted-foreground uppercase">Monthly Min</p><p className="text-lg font-display font-bold text-foreground">{formatCurrency(totalMinPayment, false)}</p></div>
-            <div className="card-forged p-4 text-center"><p className="text-[10px] text-muted-foreground uppercase">Target Payment</p><p className="text-lg font-display font-bold text-primary">{formatCurrency(totalTargetPayment, false)}</p></div>
+            <div className="card-forged p-4 text-center"><p className="text-xs text-muted-foreground uppercase">Total Owed</p><p className="text-lg font-display font-bold text-destructive">{formatCurrency(totalBalance, false)}</p></div>
+            <div className="card-forged p-4 text-center"><p className="text-xs text-muted-foreground uppercase">Monthly Min</p><p className="text-lg font-display font-bold text-foreground">{formatCurrency(totalMinPayment, false)}</p></div>
+            <div className="card-forged p-4 text-center"><p className="text-xs text-muted-foreground uppercase">Target Payment</p><p className="text-lg font-display font-bold text-primary">{formatCurrency(totalTargetPayment, false)}</p></div>
           </div>
 
           {/* Debt Cards */}
@@ -222,7 +222,7 @@ export default function DebtPayoff() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="text-sm font-semibold">{d.name}</h3>
-                      <p className="text-[10px] text-muted-foreground">{apr}% APR · Min {formatCurrency(Number(d.min_payment), false)}/mo</p>
+                      <p className="text-xs text-muted-foreground">{apr}% APR · Min {formatCurrency(Number(d.min_payment), false)}/mo</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-lg font-display font-bold text-destructive">{formatCurrency(bal, false)}</p>
@@ -231,9 +231,9 @@ export default function DebtPayoff() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <div><p className="text-[10px] text-muted-foreground">Target Payment</p><p className="text-xs font-semibold text-primary">{formatCurrency(tp, false)}/mo</p></div>
-                    <div><p className="text-[10px] text-muted-foreground">Payoff In</p><p className="text-xs font-semibold">{bal <= 0 ? 'Paid' : months === Infinity ? '—' : `${months} months`}</p></div>
-                    <div><p className="text-[10px] text-muted-foreground">Total Interest</p><p className="text-xs font-semibold text-destructive">{interest === Infinity ? '—' : formatCurrency(interest, false)}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Target Payment</p><p className="text-xs font-semibold text-primary">{formatCurrency(tp, false)}/mo</p></div>
+                    <div><p className="text-xs text-muted-foreground">Payoff In</p><p className="text-xs font-semibold">{bal <= 0 ? 'Paid' : months === Infinity ? '—' : `${months} months`}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="text-xs font-semibold text-destructive">{interest === Infinity ? '—' : formatCurrency(interest, false)}</p></div>
                   </div>
                 </div>
               );
@@ -250,8 +250,8 @@ export default function DebtPayoff() {
               ] as const).map(({ label, desc, sim, order, orderLabel }) => (
                 <div key={label} className="card-forged p-4 space-y-3">
                   <div>
-                    <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{desc}</p>
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-muted/20 rounded p-2 text-center">
@@ -277,7 +277,7 @@ export default function DebtPayoff() {
                           </div>
                           {result && (
                             <div className="text-right">
-                              <p className="text-[10px] font-medium">Month {result.paidOffMonth}</p>
+                              <p className="text-xs font-medium">Month {result.paidOffMonth}</p>
                               <p className="text-[9px] text-muted-foreground">{formatCurrency(result.totalInterest, false)} interest</p>
                             </div>
                           )}

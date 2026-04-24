@@ -40,7 +40,7 @@ function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: (
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground pt-2 border-t border-border/30">
+        <p className="text-xs text-muted-foreground pt-2 border-t border-border/30">
           A negative monthly cash flow can be acceptable if prior saved cash covers the difference and ending cash stays above the required floor. One-time purchases (e.g. car down payment) reduce available cash and may auto-adjust debt recommendations.
         </p>
       </div>
@@ -51,7 +51,7 @@ function CalcDrawer({ open, onClose, title, lines }: { open: boolean; onClose: (
 function ForecastTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border p-2 sm:p-3 text-[10px] sm:text-xs space-y-1 max-w-[140px] sm:max-w-xs" style={{ borderRadius: 'var(--radius)' }}>
+    <div className="bg-card border border-border p-2 sm:p-3 text-xs space-y-1 max-w-[140px] sm:max-w-xs" style={{ borderRadius: 'var(--radius)' }}>
       <p className="font-display font-bold text-foreground mb-1">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-2 sm:gap-3">
@@ -873,8 +873,8 @@ export default function Forecast() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2 sm:gap-3 min-w-0">
           <div className="min-w-0">
-            <h1 className="font-display font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight">Forecast</h1>
-            <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 truncate">36-month projections driven by live data</p>
+            <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Forecast</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 truncate">36-month projections driven by live data</p>
           </div>
           <InstructionsModal pageTitle="Forecast Guide" sections={[
             { title: 'What is this page?', body: 'The Forecast projects your financial trajectory over the next 36 months using your live accounts, recurring rules, debt payoff plan, savings goals, and one-time manual transactions.' },
@@ -888,14 +888,14 @@ export default function Forecast() {
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
           <button onClick={() => setChartMode(chartMode === 'combo' ? 'line' : 'combo')}
-            className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+            className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <TrendingUp size={12} /> {chartMode === 'combo' ? 'Line' : 'Bars'}
           </button>
           <button onClick={() => setViewMode(viewMode === 'monthly' ? 'detailed' : 'monthly')}
-            className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+            className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             {viewMode === 'monthly' ? <List size={12} /> : <BarChart3 size={12} />} {viewMode === 'monthly' ? 'Detail' : 'Summary'}
           </button>
-          <button onClick={() => setShowAssumptions(!showAssumptions)} className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
+          <button onClick={() => setShowAssumptions(!showAssumptions)} className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium btn-press" style={{ borderRadius: 'var(--radius)' }}>
             <Settings2 size={12} /> Assumptions
           </button>
           {(isPremium || isDemo) ? (
@@ -914,7 +914,7 @@ export default function Forecast() {
                   savingsBalance: r.savingsBalance ?? 0,
                 } as ForecastRow)), label);
               }}
-              className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press"
+              className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 bg-secondary border border-border px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium btn-press"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <FileDown size={12} /> PDF
@@ -922,7 +922,7 @@ export default function Forecast() {
           ) : (
             <Link
               to="/premium"
-              className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 border border-primary/30 text-primary/70 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium btn-press hover:bg-primary/5 transition-colors"
+              className="w-full sm:w-auto min-w-0 flex items-center justify-center gap-1.5 border border-primary/30 text-primary/70 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium btn-press hover:bg-primary/5 transition-colors"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <FileDown size={12} /> PDF
@@ -937,7 +937,7 @@ export default function Forecast() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">36-month simulation — every data source feeding one projection</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">The Forecast is where everything converges: income rules, debt payments, savings transfers, and one-time transactions all play out month by month.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">The Forecast is where everything converges: income rules, debt payments, savings transfers, and one-time transactions all play out month by month.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -947,22 +947,22 @@ export default function Forecast() {
               { label: 'Debt payoff trajectory', desc: 'The debt chart shows each card\'s balance declining month by month. Sapphire goes first (22.99% APR), then Discover gets the full surplus.' },
               { label: 'Assumptions panel', desc: 'Adjust income growth, expense inflation, investment return, and savings interest to model different scenarios over 3 years.' },
             ].map((f, i) => (
-              <div key={i} className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div className="min-w-0"><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
 
       {showAssumptions && (
         <div className="card-forged p-3 sm:p-5 space-y-3 sm:space-y-4">
-          <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Forecast Assumptions</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Forecast Assumptions</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
               { key: 'incomeGrowth', label: 'Income Growth %' },
@@ -973,7 +973,7 @@ export default function Forecast() {
               { key: 'taxOverride', label: 'Tax Override %' },
             ].map(({ key, label }) => (
               <div key={key}>
-                <label className="text-[9px] sm:text-[10px] text-muted-foreground uppercase">{label}</label>
+                <label className="text-[9px] sm:text-xs text-muted-foreground uppercase">{label}</label>
                 <input type="number" value={(assumptions as any)[key]}
                   onChange={e => setAssumptions(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
                   className="w-full mt-1 bg-secondary border border-border px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-foreground font-display font-bold" style={{ borderRadius: 'var(--radius)' }} step="0.1" />
@@ -987,7 +987,7 @@ export default function Forecast() {
       {!freePreview && (
         <div className="flex gap-1.5 sm:gap-2 overflow-x-auto w-full pb-1">
           {(['all', '1', '2', '3'] as const).map(yr => (
-            <button key={yr} onClick={() => setFilterYear(yr)} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium border btn-press whitespace-nowrap ${filterYear === yr ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
+            <button key={yr} onClick={() => setFilterYear(yr)} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-xs font-medium border btn-press whitespace-nowrap ${filterYear === yr ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
               {yr === 'all' ? 'All 36 Months' : `Year ${yr}`}
             </button>
           ))}
@@ -997,10 +997,10 @@ export default function Forecast() {
       {/* Milestones */}
       {projections.milestones.length > 0 && (
         <div className="card-forged p-3 sm:p-4 space-y-2">
-          <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Milestones</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Milestones</h3>
           <div className="flex flex-wrap gap-2">
             {projections.milestones.map((m, i) => (
-              <span key={i} className="bg-primary/10 text-primary px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium" style={{ borderRadius: 'var(--radius)' }}>
+              <span key={i} className="bg-primary/10 text-primary px-2 sm:px-3 py-1 text-xs font-medium" style={{ borderRadius: 'var(--radius)' }}>
                 {m.month}: {m.event}
               </span>
             ))}
@@ -1013,7 +1013,7 @@ export default function Forecast() {
           {/* Net Worth Chart */}
           <div className="card-forged p-3 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Worth & Assets Projection</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Worth & Assets Projection</h3>
               {freePreview && <span className="text-[9px] text-muted-foreground">Showing 3 of 36 months</span>}
             </div>
             <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 220 : 260}>
@@ -1059,7 +1059,7 @@ export default function Forecast() {
               </div>
               <div>
                 <p className="text-sm font-semibold">See your full 36-month forecast</p>
-                <p className="text-[11px] text-muted-foreground mt-1 max-w-xs">Upgrade to Premium to unlock all 36 months, the CC debt payoff trajectory chart, the monthly breakdown table, and PDF export.</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xs">Upgrade to Premium to unlock all 36 months, the CC debt payoff trajectory chart, the monthly breakdown table, and PDF export.</p>
               </div>
               <Link
                 to="/premium"
@@ -1074,7 +1074,7 @@ export default function Forecast() {
           {/* Debt Projection Chart — premium only */}
           {!freePreview && cardProjectionData && (
             <div className="card-forged p-3 sm:p-5">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2"><CreditCard size={12} /> Credit Card Debt Payoff Trajectory</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2"><CreditCard size={12} /> Credit Card Debt Payoff Trajectory</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={cardProjectionData.data.slice(0, filterYear === 'all' ? 36 : parseInt(filterYear) * 12)} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
@@ -1092,9 +1092,9 @@ export default function Forecast() {
 
           {/* Monthly Cash Flow Table — premium only */}
           {!freePreview && <div className="card-forged p-3 sm:p-5 overflow-x-auto">
-            <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Monthly Breakdown</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Monthly Breakdown</h3>
             <div className="min-w-0">
-              <table className="w-full text-[10px] sm:text-xs">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="py-1.5 sm:py-2 px-1 sm:px-2 text-left font-medium">Month</th>
@@ -1149,17 +1149,17 @@ export default function Forecast() {
         </>
       ) : (
         <div className="card-forged p-3 sm:p-5">
-          <h3 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Scheduled Events Timeline</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 sm:mb-4">Scheduled Events Timeline</h3>
           <div className="space-y-1">
-            {detailedEvents.length === 0 && <p className="text-[10px] sm:text-xs text-muted-foreground text-center py-8">No recurring rules configured yet. Add rules in Budget Control to see scheduled events.</p>}
+            {detailedEvents.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No recurring rules configured yet. Add rules in Budget Control to see scheduled events.</p>}
             {detailedEvents.map((e, i) => (
               <div key={i} className="flex items-center justify-between py-1.5 sm:py-2 border-b border-border/50 last:border-0">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <span className="text-[10px] sm:text-[11px] text-muted-foreground w-20 sm:w-24 font-mono shrink-0">{e.date}</span>
-                  <span className="text-[10px] sm:text-xs font-medium truncate">{e.name}</span>
-                  {e.source && <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden sm:inline">· {e.source}</span>}
+                  <span className="text-xs text-muted-foreground w-20 sm:w-24 font-mono shrink-0">{e.date}</span>
+                  <span className="text-xs font-medium truncate">{e.name}</span>
+                  {e.source && <span className="text-[9px] sm:text-xs text-muted-foreground hidden sm:inline">· {e.source}</span>}
                 </div>
-                <span className={`text-[10px] sm:text-xs font-display font-bold shrink-0 ${e.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                <span className={`text-xs font-display font-bold shrink-0 ${e.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                   {e.type === 'income' ? '+' : '-'}{formatCurrency(e.amount, false)}
                 </span>
               </div>

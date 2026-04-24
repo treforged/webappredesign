@@ -726,7 +726,7 @@ export default function BudgetControl() {
     <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-6 sm:space-y-8 overflow-x-hidden">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3">
         <div className="min-w-0">
-          <h1 className="font-display font-bold text-xl sm:text-2xl lg:text-3xl tracking-tight">Budget Control</h1>
+          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Budget Control</h1>
           <p className="text-sm text-muted-foreground mt-0.5 sm:mt-1">Your single source of truth for income, expenses, and automation</p>
         </div>
         <InstructionsModal pageTitle="Budget Control Guide" sections={[
@@ -885,7 +885,7 @@ export default function BudgetControl() {
                     )}
                     {/* Resolved amount hint */}
                     {d.value > 0 && (
-                      <span className="text-[10px] text-muted-foreground w-full sm:w-auto">
+                      <span className="text-xs text-muted-foreground w-full sm:w-auto">
                         {d.mode === 'pct' ? formatCurrency(d.flatAmt, false) : `${paycheckGross > 0 ? ((d.value / paycheckGross) * 100).toFixed(1) : '0'}%`}
                       </span>
                     )}
@@ -1117,22 +1117,22 @@ export default function BudgetControl() {
       <Tabs defaultValue="income" className="space-y-4">
         <div className="w-full overflow-x-auto pb-1">
           <TabsList className="bg-secondary border border-border w-max min-w-full sm:min-w-0 sm:w-full justify-start flex-nowrap h-auto gap-1 p-1">
-            <TabsTrigger value="income" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="income" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Income ({incomeRules.length})
             </TabsTrigger>
-            <TabsTrigger value="fixed" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="fixed" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Fixed ({billsRules.length})
             </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="subscriptions" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Subscriptions ({subscriptionRules.length})
             </TabsTrigger>
-            <TabsTrigger value="variable" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="variable" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Variable ({variableRules.length})
             </TabsTrigger>
-            <TabsTrigger value="debt" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="debt" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Debt ({debtRules.length})
             </TabsTrigger>
-            <TabsTrigger value="transfers" className="shrink-0 text-[11px] sm:text-sm data-[state=active]:bg-background">
+            <TabsTrigger value="transfers" className="shrink-0 text-xs sm:text-sm data-[state=active]:bg-background">
               Transfers ({transferRules.length})
             </TabsTrigger>
           </TabsList>

@@ -104,7 +104,7 @@ function CalcDrawer({
           </button>
         </div>
 
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider">
           Calculation Breakdown
         </p>
 
@@ -606,7 +606,7 @@ export default function Dashboard() {
             <Shield size={15} className="text-amber-500 mt-0.5 shrink-0" />
             <div>
               <p className="text-xs font-semibold text-amber-600">Your account has no two-factor protection</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Adding 2FA takes under a minute and significantly reduces the risk of unauthorized access.
               </p>
             </div>
@@ -614,7 +614,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/settings#security"
-              className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 text-[10px] font-semibold hover:bg-amber-600 transition-colors btn-press"
+              className="flex items-center gap-1.5 bg-amber-500 text-white px-3 py-1.5 text-xs font-semibold hover:bg-amber-600 transition-colors btn-press"
               style={{ borderRadius: 'var(--radius)' }}
             >
               <Shield size={10} /> Secure my account
@@ -653,7 +653,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-xs font-medium">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
               </Link>
             ))}
@@ -666,7 +666,7 @@ export default function Dashboard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-display font-bold text-xl sm:text-2xl lg:text-3xl tracking-tight">
+              <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">
                 Command Center
               </h1>
               <InstructionsModal
@@ -725,7 +725,7 @@ export default function Dashboard() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">Jordan&apos;s Story — How it all connects</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 26 y/o with $12,700 in CC debt, a steady paycheck, and a plan to be debt-free in under a year.
                 Every number here is live-calculated from the data below.
               </p>
@@ -742,15 +742,15 @@ export default function Dashboard() {
             ].map(f => (
               <Link key={f.path} to={f.path} className="group flex gap-2.5 p-3 bg-secondary/40 hover:bg-secondary/70 transition-colors btn-press" style={{ borderRadius: 'var(--radius)' }}>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-primary group-hover:underline">{f.label} →</p>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">{f.desc}</p>
+                  <p className="text-xs font-semibold text-primary group-hover:underline">{f.label} →</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{f.desc}</p>
                 </div>
               </Link>
             ))}
           </div>
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional and resets when you close the tab.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">
+            <p className="text-xs text-muted-foreground">All data is fictional and resets when you close the tab.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">
               Set up your own profile →
             </Link>
           </div>
@@ -762,28 +762,28 @@ export default function Dashboard() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-forged p-4 cursor-pointer hover:border-primary/20 transition-colors" onClick={() => navigate('/budget')}>
-            <div className="flex items-center gap-2 mb-1"><CalendarDays size={12} className="text-primary" /><p className="text-[10px] text-muted-foreground uppercase">Next Paycheck</p></div>
+            <div className="flex items-center gap-2 mb-1"><CalendarDays size={12} className="text-primary" /><p className="text-xs text-muted-foreground uppercase">Next Paycheck</p></div>
             <p className="text-sm font-display font-bold text-success">{formatCurrency(paycheckNet, false)}</p>
-            <p className="text-[10px] text-muted-foreground">{nextPayday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+            <p className="text-xs text-muted-foreground">{nextPayday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
           </div>
           <div className="card-forged p-4 cursor-pointer hover:border-primary/20 transition-colors" onClick={() => navigate('/transactions')}>
-            <div className="flex items-center gap-2 mb-1"><AlertTriangle size={12} className="text-destructive" /><p className="text-[10px] text-muted-foreground uppercase">Bills This Week</p></div>
+            <div className="flex items-center gap-2 mb-1"><AlertTriangle size={12} className="text-destructive" /><p className="text-xs text-muted-foreground uppercase">Bills This Week</p></div>
             <p className="text-sm font-display font-bold text-destructive">{formatCurrency(upcomingBillsWeek.reduce((s, e) => s + e.amount, 0), false)}</p>
-            <p className="text-[10px] text-muted-foreground">{upcomingBillsWeek.length} upcoming</p>
+            <p className="text-xs text-muted-foreground">{upcomingBillsWeek.length} upcoming</p>
           </div>
           <div className="card-forged p-4 cursor-pointer hover:border-primary/20 transition-colors" onClick={() => navigate('/transactions')}>
-            <div className="flex items-center gap-2 mb-1"><Repeat size={12} className="text-primary" /><p className="text-[10px] text-muted-foreground uppercase">Bills This Month</p></div>
+            <div className="flex items-center gap-2 mb-1"><Repeat size={12} className="text-primary" /><p className="text-xs text-muted-foreground uppercase">Bills This Month</p></div>
             <p className="text-sm font-display font-bold text-foreground">{formatCurrency(upcomingBillsMonth.reduce((s, e) => s + e.amount, 0), false)}</p>
-            <p className="text-[10px] text-muted-foreground">{upcomingBillsMonth.length} scheduled</p>
+            <p className="text-xs text-muted-foreground">{upcomingBillsMonth.length} scheduled</p>
           </div>
           <div className="card-forged p-4 cursor-pointer hover:border-primary/20 transition-colors group" onClick={openMonthEndCalc}>
             <div className="flex items-center gap-2 mb-1">
               <Wallet size={12} className="text-primary" />
-              <p className="text-[10px] text-muted-foreground uppercase">Projected Month-End Cash</p>
+              <p className="text-xs text-muted-foreground uppercase">Projected Month-End Cash</p>
               <Info size={10} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <p className={`text-sm font-display font-bold ${monthEndCash >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(monthEndCash, false)}</p>
-            <p className="text-[10px] text-muted-foreground">After all scheduled items</p>
+            <p className="text-xs text-muted-foreground">After all scheduled items</p>
           </div>
         </div>
       )}
@@ -839,19 +839,19 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Saved</p>
+              <p className="text-xs text-muted-foreground uppercase">Saved</p>
               <p className="text-lg font-display font-bold text-primary">{formatCurrency(carGoalData.saved, false)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Down Payment Goal</p>
+              <p className="text-xs text-muted-foreground uppercase">Down Payment Goal</p>
               <p className="text-lg font-display font-bold text-foreground">{formatCurrency(carGoalData.target, false)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Progress</p>
+              <p className="text-xs text-muted-foreground uppercase">Progress</p>
               <p className="text-lg font-display font-bold text-success">{carGoalData.target > 0 ? `${((carGoalData.saved / carGoalData.target) * 100).toFixed(0)}%` : '0%'}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Est. Monthly Pmt</p>
+              <p className="text-xs text-muted-foreground uppercase">Est. Monthly Pmt</p>
               <p className="text-lg font-display font-bold text-destructive">
                 {formatCurrency(calculateMonthlyPayment(carGoalData.price - carGoalData.target, carGoalData.apr, carGoalData.term), true)}
               </p>
@@ -865,7 +865,7 @@ export default function Dashboard() {
 
       {!rulesLoading && upcomingBillsWeek.length > 0 && (
         <div className="card-forged p-4 cursor-pointer hover:border-primary/20 transition-colors" onClick={() => navigate('/transactions')}>
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming This Week</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming This Week</h3>
           <div className="space-y-1">
             {upcomingBillsWeek.slice(0, 5).map((e, i) => (
               <div key={i} className="flex items-center justify-between py-1.5 text-xs">
@@ -924,7 +924,7 @@ export default function Dashboard() {
         <div className="card-forged p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Transactions</h3>
-            <Link to="/transactions" className="text-[10px] text-primary hover:underline font-medium">View All</Link>
+            <Link to="/transactions" className="text-xs text-primary hover:underline font-medium">View All</Link>
           </div>
           <div className="space-y-1">
             {recentTxns.map((t: any) => (
@@ -942,7 +942,7 @@ export default function Dashboard() {
                       <p className="text-xs font-medium">{t.note || '—'}</p>
                       {t.isGenerated && <Repeat size={9} className="text-primary" />}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">{t.category}</p>
+                    <p className="text-xs text-muted-foreground">{t.category}</p>
                   </div>
                 </div>
                 <span className={`text-xs font-bold font-display ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
@@ -986,7 +986,7 @@ export default function Dashboard() {
                     <span className="text-xs font-bold text-primary">{pct}%</span>
                   </div>
                   <ProgressBar value={Number(g.current_amount)} max={Number(g.target_amount)} thick showLabel />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{formatCurrency(Number(g.current_amount), false)}</span>
                     <span>{formatCurrency(Number(g.target_amount), false)}</span>
                   </div>

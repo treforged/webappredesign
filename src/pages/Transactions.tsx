@@ -592,7 +592,7 @@ export default function Transactions() {
 <div className="space-y-3">
   {/* Title Row */}
   <div className="flex items-center gap-3">
-    <h1 className="font-display font-bold text-xl tracking-tight">
+    <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">
       Transactions
     </h1>
 
@@ -673,7 +673,7 @@ export default function Transactions() {
         <div className="card-forged p-4 border-primary/20 flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1 space-y-2">
             <p className="text-xs font-semibold text-foreground">One-time transactions — Premium</p>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Record income windfalls and large one-time expenses that instantly update your Debt Payoff engine and 36-month Forecast.
             </p>
             <ul className="space-y-1">
@@ -682,7 +682,7 @@ export default function Transactions() {
                 "Big expenses (car down payment, medical bill) reduce that month's payments",
                 'Adjustments flow instantly to Dashboard, Forecast, and Debt Payoff',
               ].map((f, i) => (
-                <li key={i} className="flex items-start gap-2 text-[10px] text-muted-foreground">
+                <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                   <span className="text-primary font-bold shrink-0 mt-px">→</span>
                   <span>{f}</span>
                 </li>
@@ -705,7 +705,7 @@ export default function Transactions() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">The live ledger — real entries + auto-generated ones</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Everything that has happened or is planned flows through here. One-time entries directly shape what the debt engine and forecast can do.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Everything that has happened or is planned flows through here. One-time entries directly shape what the debt engine and forecast can do.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -715,53 +715,53 @@ export default function Transactions() {
               { label: 'Income windfalls', desc: 'The $3,000 gift in June is a one-time income entry — the debt engine adds it to available surplus for that month.' },
               { label: 'Debt payments', desc: 'Auto-generated from the Debt Payoff engine each month — click to see the recommended amount per card.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
-        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-[11px] text-foreground font-medium" style={{ borderRadius: 'var(--radius)' }}>
+        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-xs text-foreground font-medium" style={{ borderRadius: 'var(--radius)' }}>
           {monthOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           <option value="forecast">Forecast Range</option>
           <option value="all">All Time</option>
         </select>
         {(['all', 'income', 'expense'] as const).map(t => (
-          <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1 text-[11px] font-medium border btn-press ${filterType === t ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
+          <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1 text-xs font-medium border btn-press ${filterType === t ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-[11px] text-foreground" style={{ borderRadius: 'var(--radius)' }}>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-xs text-foreground" style={{ borderRadius: 'var(--radius)' }}>
           <option value="all">All Categories</option>
           {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-[11px] text-foreground" style={{ borderRadius: 'var(--radius)' }}>
+        <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="bg-secondary border border-border px-2 py-1 text-xs text-foreground" style={{ borderRadius: 'var(--radius)' }}>
           <option value="all">All Sources</option>
           {paymentSourceOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="card-forged p-3 text-center"><p className="text-[10px] text-muted-foreground uppercase">Income</p><p className="text-sm font-display font-bold text-success">{formatCurrency(totals.income, false)}</p></div>
-        <div className="card-forged p-3 text-center"><p className="text-[10px] text-muted-foreground uppercase">Expenses</p><p className="text-sm font-display font-bold text-destructive">{formatCurrency(totals.expense, false)}</p></div>
-        <div className="card-forged p-3 text-center"><p className="text-[10px] text-muted-foreground uppercase">Net</p><p className={`text-sm font-display font-bold ${totals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(totals.net, false)}</p></div>
+        <div className="card-forged p-3 text-center"><p className="text-xs text-muted-foreground uppercase">Income</p><p className="text-sm font-display font-bold text-success">{formatCurrency(totals.income, false)}</p></div>
+        <div className="card-forged p-3 text-center"><p className="text-xs text-muted-foreground uppercase">Expenses</p><p className="text-sm font-display font-bold text-destructive">{formatCurrency(totals.expense, false)}</p></div>
+        <div className="card-forged p-3 text-center"><p className="text-xs text-muted-foreground uppercase">Net</p><p className={`text-sm font-display font-bold ${totals.net >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(totals.net, false)}</p></div>
       </div>
 
       {Object.keys(spendBySource).length > 0 && (
         <div className="card-forged p-4">
-          <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Spend by Payment Source</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Spend by Payment Source</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {Object.entries(spendBySource).map(([src, amt]) => (
               <div key={src} className="p-3 bg-muted/30 border border-border text-center" style={{ borderRadius: 'var(--radius)' }}>
-                <p className="text-[10px] text-muted-foreground truncate">{src}</p>
+                <p className="text-xs text-muted-foreground truncate">{src}</p>
                 <p className="text-sm font-display font-bold text-destructive">{formatCurrency(amt, false)}</p>
               </div>
             ))}
@@ -793,7 +793,7 @@ export default function Transactions() {
                     {isRecon && <span className="text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5" style={{ borderRadius: 'var(--radius)' }} title="Manual balance correction">reconciled</span>}
                     {sourceMissing && <span className="text-destructive" aria-label="Linked account not found"><AlertTriangle size={10} /></span>}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {t.date} · {t.category}{!isRecon && <> · {sourceMissing ? <span className="text-destructive">⚠ Missing account</span> : getSourceLabel(t.payment_source)}</>}
                   </p>
                 </div>
@@ -827,14 +827,14 @@ export default function Transactions() {
                 }}
                 className="w-full text-left p-3 border border-border hover:border-primary hover:bg-primary/5 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
                 <p className="text-xs font-semibold">Edit This Occurrence Only</p>
-                <p className="text-[10px] text-muted-foreground">Creates a one-time override. Future months are unaffected.</p>
+                <p className="text-xs text-muted-foreground">Creates a one-time override. Future months are unaffected.</p>
               </button>
               {editChoiceRule && (
                 <button
                   onClick={handleEditRule}
                   className="w-full text-left p-3 border border-border hover:border-primary hover:bg-primary/5 transition-colors" style={{ borderRadius: 'var(--radius)' }}>
                   <p className="text-xs font-semibold">Edit Recurring Rule</p>
-                  <p className="text-[10px] text-muted-foreground">Updates the source rule in Budget Control. All future occurrences change.</p>
+                  <p className="text-xs text-muted-foreground">Updates the source rule in Budget Control. All future occurrences change.</p>
                 </button>
               )}
             </div>

@@ -324,7 +324,7 @@ export default function SavingsGoals() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-xl tracking-tight">Savings Goals</h1>
+            <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Savings Goals</h1>
             <InstructionsModal pageTitle="Savings Goals Guide" sections={[
               { title: 'What is this page?', body: 'Track progress toward your financial goals — emergency fund, vacation, down payment, or car purchase. Link goals to real accounts for automatic balance sync.' },
               { title: 'Linked Accounts', body: 'When linked to an account, the goal\'s "current saved" automatically reflects that account balance. "Available after bills" shows the realistic amount after subtracting scheduled outflows.' },
@@ -355,7 +355,7 @@ export default function SavingsGoals() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-foreground">Savings goals + Car Fund — track every target in one place</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Jordan is building an emergency fund while saving for a car. Goals link to real accounts and auto-sync balances.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Jordan is building an emergency fund while saving for a car. Goals link to real accounts and auto-sync balances.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -365,15 +365,15 @@ export default function SavingsGoals() {
               { label: 'Linked accounts', desc: 'When an account is linked, "current saved" always reflects the live balance — no manual updates needed.' },
               { label: 'Connects to Forecast', desc: 'Monthly contributions here are deducted in the Forecast before sizing debt payments — goals don\'t compete with the debt engine.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] text-muted-foreground">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
@@ -381,8 +381,8 @@ export default function SavingsGoals() {
       <SavingsGrowthChart goals={allGoals} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="card-forged p-4 text-center"><p className="text-[10px] text-muted-foreground uppercase">Total Saved</p><p className="text-lg font-display font-bold text-success">{formatCurrency(totalSaved, false)}</p></div>
-        <div className="card-forged p-4 text-center"><p className="text-[10px] text-muted-foreground uppercase">Total Target</p><p className="text-lg font-display font-bold text-foreground">{formatCurrency(totalTarget, false)}</p></div>
+        <div className="card-forged p-4 text-center"><p className="text-xs text-muted-foreground uppercase">Total Saved</p><p className="text-lg font-display font-bold text-success">{formatCurrency(totalSaved, false)}</p></div>
+        <div className="card-forged p-4 text-center"><p className="text-xs text-muted-foreground uppercase">Total Target</p><p className="text-lg font-display font-bold text-foreground">{formatCurrency(totalTarget, false)}</p></div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -407,7 +407,7 @@ export default function SavingsGoals() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground break-words leading-relaxed">
+                  <p className="text-xs text-muted-foreground break-words leading-relaxed">
                     {(g as any).linked_rule
                       ? <span className="text-primary/80">{formatCurrency(Number(g.monthly_contribution), false)}/mo · via {(g as any).linked_rule.name}</span>
                       : `${formatCurrency(Number(g.monthly_contribution), false)}/mo contribution`
@@ -429,7 +429,7 @@ export default function SavingsGoals() {
                 <span className="text-xs text-muted-foreground">of {formatCurrency(Number(g.target_amount), false)}</span>
               </div>
               <ProgressBar value={Number(g.current_amount)} max={Number(g.target_amount)} color={pct >= 100 ? 'success' : 'gold'} />
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-[10px] text-muted-foreground">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground">
                 <span>{pct.toFixed(0)}% complete</span>
                 <span>Est. completion: {estimateCompletion(g)}</span>
               </div>

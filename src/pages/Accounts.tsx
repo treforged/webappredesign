@@ -312,7 +312,7 @@ export default function Accounts() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold">{plaidLinkedName} linked!</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Balances synced successfully. Your accounts are ready.</p>
+              <p className="text-xs text-muted-foreground mt-1">Balances synced successfully. Your accounts are ready.</p>
             </div>
             <button
               onClick={() => {
@@ -339,7 +339,7 @@ export default function Accounts() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-2xl lg:text-3xl tracking-tight">Accounts</h1>
+            <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Accounts</h1>
             <InstructionsModal pageTitle="Accounts Guide" sections={[
               { title: 'What is this page?', body: 'Accounts is the centralized source of truth for all your financial balances — checking, savings, investments, retirement, credit cards, and loans.' },
               { title: 'How it connects', body: 'Account balances drive net worth, liquid cash calculations, debt payoff recommendations, and payment source availability across the entire app.' },
@@ -360,7 +360,7 @@ export default function Accounts() {
             <div className="shrink-0 w-1.5 h-8 bg-primary rounded-full mt-0.5" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-foreground">Your financial foundation</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Every account type in one place — balances here drive every number across the entire app.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Every account type in one place — balances here drive every number across the entire app.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -370,15 +370,15 @@ export default function Accounts() {
               { label: 'Savings & HYS', desc: 'Tracked separately from cash so emergency funds are never counted as available for debt payments.' },
               { label: 'Investments & Retirement', desc: '401k, Roth IRA, and brokerage grow over time and appear in Net Worth projections.' },
             ].map((f, i) => (
-              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-[10px]" style={{ borderRadius: 'var(--radius)' }}>
+              <div key={i} className="flex gap-2 p-2.5 bg-secondary/40 text-xs" style={{ borderRadius: 'var(--radius)' }}>
                 <span className="text-primary font-bold shrink-0">→</span>
                 <div><span className="font-medium text-foreground">{f.label}: </span><span className="text-muted-foreground">{f.desc}</span></div>
               </div>
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground truncate">All data is fictional.</p>
-            <Link to="/auth" className="text-[11px] font-semibold text-primary hover:underline">Use with your own data →</Link>
+            <p className="text-xs text-muted-foreground truncate">All data is fictional.</p>
+            <Link to="/auth" className="text-xs font-semibold text-primary hover:underline">Use with your own data →</Link>
           </div>
         </div>
       )}
@@ -399,7 +399,7 @@ export default function Accounts() {
       {/* Filter */}
       <div className="flex gap-2">
         {(['all', 'assets', 'liabilities'] as const).map(t => (
-          <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1 text-[11px] font-medium border btn-press ${filterType === t ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
+          <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1 text-xs font-medium border btn-press ${filterType === t ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:text-foreground'}`} style={{ borderRadius: 'var(--radius)' }}>
             {t === 'all' ? 'All Accounts' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
@@ -430,7 +430,7 @@ export default function Accounts() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {TYPE_LABELS[a.account_type] || a.account_type}
                       {a.institution ? ` · ${a.institution}` : ''}
                       {a.apr ? ` · ${a.apr}% APR` : ''}
@@ -446,7 +446,7 @@ export default function Accounts() {
                   {a.plaid_account_id && (
                     <button
                       onClick={() => handleUnlinkAccount(a.id)}
-                      className={`text-[10px] font-medium px-1.5 py-0.5 border transition-colors ${unlinkConfirm === a.id ? 'text-destructive border-destructive/40 bg-destructive/5' : 'text-muted-foreground border-transparent hover:text-destructive'}`}
+                      className={`text-xs font-medium px-1.5 py-0.5 border transition-colors ${unlinkConfirm === a.id ? 'text-destructive border-destructive/40 bg-destructive/5' : 'text-muted-foreground border-transparent hover:text-destructive'}`}
                       style={{ borderRadius: 'var(--radius)' }}
                       title={unlinkConfirm === a.id ? 'Click again to confirm unlink' : 'Unlink from Plaid auto-sync'}
                     >
@@ -460,7 +460,7 @@ export default function Accounts() {
                   <button onClick={() => handleDelete(a.id)} className={`icon-btn ${deleteConfirm === a.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={14} /></button>
                 </div>
               </div>
-              {a.notes && <p className="text-[10px] text-muted-foreground mt-2 ml-12 break-words">{a.notes}</p>}
+              {a.notes && <p className="text-xs text-muted-foreground mt-2 ml-12 break-words">{a.notes}</p>}
             </div>
           );
         })}
@@ -472,14 +472,14 @@ export default function Accounts() {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <h3 className="text-sm font-semibold flex items-center gap-1.5"><Link2 size={14} className="text-primary" /> Linked Banks</h3>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Auto-sync balances from your bank accounts (premium)</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Auto-sync balances from your bank accounts (premium)</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {isPremium && plaidItems.length > 0 && (
                 <button
                   onClick={() => syncPlaidNow(true)}
                   disabled={plaidSyncingNow}
-                  className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/50 px-2 py-1 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/50 px-2 py-1 transition-colors disabled:opacity-50"
                   style={{ borderRadius: 'var(--radius)' }}
                   title="Force a fresh sync from Plaid now"
                 >
@@ -503,7 +503,7 @@ export default function Accounts() {
               .sort()
               .at(-1);
             return (
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${mostRecent ? 'bg-green-500' : 'bg-yellow-500'}`} />
                 {mostRecent
                   ? `Last synced ${new Date(mostRecent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · Updates daily at 8 AM`
@@ -512,7 +512,7 @@ export default function Accounts() {
             );
           })()}
 
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Bank connections are powered by{' '}
             <a href="https://plaid.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Plaid</a>
             , a trusted financial data platform used by thousands of apps. We never see your bank login credentials — Plaid handles authentication securely.{' '}
@@ -545,7 +545,7 @@ export default function Accounts() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold truncate">{item.institution_name ?? 'Bank'}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {item.last_synced_at
                           ? `Last synced ${new Date(item.last_synced_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
                           : 'Not yet synced'}
@@ -565,7 +565,7 @@ export default function Accounts() {
                       setDelinking(false);
                     }}
                     onBlur={() => setDelinkConfirm(null)}
-                    className={`text-[10px] font-medium px-2 py-1 rounded border transition-colors shrink-0 ${
+                    className={`text-xs font-medium px-2 py-1 rounded border transition-colors shrink-0 ${
                       delinkConfirm === item.plaid_item_id
                         ? 'text-destructive border-destructive/40 bg-destructive/10'
                         : 'text-muted-foreground border-transparent hover:text-destructive'
@@ -593,7 +593,7 @@ export default function Accounts() {
           <div className="card-forged w-full max-w-md p-5 space-y-4">
             <div className="min-w-0">
               <h3 className="text-sm font-semibold">Match Linked Accounts</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Do any of these Plaid accounts match accounts you already added manually? We'll merge the balance and enable auto-sync on the existing one.
               </p>
             </div>
@@ -602,7 +602,7 @@ export default function Accounts() {
                 <div key={i} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{entry.plaidAccount.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{formatCurrency(entry.plaidAccount.balance, false)}</p>
+                    <p className="text-xs text-muted-foreground truncate">{formatCurrency(entry.plaidAccount.balance, false)}</p>
                   </div>
                   <select
                     className="bg-secondary border border-border text-xs px-2 py-1 rounded flex-1 min-w-0 truncate"
