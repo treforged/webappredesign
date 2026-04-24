@@ -416,48 +416,48 @@ export default function Accounts() {
           const liability = isLiability(a.account_type);
           return (
             <div key={a.id} className={`card-forged p-4 transition-opacity ${!a.active ? 'opacity-40' : ''}`}>
-              <div className="flex items-start gap-3 min-w-0">
-                <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${liability ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                  <Icon size={16} className={liability ? 'text-destructive' : 'text-primary'} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-md flex items-center justify-center ${liability ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                    <Icon size={16} className={liability ? 'text-destructive' : 'text-primary'} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
                       <p className="text-sm font-semibold truncate">{a.name}</p>
                       {a.plaid_account_id && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 font-medium leading-none shrink-0" style={{ borderRadius: 'var(--radius)' }}>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 font-medium leading-none" style={{ borderRadius: 'var(--radius)' }}>
                           Auto-sync
                         </span>
                       )}
                     </div>
-                    <span className={`text-base font-display font-bold shrink-0 ${liability ? 'text-destructive' : 'text-success'}`}>
-                      {liability ? '-' : ''}{formatCurrency(Number(a.balance), false)}
-                    </span>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {TYPE_LABELS[a.account_type] || a.account_type}
+                      {a.institution ? ` · ${a.institution}` : ''}
+                      {a.apr ? ` · ${a.apr}% APR` : ''}
+                      {a.apy_rate != null ? ` · ${a.apy_rate}% APY` : ''}
+                      {a.credit_limit ? ` · Limit ${formatCurrency(Number(a.credit_limit), false)}` : ''}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {TYPE_LABELS[a.account_type] || a.account_type}
-                    {a.institution ? ` · ${a.institution}` : ''}
-                    {a.apr ? ` · ${a.apr}% APR` : ''}
-                    {a.apy_rate != null ? ` · ${a.apy_rate}% APY` : ''}
-                    {a.credit_limit ? ` · Limit ${formatCurrency(Number(a.credit_limit), false)}` : ''}
-                  </p>
-                  <div className="flex items-center gap-0.5 mt-2 -ml-1">
-                    {a.plaid_account_id && (
-                      <button
-                        onClick={() => handleUnlinkAccount(a.id)}
-                        className={`text-xs font-medium px-1.5 py-1 border transition-colors mr-1 ${unlinkConfirm === a.id ? 'text-destructive border-destructive/40 bg-destructive/5' : 'text-muted-foreground border-transparent hover:text-destructive'}`}
-                        style={{ borderRadius: 'var(--radius)' }}
-                        title={unlinkConfirm === a.id ? 'Click again to confirm unlink' : 'Unlink from Plaid auto-sync'}
-                      >
-                        {unlinkConfirm === a.id ? 'Confirm unlink?' : <Unlink size={12} />}
-                      </button>
-                    )}
-                    <button onClick={() => toggleActive(a)} className="icon-btn text-muted-foreground hover:text-foreground" title={a.active ? 'Deactivate' : 'Activate'}>
-                      {a.active ? <Eye size={14} /> : <EyeOff size={14} />}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-lg font-display font-bold truncate ${liability ? 'text-destructive' : 'text-success'}`}>
+                    {liability ? '-' : ''}{formatCurrency(Number(a.balance), false)}
+                  </span>
+                  {a.plaid_account_id && (
+                    <button
+                      onClick={() => handleUnlinkAccount(a.id)}
+                      className={`text-xs font-medium px-1.5 py-0.5 border transition-colors ${unlinkConfirm === a.id ? 'text-destructive border-destructive/40 bg-destructive/5' : 'text-muted-foreground border-transparent hover:text-destructive'}`}
+                      style={{ borderRadius: 'var(--radius)' }}
+                      title={unlinkConfirm === a.id ? 'Click again to confirm unlink' : 'Unlink from Plaid auto-sync'}
+                    >
+                      {unlinkConfirm === a.id ? 'Confirm unlink?' : <Unlink size={12} />}
                     </button>
-                    <button onClick={() => openEdit(a)} className="icon-btn text-muted-foreground hover:text-foreground"><Edit2 size={14} /></button>
-                    <button onClick={() => handleDelete(a.id)} className={`icon-btn ${deleteConfirm === a.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={14} /></button>
-                  </div>
+                  )}
+                  <button onClick={() => toggleActive(a)} className="icon-btn text-muted-foreground hover:text-foreground" title={a.active ? 'Deactivate' : 'Activate'}>
+                    {a.active ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+                  <button onClick={() => openEdit(a)} className="icon-btn text-muted-foreground hover:text-foreground"><Edit2 size={14} /></button>
+                  <button onClick={() => handleDelete(a.id)} className={`icon-btn ${deleteConfirm === a.id ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}><Trash2 size={14} /></button>
                 </div>
               </div>
               {a.notes && <p className="text-xs text-muted-foreground mt-2 ml-12 break-words">{a.notes}</p>}

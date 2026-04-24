@@ -613,7 +613,7 @@ export default function AiAdvisor() {
       <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full overflow-x-hidden">
         <SharedHeader />
 
-        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5">
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5 overflow-x-hidden">
           {conversations.map(convo => {
             const ts = new Date(convo.created_at);
             const isToday = ts.toDateString() === new Date().toDateString();
@@ -660,7 +660,7 @@ export default function AiAdvisor() {
       {isNewChat && <SnapshotBar />}
 
       {/* Thread */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 lg:px-6 py-4 space-y-6">
 
         {/* Empty state */}
         {activeEntries.length === 0 && !loading && (

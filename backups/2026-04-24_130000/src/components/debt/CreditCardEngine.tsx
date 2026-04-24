@@ -798,9 +798,9 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
             const hasOverrides = Object.keys(cardOverrides).length > 0;
 
             return (
-              <div key={proj.card.id} className="card-forged w-full max-w-full min-w-0">
+              <div key={proj.card.id} className="card-forged overflow-hidden w-full max-w-full min-w-0">
                 <button onClick={() => setExpandedCard(isExpanded ? null : proj.card.id)}
-                  className="w-full p-3 sm:p-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between text-left hover:bg-muted/10 transition-colors">
+                  className="w-full p-3 sm:p-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between text-left hover:bg-muted/10 transition-colors overflow-hidden">
                   <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                     <span className="w-3 sm:w-4 h-3 sm:h-4 rounded-sm shrink-0" style={{ backgroundColor: proj.card.color }} />
                     <div className="min-w-0 flex-1">
