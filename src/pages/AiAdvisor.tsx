@@ -535,7 +535,7 @@ export default function AiAdvisor() {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <div className="flex gap-0.5">
+        <div className="hidden sm:flex gap-0.5">
           {Array.from({ length: DAILY_LIMIT }).map((_, i) => (
             <div key={i} className={`h-1.5 w-2 rounded-full transition-colors ${i < usedToday ? 'bg-primary' : 'bg-border'}`} />
           ))}
@@ -613,7 +613,7 @@ export default function AiAdvisor() {
       <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
         <SharedHeader />
 
-        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5" style={{ overflowX: 'clip', touchAction: 'pan-y' }}>
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5" style={{ overflowX: 'hidden', touchAction: 'pan-y' }}>
           {conversations.map(convo => {
             const ts = new Date(convo.created_at);
             const isToday = ts.toDateString() === new Date().toDateString();
@@ -660,7 +660,7 @@ export default function AiAdvisor() {
       {isNewChat && <SnapshotBar />}
 
       {/* Thread */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-6" style={{ overflowX: 'clip', touchAction: 'pan-y' }}>
+      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-6" style={{ overflowX: 'hidden', touchAction: 'pan-y' }}>
 
         {/* Empty state */}
         {activeEntries.length === 0 && !loading && (
