@@ -302,7 +302,7 @@ export default function Accounts() {
   };
 
   return (
-    <div className="py-4 lg:py-8 max-w-7xl mx-auto space-y-8 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-8 overflow-x-hidden">
       {/* Plaid link success overlay */}
       {plaidLinkedName && !plaidSyncing && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm p-4">

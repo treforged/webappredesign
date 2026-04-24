@@ -320,7 +320,7 @@ export default function SavingsGoals() {
   }, [form.goal_type, form.linked_account, accountOptions]);
 
   return (
-    <div className="py-4 lg:py-6 max-w-5xl mx-auto space-y-6 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">

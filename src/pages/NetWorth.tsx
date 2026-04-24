@@ -267,7 +267,7 @@ export default function NetWorth() {
   };
 
   return (
-    <div className="py-3 sm:py-4 lg:py-8 max-w-7xl mx-auto space-y-5 sm:space-y-8 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-5 sm:space-y-8 overflow-x-hidden">
       <div className="flex items-center gap-3">
         <div>
           <h1 className="font-display font-bold text-2xl lg:text-3xl tracking-tight">Net Worth</h1>

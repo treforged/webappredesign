@@ -869,7 +869,7 @@ export default function Forecast() {
   const displayData = freePreview ? filteredData.slice(0, 3) : filteredData;
 
   return (
-    <div className="py-3 sm:py-4 lg:py-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 overflow-x-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2 sm:gap-3 min-w-0">
           <div className="min-w-0">

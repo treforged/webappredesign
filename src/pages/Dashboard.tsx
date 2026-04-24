@@ -578,7 +578,7 @@ export default function Dashboard() {
 
   if (essentialLoading) {
     return (
-      <div className="py-4 lg:py-8 max-w-7xl mx-auto space-y-8 overflow-x-hidden">
+      <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-8 overflow-x-hidden">
         <div className="flex items-center justify-between">
           <div>
             <div className="h-8 w-48 bg-muted/50 rounded animate-pulse" />
@@ -596,7 +596,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="py-4 lg:py-8 max-w-7xl mx-auto space-y-8 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-8 overflow-x-hidden">
       {!isDemo && <AppTour variant="new-user" />}
       <AccountUpdateReminder />
 

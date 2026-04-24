@@ -108,7 +108,7 @@ export default function DebtPayoff() {
   const hasCreditCards = accounts?.some((a: any) => a.account_type === 'credit_card' && a.active) ?? false;
 
   return (
-    <div className="py-3 sm:py-4 lg:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-6 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-6 overflow-x-hidden">
       <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="min-w-0">

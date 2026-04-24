@@ -587,7 +587,7 @@ export default function Transactions() {
   ], [paymentSourceOptions, editId]);
 
   return (
-    <div className="py-4 lg:py-6 max-w-5xl mx-auto space-y-6 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-6 overflow-x-hidden">
       {/* Header */}
 <div className="space-y-3">
   {/* Title Row */}
