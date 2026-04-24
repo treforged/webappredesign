@@ -610,7 +610,7 @@ export default function AiAdvisor() {
 
   if (view === 'list') {
     return (
-      <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
+      <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full overflow-hidden">
         <SharedHeader />
 
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-1.5" style={{ overflowX: 'hidden', touchAction: 'pan-y' }}>
@@ -654,7 +654,7 @@ export default function AiAdvisor() {
   const showBackInChat = conversations.length > 0;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] lg:h-screen max-w-3xl mx-auto w-full overflow-hidden">
 
       <SharedHeader showBack={showBackInChat} title={activeTitle ?? undefined} />
       {isNewChat && <SnapshotBar />}

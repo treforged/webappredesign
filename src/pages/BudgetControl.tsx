@@ -723,7 +723,7 @@ export default function BudgetControl() {
   );
 
   return (
-    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-6 sm:space-y-8 overflow-x-hidden">
+    <div className="py-4 lg:py-6 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3">
         <div className="min-w-0">
           <h1 className="font-display font-bold text-xl sm:text-2xl tracking-tight">Budget Control</h1>
