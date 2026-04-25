@@ -9,6 +9,7 @@ const IDLE_TIMEOUT_MS = 10 * 60 * 1000;    // 10 minutes
 const IDLE_WARNING_MS =  8 * 60 * 1000;    // warn at 8 minutes
 const IDLE_CHECK_INTERVAL_MS = 30 * 1000;  // check every 30 seconds
 const LAST_ACTIVITY_KEY = 'forged:last_activity';
+const REVIEWER_EMAIL = 'reviewer@treforged.com';
 
 type AuthContextType = {
   user: User | null;
@@ -45,6 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsDemo(false);
   }, []);
 
+  const resetReviewerAccount = useCallback(async (userId: string) => {
+    await supabase
+      .from('profiles')
+      .update({ founder_note_seen: false, onboarding_completed: false } as any)
+      .eq('user_id', userId);
+    localStorage.removeItem(`forged:onboarding_done_${userId}`);
+    localStorage.removeItem('forged:tour_done_new_user');
+    localStorage.removeItem('forged:tour_done_premium');
+    sessionStorage.removeItem('forged:founder_note_seen');
+    sessionStorage.removeItem('forged:onboarding_wizard_dismissed');
+  }, []);
+
   // ── Auth state listener ──────────────────────────────────────────────────
   useEffect(() => {
     // Handle email confirmation token in URL hash
@@ -66,8 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user?.id) {
           initRevenueCat(session.user.id).catch(() => {/* native no-op on web */});
         }
-        if (session?.user?.email === 'reviewer@treforged.com') {
-          localStorage.removeItem(`forged:onboarding_done_${session.user.id}`);
+        if (session?.user?.email === REVIEWER_EMAIL) {
+          resetReviewerAccount(session.user.id);
         }
         if (locationRef.current === '/auth') {
           supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: aal }) => {
@@ -128,10 +141,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOutWithBroadcast = useCallback(async () => {
     localStorage.removeItem(LAST_ACTIVITY_KEY);
+    if (user?.email === REVIEWER_EMAIL && user?.id) {
+      await resetReviewerAccount(user.id);
+    }
     broadcastSignOut();
     await supabase.auth.signOut();
     setIsDemo(false);
-  }, [broadcastSignOut]);
+  }, [broadcastSignOut, user, resetReviewerAccount]);
 
   // ── Idle session timeout ─────────────────────────────────────────────────
   // Last activity is stored in localStorage so it survives tab close/reopen.
