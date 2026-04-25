@@ -794,7 +794,7 @@ export default function SettingsPage() {
 
           {/* Sign-In Passkey — separate from app lock, lets you skip password on login */}
           {typeof window !== 'undefined' && window.PublicKeyCredential && (
-            <div className="pt-2 border-t border-border space-y-2">
+            <div className="pt-2 border-t border-border space-y-2 md:hidden">
               <p className="text-xs text-muted-foreground">
                 <span className="text-foreground font-medium">Sign-in passkey</span> — skip the password field on the login page entirely.
               </p>
