@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { loginSchema, signUpSchema } from '@/lib/schemas';
 import { Capacitor } from '@capacitor/core';
-import { useAuth } from '@/contexts/AuthContext';
 
 const PASSKEY_CRED_KEY   = 'forged:signin_passkey';
 const PASSKEY_TOKENS_KEY = 'forged:signin_passkey_tokens';
@@ -14,13 +13,12 @@ function b64urlToBytes(b64url: string): Uint8Array {
   return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 }
 
-type Mode = 'landing' | 'login' | 'signup' | 'reset' | 'set-password' | 'mfa';
+type Mode = 'login' | 'signup' | 'reset' | 'set-password' | 'mfa';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>('landing');
-  const { setIsDemo } = useAuth();
+  const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -81,12 +79,6 @@ export default function Auth() {
     setConfirmPassword('');
     setDisplayName('');
     setResetSent(false);
-    if (next === 'landing') setEmail('');
-  };
-
-  const handleDemoLogin = () => {
-    setIsDemo(true);
-    navigate('/dashboard', { replace: true });
   };
 
   const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
@@ -331,63 +323,6 @@ const { error } = await supabase.auth.signInWithOAuth({
     }
   }, [mfaCode, mfaFactorType, loading, handleMfaVerify]);
 
-  // ── Landing ───────────────────────────────────────────────────────────────
-  if (mode === 'landing') {
-    return (
-      <div
-        className="min-h-screen bg-background flex items-center justify-center px-6"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
-        }}
-      >
-        <style>{`
-          @keyframes authEntrance {
-            from { opacity: 0; transform: scale(0.85) translateY(8px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-          }
-          .auth-logo  { animation: authEntrance 0.6s ease forwards; }
-          .auth-cta   { opacity: 0; animation: authEntrance 0.5s ease forwards; }
-          .auth-cta-1 { animation-delay: 0.4s; }
-          .auth-cta-2 { animation-delay: 0.55s; }
-          .auth-cta-3 { animation-delay: 0.7s; }
-          .auth-trust { opacity: 0; animation: authEntrance 0.5s ease 0.85s forwards; }
-        `}</style>
-        <div className="w-full max-w-xs space-y-10">
-          <div className="text-center auth-logo">
-            <h1 className="font-display font-bold text-4xl tracking-tight text-gold">FORGED</h1>
-            <p className="text-xs text-muted-foreground mt-2">Your money. Clear and honest.</p>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={() => switchMode('signup')}
-              className="auth-cta auth-cta-1 w-full bg-primary text-primary-foreground py-3.5 text-sm font-semibold btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              Start Free
-            </button>
-            <button
-              onClick={() => switchMode('login')}
-              className="auth-cta auth-cta-2 w-full border border-border text-foreground py-3.5 text-sm font-semibold hover:bg-secondary/60 transition-colors btn-press"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={handleDemoLogin}
-              className="auth-cta auth-cta-3 w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Try Demo
-            </button>
-          </div>
-          <p className="auth-trust text-xs text-muted-foreground text-center">
-            0 ads. Ever. No selling your data.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // ── MFA challenge UI ──────────────────────────────────────────────────────
   if (mode === 'mfa') {
     const FACTOR_HINTS: Record<string, string> = {
@@ -579,13 +514,9 @@ const { error } = await supabase.auth.signInWithOAuth({
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6">
-          <button
-            type="button"
-            onClick={() => switchMode('landing')}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Back
-          </button>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            ← Back to home
+          </Link>
         </div>
 
         <div className="text-center mb-8">
