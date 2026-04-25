@@ -3,14 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2, Fingerprint, KeyRound, Hash, Monitor } from 'lucide-react';
-
-interface TrustedDevice {
-  device_id: string;
-  name: string;
-  trusted_at: string;
-  last_seen: string;
-}
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2, Fingerprint, KeyRound, Hash } from 'lucide-react';
 import { useAppLock, type LockType } from '@/hooks/useAppLock';
 import { LinkedAccounts } from '@/components/settings/LinkedAccounts';
 import { TwoFactorAuth } from '@/components/settings/TwoFactorAuth';
@@ -141,7 +134,6 @@ export default function SettingsPage() {
     catch { return false; }
   });
   const [signinPasskeyBusy, setSigninPasskeyBusy] = useState(false);
-  const [trustedDevices, setTrustedDevices] = useState<TrustedDevice[]>([]);
 
   // Account security state
   const [newEmail, setNewEmail] = useState('');
@@ -169,7 +161,6 @@ export default function SettingsPage() {
       setPaycheckStartDate((profile as any).paycheck_start_date || '');
       setDefaultDepositAccount((profile as any).default_deposit_account || '');
       setAutoGenerateRecurring((profile as any).auto_generate_recurring ?? true);
-      setTrustedDevices(((profile as any).trusted_devices ?? []) as TrustedDevice[]);
       setDirty(false);
     }
   }, [profile]);
@@ -375,20 +366,6 @@ export default function SettingsPage() {
     toast.success('Sign-in passkey removed');
   };
 
-  const handleRevokeDevice = async (deviceId: string) => {
-    try {
-      const updated = trustedDevices.filter(d => d.device_id !== deviceId);
-      await supabase.from('profiles').update({ trusted_devices: updated } as any).eq('user_id', user!.id);
-      setTrustedDevices(updated);
-      if (localStorage.getItem('forged:trusted_device_id') === deviceId) {
-        localStorage.removeItem('forged:trusted_device_id');
-      }
-      toast.success('Device revoked');
-    } catch {
-      toast.error('Failed to revoke device');
-    }
-  };
-
   const handleCancelOrResume = async (action: 'cancel' | 'resume') => {
     setCancelLoading(true);
     setConfirmCancel(false);
@@ -511,57 +488,6 @@ export default function SettingsPage() {
 
           {/* Two-Factor Auth */}
           <TwoFactorAuth />
-
-          <div className="border-t border-border" />
-
-          {/* Trusted Devices */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Monitor size={13} className="text-muted-foreground" />
-              <span className="text-xs font-medium">Trusted Devices</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Devices that skip 2FA for 30 days after you verify once.
-            </p>
-            {trustedDevices.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No trusted devices yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {trustedDevices.map(device => {
-                  const isCurrentDevice = (() => { try { return localStorage.getItem('forged:trusted_device_id') === device.device_id; } catch { return false; } })();
-                  const isExpired = Date.now() - new Date(device.trusted_at).getTime() >= 30 * 24 * 60 * 60 * 1000;
-                  return (
-                    <div key={device.device_id} className="flex items-center justify-between gap-3 bg-secondary border border-border px-3 py-2" style={{ borderRadius: 'var(--radius)' }}>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-medium truncate">{device.name}</p>
-                          {isCurrentDevice && (
-                            <span className="text-[9px] px-1 py-0.5 bg-primary/15 text-primary border border-primary/30 shrink-0" style={{ borderRadius: 'var(--radius)' }}>
-                              This device
-                            </span>
-                          )}
-                          {isExpired && (
-                            <span className="text-[9px] px-1 py-0.5 bg-amber-500/15 text-amber-600 border border-amber-500/30 shrink-0" style={{ borderRadius: 'var(--radius)' }}>
-                              Expired
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">
-                          Trusted {format(new Date(device.trusted_at), 'MMM d, yyyy')} · Last seen {format(new Date(device.last_seen), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRevokeDevice(device.device_id)}
-                        className="shrink-0 text-xs text-destructive hover:underline"
-                      >
-                        Revoke
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           <div className="border-t border-border" />
 

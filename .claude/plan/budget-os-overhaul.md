@@ -28,7 +28,8 @@
 - **Phase 2 — Auth Page Redesign** (Auth.tsx)
   - 2A: Landing view added — animated FORGED logo + staggered CTAs (Start Free / Sign In / Try Demo); demo login wired to setIsDemo
   - 2B: No biometric UI found on web — passkey is WebAuthn (correct); no changes needed
-  - 2C/2D: Deferred (passkey server-side + trusted devices — separate session)
+  - 2C: Passkey expired UX — auto-switch to login mode + amber banner on token expiry/missing
+  - 2D: Trusted devices — migration (trusted_devices jsonb on profiles), MFA skip for trusted device, trust prompt after MFA verify, Settings revoke list
 
 ---
 
@@ -309,6 +310,7 @@ and where Forged differentiates. Research only — no code changes.
 Phase 1A → 1B → 1C   ✓ DONE
 Phase 4B              ✓ DONE (no cursor-pointer found — already clean)
 Phase 2A → 2B         ✓ DONE
+Phase 2C → 2D         ✓ DONE
 Phase 3A              (Founder's note — quick migration + modal)
 Phase 3B → 3C → 3D   (Onboarding — do together, they're coupled)
 Phase 4A              (Anvil logo — needs favicon reference)

@@ -8,55 +8,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const PASSKEY_CRED_KEY   = 'forged:signin_passkey';
 const PASSKEY_TOKENS_KEY = 'forged:signin_passkey_tokens';
-const TRUSTED_DEVICE_KEY = 'forged:trusted_device_id';
 
 function b64urlToBytes(b64url: string): Uint8Array {
   const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
   return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-}
-
-interface TrustedDevice {
-  device_id: string;
-  name: string;
-  trusted_at: string;
-  last_seen: string;
-}
-
-function getDeviceName(): string {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return 'iPhone';
-  if (/iPad/.test(ua)) return 'iPad';
-  if (/Android/.test(ua)) return 'Android';
-  if (/Macintosh/.test(ua)) return 'Mac';
-  if (/Windows/.test(ua)) return 'Windows PC';
-  return 'Browser';
-}
-
-async function checkDeviceTrusted(userId: string): Promise<boolean> {
-  const deviceId = localStorage.getItem(TRUSTED_DEVICE_KEY);
-  if (!deviceId) return false;
-  try {
-    const { data } = await supabase.from('profiles').select('trusted_devices').eq('user_id', userId).single();
-    const devices = ((data as any)?.trusted_devices ?? []) as TrustedDevice[];
-    const device = devices.find(d => d.device_id === deviceId);
-    if (!device) return false;
-    return Date.now() - new Date(device.trusted_at).getTime() < 30 * 24 * 60 * 60 * 1000;
-  } catch {
-    return false;
-  }
-}
-
-async function updateDeviceLastSeen(userId: string): Promise<void> {
-  const deviceId = localStorage.getItem(TRUSTED_DEVICE_KEY);
-  if (!deviceId) return;
-  try {
-    const { data: pd } = await supabase.from('profiles').select('trusted_devices').eq('user_id', userId).single();
-    const devices = ((pd as any)?.trusted_devices ?? []) as TrustedDevice[];
-    const updated = devices.map(d =>
-      d.device_id === deviceId ? { ...d, last_seen: new Date().toISOString() } : d
-    );
-    await supabase.from('profiles').update({ trusted_devices: updated } as any).eq('user_id', userId);
-  } catch { /* non-critical */ }
 }
 
 type Mode = 'landing' | 'login' | 'signup' | 'reset' | 'set-password' | 'mfa';
@@ -76,9 +31,6 @@ export default function Auth() {
     try { return !!(window.PublicKeyCredential && localStorage.getItem(PASSKEY_CRED_KEY)); }
     catch { return false; }
   });
-  const [trustPromptVisible, setTrustPromptVisible] = useState(false);
-  const [pendingUserId, setPendingUserId] = useState('');
-  const [passkeyExpiredBanner, setPasskeyExpiredBanner] = useState(false);
 
   // MFA challenge state
   const [mfaFactorId, setMfaFactorId] = useState('');
@@ -129,30 +81,12 @@ export default function Auth() {
     setConfirmPassword('');
     setDisplayName('');
     setResetSent(false);
-    setPasskeyExpiredBanner(false);
     if (next === 'landing') setEmail('');
   };
 
   const handleDemoLogin = () => {
     setIsDemo(true);
     navigate('/dashboard', { replace: true });
-  };
-
-  const handleTrustDevice = async () => {
-    setLoading(true);
-    try {
-      const deviceId = crypto.randomUUID();
-      localStorage.setItem(TRUSTED_DEVICE_KEY, deviceId);
-      const { data: pd } = await supabase.from('profiles').select('trusted_devices').eq('user_id', pendingUserId).single();
-      const existing = ((pd as any)?.trusted_devices ?? []) as TrustedDevice[];
-      const now = new Date().toISOString();
-      await supabase.from('profiles').update({
-        trusted_devices: [...existing, { device_id: deviceId, name: getDeviceName(), trusted_at: now, last_seen: now }],
-      } as any).eq('user_id', pendingUserId);
-    } catch { /* non-critical */ } finally {
-      setLoading(false);
-      navigate('/dashboard', { replace: true });
-    }
   };
 
   const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
@@ -224,10 +158,6 @@ const { error } = await supabase.auth.signInWithOAuth({
       const lower = msg.toLowerCase();
       if (!lower.includes('cancel') && !lower.includes('abort') && !lower.includes('not allowed')) {
         toast.error(msg || 'Passkey sign-in failed');
-        if (msg.includes('re-link') || msg.includes('expired') || msg.includes('missing')) {
-          setPasskeyExpiredBanner(true);
-          setMode('login');
-        }
       }
     } finally {
       setLoading(false);
@@ -300,23 +230,12 @@ const { error } = await supabase.auth.signInWithOAuth({
     setLoading(true);
     try {
       if (mode === 'login') {
-        const { data: authData, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
 
         // Check if MFA is required before granting access
         const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (aal && aal.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
-          // Trusted device skips MFA challenge
-          if (authData.user?.id) {
-            const trusted = await checkDeviceTrusted(authData.user.id);
-            if (trusted) {
-              await updateDeviceLastSeen(authData.user.id);
-              toast.success('Signed in successfully');
-              navigate('/dashboard', { replace: true });
-              setLoading(false);
-              return;
-            }
-          }
           // User has MFA enrolled — find first verified factor and challenge it
           const { data: factorsData } = await supabase.auth.mfa.listFactors();
           const rawFactors = factorsData as any;
@@ -395,19 +314,7 @@ const { error } = await supabase.auth.signInWithOAuth({
       });
       if (error) throw error;
       toast.success('Signed in successfully');
-      const { data: { user: mfaUser } } = await supabase.auth.getUser();
-      if (mfaUser) {
-        const isTrusted = await checkDeviceTrusted(mfaUser.id);
-        if (isTrusted) {
-          await updateDeviceLastSeen(mfaUser.id);
-          navigate('/dashboard');
-        } else {
-          setPendingUserId(mfaUser.id);
-          setTrustPromptVisible(true);
-        }
-      } else {
-        navigate('/dashboard');
-      }
+      navigate('/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Verification failed';
       setMfaError(msg);
@@ -423,49 +330,6 @@ const { error } = await supabase.auth.signInWithOAuth({
       handleMfaVerify();
     }
   }, [mfaCode, mfaFactorType, loading, handleMfaVerify]);
-
-  // ── Trust device prompt (post-MFA) ───────────────────────────────────────
-  if (trustPromptVisible) {
-    return (
-      <div
-        className="min-h-screen bg-background flex items-center justify-center px-4"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
-        }}
-      >
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <h1 className="font-display font-bold text-xl tracking-tight text-gold">FORGED</h1>
-            <p className="text-xs text-muted-foreground mt-1">You're signed in.</p>
-          </div>
-          <div className="card-forged p-6 space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Trust this device?</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Skip 2FA on this {getDeviceName()} for the next 30 days.
-              </p>
-            </div>
-            <button
-              onClick={handleTrustDevice}
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              {loading ? 'Saving…' : 'Yes, trust this device'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard', { replace: true })}
-              className="w-full py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── Landing ───────────────────────────────────────────────────────────────
   if (mode === 'landing') {
@@ -734,18 +598,6 @@ const { error } = await supabase.auth.signInWithOAuth({
         </div>
 
         <form onSubmit={handleSubmit} className="card-forged p-6 space-y-4">
-          {mode === 'login' && passkeyExpiredBanner && (
-            <div
-              className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 text-xs text-amber-600"
-              style={{ borderRadius: 'var(--radius)' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>Your saved sign-in expired. Sign in with your password to re-link it.</span>
-            </div>
-          )}
-
           {mode === 'signup' && (
             <div>
               <label className="text-xs text-muted-foreground uppercase">Display Name</label>
