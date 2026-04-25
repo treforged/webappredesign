@@ -14,7 +14,7 @@ import PremiumGate from '@/components/shared/PremiumGate';
 import {
   Building2, Plus, Edit2, Trash2, Wallet, TrendingUp, TrendingDown,
   CreditCard, PiggyBank, Landmark, DollarSign, Eye, EyeOff,
-  Link2, Unlink, Loader2,
+  Link2, Unlink, Loader2, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -60,25 +60,6 @@ const TYPE_ICONS: Record<string, any> = {
   other_liability: TrendingDown, other_asset: Wallet,
 };
 
-function formatSyncStatus(lastSyncedAt: string | null): { text: string; isStale: boolean } {
-  if (!lastSyncedAt) return { text: 'Not yet synced', isStale: false };
-  const ms = Date.now() - new Date(lastSyncedAt).getTime();
-  const hours = ms / (1000 * 60 * 60);
-  if (hours > 25) return { text: 'Sync delayed', isStale: true };
-  if (hours < 1) {
-    const mins = Math.round(ms / (1000 * 60));
-    return { text: mins <= 1 ? 'Updated just now' : `Updated ${mins} min ago`, isStale: false };
-  }
-  const h = Math.floor(hours);
-  if (h < 24) return { text: `Updated ${h} hour${h === 1 ? '' : 's'} ago`, isStale: false };
-  const d = new Date(lastSyncedAt);
-  const today = new Date();
-  if (d.toDateString() === today.toDateString()) {
-    return { text: `Updated today at ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, isStale: false };
-  }
-  return { text: `Updated ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, isStale: false };
-}
-
 const emptyForm = { name: '', account_type: 'checking', institution: '', balance: '', credit_limit: '', apr: '', notes: '', min_payment: '', apy_rate: '' };
 const APY_TYPES = ['401k', 'roth_ira', 'brokerage', 'savings', 'high_yield_savings'];
 
@@ -88,7 +69,7 @@ export default function Accounts() {
   const { data: accounts, add, update, remove, loading } = useAccounts();
   const { data: debts, update: updateDebt, add: addDebt } = useDebts();
   const { add: addReconciliation } = useAccountReconciliations();
-  const { items: plaidItems, loading: plaidLoading, remove: removePlaidItem, invalidate: invalidatePlaid } = usePlaidItems();
+  const { items: plaidItems, loading: plaidLoading, syncing: plaidSyncingNow, remove: removePlaidItem, syncNow: syncPlaidNow, invalidate: invalidatePlaid } = usePlaidItems();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -494,6 +475,18 @@ export default function Accounts() {
               <p className="text-xs text-muted-foreground mt-0.5">Auto-sync balances from your bank accounts (premium)</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {isPremium && plaidItems.length > 0 && (
+                <button
+                  onClick={() => syncPlaidNow(true)}
+                  disabled={plaidSyncingNow}
+                  className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/50 px-2 py-1 transition-colors disabled:opacity-50"
+                  style={{ borderRadius: 'var(--radius)' }}
+                  title="Force a fresh sync from Plaid now"
+                >
+                  {plaidSyncingNow ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                  {plaidSyncingNow ? 'Syncing…' : 'Sync now'}
+                </button>
+              )}
               {isPremium && plaidItems.length < 10 && (
                 <PlaidLinkButton
                   onSuccess={handlePlaidSuccess}
@@ -552,15 +545,11 @@ export default function Accounts() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold truncate">{item.institution_name ?? 'Bank'}</p>
-                      {(() => {
-                        const { text, isStale } = formatSyncStatus(item.last_synced_at);
-                        return (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            {isStale && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 inline-block" />}
-                            {text}
-                          </p>
-                        );
-                      })()}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.last_synced_at
+                          ? `Last synced ${new Date(item.last_synced_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                          : 'Not yet synced'}
+                      </p>
                     </div>
                   </div>
                   <button

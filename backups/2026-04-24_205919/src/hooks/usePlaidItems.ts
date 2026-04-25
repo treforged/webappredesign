@@ -118,8 +118,10 @@ export function usePlaidItems() {
   return {
     items: query.data ?? [],
     loading: query.isLoading,
+    syncing,
     error: query.error,
     remove,
+    syncNow,
     invalidate,
   };
 }

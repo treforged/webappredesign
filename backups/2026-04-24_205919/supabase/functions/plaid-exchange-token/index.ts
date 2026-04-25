@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ institution_name, plaid_item_id: item_id }), {
+    return new Response(JSON.stringify({ institution_name, item_id }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

@@ -57,29 +57,10 @@ Deno.serve(async (req) => {
   const plaidEnv  = Deno.env.get("PLAID_ENV") || "sandbox";
   const plaidBase = `https://${plaidEnv}.plaid.com`;
 
-  // Fetch active premium user IDs — only sync paying subscribers
-  const { data: premiumSubs, error: subsErr } = await supabase
-    .from("user_subscriptions")
-    .select("user_id")
-    .eq("plan", "premium")
-    .in("subscription_status", ["active", "trialing"]);
-
-  if (subsErr) {
-    console.error("Failed to fetch premium subscriptions:", subsErr.message);
-    return new Response(JSON.stringify({ error: subsErr.message }), { status: 500 });
-  }
-
-  const premiumUserIds = (premiumSubs ?? []).map((s: any) => s.user_id);
-
-  if (premiumUserIds.length === 0) {
-    return new Response(JSON.stringify({ synced: 0, reason: "no active premium users" }), { status: 200 });
-  }
-
-  // Fetch plaid_items for premium users only
+  // Fetch all plaid_items for premium users
   const { data: items, error: itemsErr } = await supabase
     .from("plaid_items")
-    .select("id, user_id, plaid_item_id, access_token, institution_name")
-    .in("user_id", premiumUserIds);
+    .select("id, user_id, plaid_item_id, access_token, institution_name");
 
   if (itemsErr) {
     console.error("Failed to fetch plaid_items:", itemsErr.message);

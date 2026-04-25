@@ -164,17 +164,11 @@ Deno.serve(async (req) => {
 
     // force=true bypasses the 23.5h cooldown — user explicitly requested fresh data
     const forceSync = body?.force === true;
-    // item_id scopes sync to a single institution — used post-link to avoid syncing all items
-    const itemIdFilter = body?.item_id as string | undefined;
 
-    let itemsQuery = supabase
+    const { data: plaidItems, error: itemsErr } = await supabase
       .from("plaid_items")
       .select("id, plaid_item_id, access_token, institution_name, last_synced_at")
       .eq("user_id", userId);
-    if (itemIdFilter) {
-      itemsQuery = itemsQuery.eq("plaid_item_id", itemIdFilter);
-    }
-    const { data: plaidItems, error: itemsErr } = await itemsQuery;
 
     if (itemsErr) throw new Error(itemsErr.message);
     if (!plaidItems || plaidItems.length === 0) {
