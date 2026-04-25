@@ -870,7 +870,7 @@ const { error } = await supabase.auth.signInWithOAuth({
         </form>
 
         {mode === 'login' && hasSigninPasskey && (
-          <div className="mt-4 space-y-3 md:hidden">
+          <div className="mt-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
               <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>

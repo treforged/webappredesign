@@ -794,7 +794,7 @@ export default function SettingsPage() {
 
           {/* Sign-In Passkey — separate from app lock, lets you skip password on login */}
           {typeof window !== 'undefined' && window.PublicKeyCredential && (
-            <div className="pt-2 border-t border-border space-y-2 md:hidden">
+            <div className="pt-2 border-t border-border space-y-2">
               <p className="text-xs text-muted-foreground">
                 <span className="text-foreground font-medium">Sign-in passkey</span> — skip the password field on the login page entirely.
               </p>
@@ -824,7 +824,7 @@ export default function SettingsPage() {
                     </svg>
                     <div className="text-left">
                       <p className="text-xs font-medium">Register sign-in passkey</p>
-                      <p className="text-[9px] text-muted-foreground">Use Face ID / fingerprint to sign in next time</p>
+                      <p className="text-[9px] text-muted-foreground">Face ID, fingerprint, Windows Hello, or security key</p>
                     </div>
                   </div>
                   {signinPasskeyBusy && <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
