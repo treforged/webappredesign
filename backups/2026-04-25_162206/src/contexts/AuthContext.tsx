@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -37,7 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const qc = useQueryClient();
 
   // Use a ref for location to avoid stale closure issues in onAuthStateChange
   const locationRef = useRef(location.pathname);
@@ -58,9 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('forged:tour_done_premium');
     sessionStorage.removeItem('forged:founder_note_seen');
     sessionStorage.removeItem('forged:onboarding_wizard_dismissed');
-    sessionStorage.removeItem('forged:onboarding_step');
-    qc.removeQueries({ queryKey: ['profile'] });
-  }, [qc]);
+  }, []);
 
   // ── Auth state listener ──────────────────────────────────────────────────
   useEffect(() => {

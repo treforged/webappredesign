@@ -4,14 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import PlaidLinkButton from '@/components/shared/PlaidLinkButton';
-import ModalShell from '@/components/shared/ModalShell';
 import {
   X, ChevronRight, Crown, Check, Shield,
   DollarSign, CreditCard, PiggyBank,
 } from 'lucide-react';
 
 const WIZARD_DISMISSED_KEY = 'forged:onboarding_wizard_dismissed';
-const WIZARD_STEP_KEY = 'forged:onboarding_step';
 
 type Step = 1 | 2 | 3 | 4;
 type UpsellStage = null | 'first' | 'second';
@@ -28,13 +26,11 @@ export default function OnboardingWizard({ onComplete, onDismiss }: Props) {
   const { isPremium } = useSubscription();
   const navigate = useNavigate();
 
-  const savedStep = parseInt(sessionStorage.getItem(WIZARD_STEP_KEY) ?? '1', 10);
-  const [step, setStep] = useState<Step>((Math.min(Math.max(savedStep, 1), 4)) as Step);
+  const [step, setStep] = useState<Step>(1);
   const [upsellStage, setUpsellStage] = useState<UpsellStage>(isPremium ? null : 'first');
   const [bankLinked, setBankLinked] = useState(false);
 
   const markComplete = async () => {
-    sessionStorage.removeItem(WIZARD_STEP_KEY);
     if (user) {
       await supabase
         .from('profiles')
@@ -46,7 +42,6 @@ export default function OnboardingWizard({ onComplete, onDismiss }: Props) {
 
   const dismiss = () => {
     sessionStorage.setItem(WIZARD_DISMISSED_KEY, '1');
-    sessionStorage.removeItem(WIZARD_STEP_KEY);
     onDismiss();
   };
 
@@ -56,40 +51,44 @@ export default function OnboardingWizard({ onComplete, onDismiss }: Props) {
   };
 
   const navigateTo = (path: string) => {
-    const next = step < 4 ? step + 1 : step;
-    sessionStorage.setItem(WIZARD_STEP_KEY, String(next));
+    sessionStorage.setItem(WIZARD_DISMISSED_KEY, '1');
     navigate(path);
   };
 
   return (
-    <ModalShell onDismiss={dismiss} zIndex="z-40">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 sm:px-6 sm:pt-6">
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Getting started</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Step {step} of {STEP_LABELS.length} — {STEP_LABELS[step - 1]}
-          </p>
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-background/85 backdrop-blur-sm"
+      onClick={dismiss}
+    >
+      <div
+        className="card-forged p-5 sm:p-6 w-full max-w-md space-y-5 relative animate-in fade-in zoom-in-95 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Getting started</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Step {step} of {STEP_LABELS.length} — {STEP_LABELS[step - 1]}
+            </p>
+          </div>
+          <button
+            onClick={dismiss}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            aria-label="Dismiss"
+          >
+            <X size={16} />
+          </button>
         </div>
-        <button
-          onClick={dismiss}
-          className="text-muted-foreground hover:text-foreground transition-colors p-1"
-          aria-label="Dismiss"
-        >
-          <X size={16} />
-        </button>
-      </div>
 
-      {/* Progress bar */}
-      <div className="mx-5 sm:mx-6 mt-4 h-1 bg-secondary rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${(step / STEP_LABELS.length) * 100}%` }}
-        />
-      </div>
+        {/* Progress bar */}
+        <div className="h-1 bg-secondary rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${(step / STEP_LABELS.length) * 100}%` }}
+          />
+        </div>
 
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-5 space-y-5">
         {/* ── Step 1: Bank connect ── */}
         {step === 1 && isPremium && (
           <BankConnectStep
@@ -150,7 +149,7 @@ export default function OnboardingWizard({ onComplete, onDismiss }: Props) {
           />
         )}
       </div>
-    </ModalShell>
+    </div>
   );
 }
 
