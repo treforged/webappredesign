@@ -60,7 +60,7 @@ function ProtectedRoute({ children, skipOnboardingCheck }: { children: React.Rea
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><span className="text-sm text-muted-foreground animate-pulse">Authenticating…</span></div>;
   if (!user && !isDemo) return <Navigate to="/auth" replace />;
   if (!skipOnboardingCheck && user && !isDemo) {
-    const done = localStorage.getItem(`forged:onboarding_done_${user.id}`);
+    const done = localStorage.getItem(`forgenta:onboarding_done_${user.id}`);
     if (!done) return <Navigate to="/onboarding" replace />;
   }
   return <>{children}</>;

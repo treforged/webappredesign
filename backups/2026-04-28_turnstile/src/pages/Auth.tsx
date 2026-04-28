@@ -7,7 +7,6 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/contexts/AuthContext';
 
 import ForgentaLogo from '@/components/shared/ForgentaLogo';
-import { TurnstileWidget } from '@/components/shared/TurnstileWidget';
 
 const TRUSTED_DEVICE_KEY = 'forgenta:trusted_device_id';
 
@@ -70,8 +69,6 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false);
   const [trustPromptVisible, setTrustPromptVisible] = useState(false);
   const [pendingUserId, setPendingUserId] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   // MFA challenge state
   const [mfaFactorId, setMfaFactorId] = useState('');
@@ -114,8 +111,6 @@ export default function Auth() {
     setConfirmPassword('');
     setDisplayName('');
     setResetSent(false);
-    setTurnstileToken(null);
-    setTurnstileResetKey(k => k + 1);
     if (next === 'landing') setEmail('');
   };
 
@@ -195,30 +190,6 @@ export default function Auth() {
     }
   };
 
-  const verifyTurnstile = async (): Promise<boolean> => {
-    if (!turnstileToken) {
-      toast.error('Security check failed. Please refresh and try again.');
-      return false;
-    }
-    try {
-      const { error } = await supabase.functions.invoke('verify-turnstile', {
-        body: { token: turnstileToken },
-      });
-      if (error) {
-        toast.error('Security check failed. Please refresh and try again.');
-        setTurnstileToken(null);
-        setTurnstileResetKey(k => k + 1);
-        return false;
-      }
-      return true;
-    } catch {
-      toast.error('Security check failed. Please refresh and try again.');
-      setTurnstileToken(null);
-      setTurnstileResetKey(k => k + 1);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -241,7 +212,6 @@ export default function Auth() {
 
     if (mode === 'reset') {
       if (!email.trim()) { toast.error('Enter your email address'); return; }
-      if (!await verifyTurnstile()) return;
       setLoading(true);
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -264,8 +234,6 @@ export default function Auth() {
       const result = signUpSchema.safeParse({ displayName, email, password, confirmPassword });
       if (!result.success) { toast.error(result.error.issues[0].message); return; }
     }
-
-    if (!await verifyTurnstile()) return;
 
     setLoading(true);
     try {
@@ -321,8 +289,6 @@ export default function Auth() {
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Authentication failed');
-      setTurnstileToken(null);
-      setTurnstileResetKey(k => k + 1);
     } finally {
       setLoading(false);
     }
@@ -793,19 +759,9 @@ export default function Auth() {
             </div>
           )}
 
-          <TurnstileWidget
-            onToken={setTurnstileToken}
-            onError={() => {
-              setTurnstileToken(null);
-              toast.error('Security check failed. Please refresh and try again.');
-            }}
-            onExpire={() => setTurnstileToken(null)}
-            resetKey={turnstileResetKey}
-          />
-
           <button
             type="submit"
-            disabled={loading || !turnstileToken || (mode === 'signup' && !!confirmPassword && confirmPassword !== password)}
+            disabled={loading || (mode === 'signup' && !!confirmPassword && confirmPassword !== password)}
             className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
             style={{ borderRadius: 'var(--radius)' }}
           >
