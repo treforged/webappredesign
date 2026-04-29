@@ -432,6 +432,7 @@ export default function Forecast() {
   // One-time manual transactions for forecast.
   // CC-tagged expenses are excluded — they increase CC balance (tracked by the debt
   // engine via cardPurchasesPerMonth) and do NOT reduce checking account cash.
+  // Past transactions in the current month are excluded — starting cash already reflects them.
   const oneTimeByMonth = useMemo(() => {
     const result: Record<string, { income: number; expense: number }> = {};
     const ccSources = new Set(
@@ -439,10 +440,13 @@ export default function Forecast() {
         .filter((a: any) => a.account_type === 'credit_card' && a.active)
         .flatMap((a: any) => [a.id, `account:${a.id}`]),
     );
+    const todayStr = new Date().toISOString().split('T')[0];
+    const currentMonthKey = todayStr.substring(0, 7);
     for (const t of transactions) {
       if ((t as any).isGenerated) continue;
       const monthKey = t.date?.substring(0, 7);
       if (!monthKey) continue;
+      if (monthKey === currentMonthKey && t.date && t.date < todayStr) continue;
       if (!result[monthKey]) result[monthKey] = { income: 0, expense: 0 };
       if (t.type === 'income') result[monthKey].income += Number(t.amount);
       else if (!t.payment_source || !ccSources.has(t.payment_source)) result[monthKey].expense += Number(t.amount);
@@ -451,6 +455,7 @@ export default function Forecast() {
   }, [transactions, accounts]);
 
   // CC-only one-time purchases per month — display-only, does NOT affect cash floor math.
+  // Past transactions in the current month are excluded — starting cash already reflects them.
   const ccOneTimeByMonth = useMemo(() => {
     const result: Record<string, number> = {};
     const ccSources = new Set(
@@ -458,12 +463,15 @@ export default function Forecast() {
         .filter((a: any) => a.account_type === 'credit_card' && a.active)
         .flatMap((a: any) => [a.id, `account:${a.id}`]),
     );
+    const todayStr = new Date().toISOString().split('T')[0];
+    const currentMonthKey = todayStr.substring(0, 7);
     for (const t of transactions) {
       if ((t as any).isGenerated) continue;
       if (t.type !== 'expense') continue;
       if (!t.payment_source || !ccSources.has(t.payment_source)) continue;
       const monthKey = t.date?.substring(0, 7);
       if (!monthKey) continue;
+      if (monthKey === currentMonthKey && t.date && t.date < todayStr) continue;
       result[monthKey] = (result[monthKey] || 0) + Number(t.amount);
     }
     return result;
