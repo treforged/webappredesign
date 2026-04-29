@@ -48,6 +48,7 @@ export default function Sidebar() {
               style={{ height: 28, width: 28, objectFit: 'contain' }}
               draggable={false}
             />
+            <span className="font-display font-bold text-sm tracking-tight text-primary">FORGENTA</span>
             {isDemo && (
               <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1 py-0.5 rounded shrink-0">Demo</span>
             )}

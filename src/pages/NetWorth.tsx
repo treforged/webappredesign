@@ -21,8 +21,18 @@ import {
 import { ASSET_TYPES, LIABILITY_TYPES } from '@/lib/types';
 
 const COLORS = [
-  'hsl(43, 56%, 52%)', 'hsl(142, 50%, 40%)', 'hsl(200, 60%, 50%)',
-  'hsl(280, 50%, 50%)', 'hsl(30, 80%, 55%)', 'hsl(0, 0%, 40%)',
+  'hsl(43, 56%, 52%)',
+  'hsl(142, 50%, 42%)',
+  'hsl(200, 65%, 52%)',
+  'hsl(280, 55%, 58%)',
+  'hsl(30, 80%, 52%)',
+  'hsl(170, 60%, 42%)',
+  'hsl(320, 55%, 52%)',
+  'hsl(60, 65%, 44%)',
+  'hsl(240, 55%, 62%)',
+  'hsl(15, 75%, 52%)',
+  'hsl(100, 45%, 44%)',
+  'hsl(0, 65%, 52%)',
 ];
 
 function CustomTooltip({ active, payload }: any) {
@@ -366,10 +376,10 @@ export default function NetWorth() {
               </div>
             )}
             <div className="flex-1 min-w-0 space-y-1.5">
-              {allAssets.map((a) => (
+              {allAssets.map((a, idx) => (
                 <div key={a.id} className="flex items-center justify-between gap-2 py-1.5 text-xs">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLORS[assetsByType.findIndex(t => t.name === a.type) % COLORS.length] }} />
+                    <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                     <span className="font-medium truncate">{a.name}</span>
                     <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">{a.type}</span>
                     {(a as any).isLive && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5 shrink-0" style={{ borderRadius: 'var(--radius)' }}>live</span>}
@@ -404,7 +414,7 @@ export default function NetWorth() {
                 <ResponsiveContainer width={120} height={120}>
                   <PieChart>
                     <Pie data={liabilitiesByType} cx="50%" cy="50%" innerRadius={28} outerRadius={50} dataKey="value" strokeWidth={0}>
-                      {liabilitiesByType.map((_, i) => <Cell key={i} fill={['hsl(0, 73%, 35%)', 'hsl(30, 80%, 55%)', 'hsl(0, 50%, 50%)'][i % 3]} />)}
+                      {liabilitiesByType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                   </PieChart>
@@ -412,10 +422,10 @@ export default function NetWorth() {
               </div>
             )}
             <div className="flex-1 min-w-0 space-y-1.5">
-              {allLiabilities.map((l) => (
+              {allLiabilities.map((l, idx) => (
                 <div key={l.id} className="flex items-center justify-between gap-2 py-1.5 text-xs">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ['hsl(0, 73%, 35%)', 'hsl(30, 80%, 55%)', 'hsl(0, 50%, 50%)'][liabilitiesByType.findIndex(t => t.name === l.type) % 3] }} />
+                    <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                     <span className="font-medium truncate">{l.name}</span>
                     <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">{l.type}</span>
                     {(l as any).isLive && <span className="text-[9px] text-primary bg-primary/10 px-1 py-0.5 shrink-0" style={{ borderRadius: 'var(--radius)' }}>live</span>}

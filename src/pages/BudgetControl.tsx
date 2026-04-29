@@ -625,6 +625,50 @@ export default function BudgetControl() {
     ],
   });
 
+  const openFixedCalc = () => {
+    const lines: { label: string; value: string; op?: string }[] = fixedRules
+      .filter((r: any) => r.active)
+      .map((r: any) => ({ label: r.name, value: formatCurrency(toCurrentMonthAmount(r), false) }));
+    lines.push({ label: 'Total Fixed Expenses', value: formatCurrency(totalFixedExpenses, false), op: '=' });
+    setCalcDrawer({ title: 'Fixed Expenses This Month', lines });
+  };
+
+  const openVariableCalc = () => {
+    const lines: { label: string; value: string; op?: string }[] = variableRules
+      .filter((r: any) => r.active)
+      .map((r: any) => ({ label: r.name, value: formatCurrency(toCurrentMonthAmount(r), false) }));
+    lines.push({ label: 'Total Variable Expenses', value: formatCurrency(totalVariableExpenses, false), op: '=' });
+    setCalcDrawer({ title: 'Variable Expenses This Month', lines });
+  };
+
+  const openDebtCalc = () => {
+    const lines: { label: string; value: string; op?: string }[] = debtRules
+      .filter((r: any) => r.active)
+      .map((r: any) => ({ label: r.name, value: formatCurrency(toCurrentMonthAmount(r), false) }));
+    lines.push({ label: 'Total Debt Payments', value: formatCurrency(totalDebtPayments, false), op: '=' });
+    setCalcDrawer({ title: 'Debt Payments This Month', lines });
+  };
+
+  const openTransferCalc = () => {
+    const lines: { label: string; value: string; op?: string }[] = transferRules
+      .filter((r: any) => r.active)
+      .map((r: any) => ({ label: r.name, value: formatCurrency(toCurrentMonthAmount(r), false) }));
+    lines.push({ label: 'Total Transfers', value: formatCurrency(totalTransfers, false), op: '=' });
+    setCalcDrawer({ title: 'Transfers This Month', lines });
+  };
+
+  const openProjectedCalc = () => setCalcDrawer({
+    title: 'Projected Remaining',
+    lines: [
+      { label: 'Monthly Take-Home', value: formatCurrency(monthlyTakeHome, false) },
+      { label: 'Fixed Expenses', value: formatCurrency(totalFixedExpenses, false), op: '−' },
+      { label: 'Variable Expenses', value: formatCurrency(totalVariableExpenses, false), op: '−' },
+      { label: 'Debt Payments', value: formatCurrency(totalDebtPayments, false), op: '−' },
+      { label: 'Transfers', value: formatCurrency(totalTransfers, false), op: '−' },
+      { label: 'Projected Remaining', value: formatCurrency(remaining, false), op: '=' },
+    ],
+  });
+
   const openIncomeCalc = () => {
     const lines: { label: string; value: string; op?: string }[] = [
       { label: `Pay frequency: ${payFrequency}`, value: '' },
@@ -840,66 +884,63 @@ export default function BudgetControl() {
             return groupOrder.filter(g => grouped[g]?.length).map(group => (
               <div key={group} className="space-y-0">
                 <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5 pt-2 pb-0.5">{group}</p>
-                <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   {grouped[group].map(d => {
               const isRetirement = /401|403|roth|ira/i.test(d.label);
               const isTaxItem = TAX_CATALOG_LABELS.has(d.label.toLowerCase());
               const fromCatalog = isCatalogItem(d.label);
               return (
-                <div key={d.id} className="border-b border-border/30 last:border-0 pb-2 pt-1">
-                  {/* Row 1: label + remove */}
-                  <div className="flex items-center gap-2 pt-1 pb-0.5">
+                <div key={d.id} className="border border-border/40 p-2 space-y-1.5 min-w-0" style={{ borderRadius: 'var(--radius)' }}>
+                  {/* Label + remove */}
+                  <div className="flex items-start justify-between gap-1">
                     {fromCatalog ? (
-                      <span className="flex-1 min-w-0 text-sm font-semibold text-foreground px-0.5 truncate">{d.label}</span>
+                      <span className="flex-1 min-w-0 text-[10px] font-semibold text-foreground leading-tight">{d.label}</span>
                     ) : (
                       <input
                         type="text"
                         value={d.label}
                         onChange={e => updateDeduction(d.id, { label: e.target.value })}
-                        className="flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-border focus:border-primary text-sm font-semibold text-foreground px-0.5 outline-none transition-colors"
+                        className="flex-1 min-w-0 bg-transparent text-[10px] font-semibold text-foreground outline-none border-b border-transparent hover:border-border focus:border-primary transition-colors"
                       />
                     )}
-                    <button onClick={() => removeDeduction(d.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X size={12} /></button>
+                    <button onClick={() => removeDeduction(d.id)} className="text-muted-foreground hover:text-destructive shrink-0 mt-0.5"><X size={10} /></button>
                   </div>
-                  {/* Row 2: controls */}
-                  <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 min-w-0">
-                    {/* Value input */}
-                    <input
-                      type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
-                      value={d.value}
-                      onChange={e => updateDeduction(d.id, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-full sm:w-24 bg-secondary border border-border px-3 py-2 text-base text-foreground font-display font-bold text-left sm:text-right min-w-0"
-                      style={{ borderRadius: 'var(--radius)' }}
-                    />
-                    {/* $/% toggle */}
-                    <div className="flex gap-1 w-full sm:w-auto shrink-0">
-                      <button onClick={() => updateDeduction(d.id, { mode: 'flat' })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.mode === 'flat' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>$</button>
-                      <button onClick={() => updateDeduction(d.id, { mode: 'pct' })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.mode === 'pct' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>%</button>
+                  {/* Value input */}
+                  <input
+                    type="number" min={0} max={d.mode === 'pct' ? 100 : undefined} step={d.mode === 'pct' ? 0.5 : 1}
+                    value={d.value}
+                    onChange={e => updateDeduction(d.id, { value: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-secondary border border-border px-2 py-1.5 text-sm text-foreground font-display font-bold text-right min-w-0"
+                    style={{ borderRadius: 'var(--radius)' }}
+                  />
+                  {/* $/% toggle */}
+                  <div className="flex gap-1">
+                    <button onClick={() => updateDeduction(d.id, { mode: 'flat' })} className={`flex-1 text-[9px] py-0.5 border transition-colors ${d.mode === 'flat' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>$</button>
+                    <button onClick={() => updateDeduction(d.id, { mode: 'pct' })} className={`flex-1 text-[9px] py-0.5 border transition-colors ${d.mode === 'pct' ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>%</button>
+                  </div>
+                  {/* Pre/post-tax toggle */}
+                  {!isTaxItem && (
+                    <div className="flex gap-1">
+                      <button onClick={() => updateDeduction(d.id, { preTax: true })} className={`flex-1 text-[9px] py-0.5 border transition-colors ${d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Pre</button>
+                      <button onClick={() => updateDeduction(d.id, { preTax: false })} className={`flex-1 text-[9px] py-0.5 border transition-colors ${!d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Post</button>
                     </div>
-                    {/* Pre/post-tax toggle */}
-                    {!isTaxItem && (
-                      <div className="flex gap-1 w-full sm:w-auto shrink-0">
-                        <button onClick={() => updateDeduction(d.id, { preTax: true })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Pre</button>
-                        <button onClick={() => updateDeduction(d.id, { preTax: false })} className={`text-[9px] px-1.5 py-0.5 border transition-colors ${!d.preTax ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-muted-foreground border-border'}`} style={{ borderRadius: 'var(--radius)' }}>Post</button>
-                      </div>
-                    )}
-                    {/* Resolved amount hint */}
-                    {d.value > 0 && (
-                      <span className="text-xs text-muted-foreground w-full sm:w-auto">
-                        {d.mode === 'pct' ? formatCurrency(d.flatAmt, false) : `${paycheckGross > 0 ? ((d.value / paycheckGross) * 100).toFixed(1) : '0'}%`}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  {/* Resolved amount hint */}
+                  {d.value > 0 && (
+                    <p className="text-[9px] text-muted-foreground text-right">
+                      {d.mode === 'pct' ? formatCurrency(d.flatAmt, false) : `${paycheckGross > 0 ? ((d.value / paycheckGross) * 100).toFixed(1) : '0'}%`}
+                    </p>
+                  )}
                   {/* Retirement account + goal link */}
                   {isRetirement && (
-                    <div className="flex flex-col gap-2 pl-1 mt-0.5 sm:flex-row sm:flex-wrap sm:items-center min-w-0">
+                    <div className="space-y-1 pt-0.5 min-w-0">
                       {retirementAccounts.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-muted-foreground">Account:</span>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="text-[8px] text-muted-foreground shrink-0">Acct:</span>
                           <select
                             value={d.accountId ?? ''}
                             onChange={e => updateDeduction(d.id, { accountId: e.target.value || undefined })}
-                            className="bg-secondary border border-border px-1.5 py-1 text-[9px] text-foreground min-w-0 max-w-full"
+                            className="flex-1 min-w-0 bg-secondary border border-border px-1 py-0.5 text-[8px] text-foreground"
                             style={{ borderRadius: 'var(--radius)' }}
                           >
                             <option value="">— none —</option>
@@ -910,12 +951,12 @@ export default function BudgetControl() {
                         </div>
                       )}
                       {savingsGoals.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-muted-foreground">Goal:</span>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="text-[8px] text-muted-foreground shrink-0">Goal:</span>
                           <select
                             value={d.goalId ?? ''}
                             onChange={e => updateDeduction(d.id, { goalId: e.target.value || undefined })}
-                            className="bg-secondary border border-border px-1.5 py-1 text-[9px] text-foreground min-w-0 max-w-full"
+                            className="flex-1 min-w-0 bg-secondary border border-border px-1 py-0.5 text-[8px] text-foreground"
                             style={{ borderRadius: 'var(--radius)' }}
                           >
                             <option value="">— none —</option>
@@ -926,9 +967,9 @@ export default function BudgetControl() {
                         </div>
                       )}
                       {d.goalId && d.value > 0 && (
-                        <span className="text-[9px] text-success">
-                          syncs {formatCurrency(Math.round(d.flatAmt * (payFrequency === 'biweekly' ? 26 : payFrequency === 'monthly' ? 12 : 52) / 12 * 100) / 100, false)}/mo → goal
-                        </span>
+                        <p className="text-[8px] text-success">
+                          {formatCurrency(Math.round(d.flatAmt * (payFrequency === 'biweekly' ? 26 : payFrequency === 'monthly' ? 12 : 52) / 12 * 100) / 100, false)}/mo → goal
+                        </p>
                       )}
                     </div>
                   )}
@@ -1043,11 +1084,21 @@ export default function BudgetControl() {
         <div className="cursor-pointer" onClick={openIncomeCalc}>
           <MetricCard label="Monthly Take-Home" value={formatCurrency(monthlyTakeHome, false)} accent="success" icon={DollarSign} />
         </div>
-        <MetricCard label="Fixed Expenses" value={formatCurrency(totalFixedExpenses, false)} accent="crimson" icon={TrendingDown} />
-        <MetricCard label="Variable" value={formatCurrency(totalVariableExpenses, false)} accent="gold" icon={TrendingDown} />
-        <MetricCard label="Debt Payments" value={formatCurrency(totalDebtPayments, false)} accent="crimson" icon={CreditCard} />
-        <MetricCard label="Transfers" value={formatCurrency(totalTransfers, false)} accent="gold" icon={ArrowLeftRight} />
-        <MetricCard label="Projected Remaining" value={formatCurrency(remaining, false)} accent={remaining >= 0 ? 'success' : 'crimson'} icon={PiggyBank} />
+        <div className="cursor-pointer" onClick={openFixedCalc}>
+          <MetricCard label="Fixed Expenses" value={formatCurrency(totalFixedExpenses, false)} accent="crimson" icon={TrendingDown} />
+        </div>
+        <div className="cursor-pointer" onClick={openVariableCalc}>
+          <MetricCard label="Variable" value={formatCurrency(totalVariableExpenses, false)} accent="gold" icon={TrendingDown} />
+        </div>
+        <div className="cursor-pointer" onClick={openDebtCalc}>
+          <MetricCard label="Debt Payments" value={formatCurrency(totalDebtPayments, false)} accent="crimson" icon={CreditCard} />
+        </div>
+        <div className="cursor-pointer" onClick={openTransferCalc}>
+          <MetricCard label="Transfers" value={formatCurrency(totalTransfers, false)} accent="gold" icon={ArrowLeftRight} />
+        </div>
+        <div className="cursor-pointer" onClick={openProjectedCalc}>
+          <MetricCard label="Projected Remaining" value={formatCurrency(remaining, false)} accent={remaining >= 0 ? 'success' : 'crimson'} icon={PiggyBank} />
+        </div>
       </div>
 
       {/* Remaining Cash On Hand — prominent */}

@@ -1123,23 +1123,27 @@ export default function Forecast() {
                 </thead>
                 <tbody>
                   {displayData.map((row: any, i: number) => (
-                    <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 cursor-pointer" onClick={() => setCalcDrawer({
-                      title: `${row.month} Breakdown`,
-                      lines: [
-                        { label: 'Starting Cash', value: formatCurrency(row.startingCash, false) },
-                        { label: 'Take-Home Income', value: formatCurrency(row.takeHome, false), op: '+' },
-                        { label: 'Expenses + Debt + Transfers', value: formatCurrency(row.totalExpenses, false), op: '−' },
-                        { label: 'One-Time Net (Cash)', value: formatCurrency(row.oneTimeNet || 0, false), op: row.oneTimeNet >= 0 ? '+' : '−' },
-                        { label: 'Ending Cash', value: formatCurrency(row.endingCash, false), op: '=' },
-                        { label: '', value: '' },
-                        { label: 'Debt Payment', value: formatCurrency(row.plannedDebtPayment ?? row.debtPayment, false) },
-                        { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
-                        { label: 'Brokerage Contrib', value: formatCurrency(row.brokerageContrib, false) },
-                        { label: 'Retirement Contrib', value: formatCurrency(row.retireContrib, false) },
-                        { label: 'Retirement Balance', value: formatCurrency(row.retirementBalance, false) },
-                        { label: 'Net Worth', value: formatCurrency(row.netWorth, false) },
-                      ],
-                    })}>
+                    <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 cursor-pointer" onClick={() => {
+                      const isCurrentMonth = i === 0 && (filterYear === 'all' || filterYear === '1');
+                      setCalcDrawer({
+                        title: `${row.month} Breakdown`,
+                        lines: [
+                          ...(isCurrentMonth ? [{ label: '⏱ Reflects remaining of month — settled transactions excluded', value: '' }] : []),
+                          { label: 'Starting Cash', value: formatCurrency(row.startingCash, false) },
+                          { label: 'Take-Home Income', value: formatCurrency(row.takeHome, false), op: '+' },
+                          { label: 'Expenses + Debt + Transfers', value: formatCurrency(row.totalExpenses, false), op: '−' },
+                          { label: 'One-Time Net (Cash)', value: formatCurrency(row.oneTimeNet || 0, false), op: row.oneTimeNet >= 0 ? '+' : '−' },
+                          { label: 'Ending Cash', value: formatCurrency(row.endingCash, false), op: '=' },
+                          { label: '', value: '' },
+                          { label: 'Debt Payment', value: formatCurrency(row.plannedDebtPayment ?? row.debtPayment, false) },
+                          { label: 'CC Purchases (one-time)', value: row.ccOneTime ? formatCurrency(row.ccOneTime, false) : '—' },
+                          { label: 'Brokerage Contrib', value: formatCurrency(row.brokerageContrib, false) },
+                          { label: 'Retirement Contrib', value: formatCurrency(row.retireContrib, false) },
+                          { label: 'Retirement Balance', value: formatCurrency(row.retirementBalance, false) },
+                          { label: 'Net Worth', value: formatCurrency(row.netWorth, false) },
+                        ],
+                      });
+                    }}>
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2 font-medium">{row.month}</td>
                       <td className="py-1.5 sm:py-2 px-1 sm:px-2 hidden sm:table-cell">{formatCurrency(row.startingCash, false)}</td>
                       <td className={`py-1.5 sm:py-2 px-1 sm:px-2 font-bold ${row.endingCash < debtPayoffOptions.cashFloor ? 'text-destructive' : row.endingCash <= debtPayoffOptions.cashFloor + 50 ? 'text-amber-400' : 'text-success'}`}>
