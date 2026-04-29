@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile, useAccounts } from '@/hooks/useSupabaseData';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2} from 'lucide-react';
+import { Settings as SettingsIcon, Crown, Save, CheckCircle, AlertCircle, Lock, Mail, CreditCard, X, Loader2, Trash2, MessageCircle, Shield, SendHorizonal, Copy, Share2, Monitor } from 'lucide-react';
 
 interface TrustedDevice {
   device_id: string;
@@ -128,6 +128,7 @@ export default function SettingsPage() {
   const [dirty, setDirty] = useState(false);
 
   const [signinPasskeyBusy, setSigninPasskeyBusy] = useState(false);
+  const [hasSigninPasskey, setHasSigninPasskey] = useState(false);
   const [trustedDevices, setTrustedDevices] = useState<TrustedDevice[]>([]);
 
   // Account security state

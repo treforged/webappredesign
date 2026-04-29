@@ -612,6 +612,11 @@ export default function Forecast() {
         }
       }
 
+      // Month 0: pin to Debt Payoff tab recommendations so forecast matches what user sees there
+      if (i === 0 && currentMonthRecommendedDebt !== null && currentMonthRecommendedDebt > 0) {
+        rawDebtPayment = currentMonthRecommendedDebt;
+      }
+
       let monthTransfers = 0;
       let monthBrokerageContrib = 0;
       let monthRetireContrib = 0;
