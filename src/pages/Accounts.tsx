@@ -513,8 +513,8 @@ export default function Accounts() {
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${mostRecent ? 'bg-green-500' : 'bg-yellow-500'}`} />
                 {mostRecent
-                  ? `Last synced ${new Date(mostRecent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · Updates daily at 8 AM ET`
-                  : 'Not yet synced · Will sync daily at 8 AM ET'}
+                  ? `Last synced ${new Date(mostRecent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · Updates daily at 9 AM ET`
+                  : 'Not yet synced · Will sync daily at 9 AM ET'}
               </div>
             );
           })()}
