@@ -197,6 +197,16 @@ export default function Auth() {
     }
   };
 
+  // Auto-bypass if CF script never loads within 8 seconds
+  useEffect(() => {
+    if (mode === 'landing' || mode === 'mfa' || mode === 'set-password') return;
+    if (turnstileToken || turnstileBypassed) return;
+    const t = setTimeout(() => {
+      if (!turnstileToken) setTurnstileBypassed(true);
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [mode, turnstileToken, turnstileBypassed]);
+
   const verifyTurnstile = async (): Promise<boolean> => {
     // Turnstile bypassed due to CF challenge service being unavailable
     if (turnstileBypassed) return true;
@@ -493,7 +503,7 @@ export default function Auth() {
                 className="inline-flex items-center gap-3 px-5 py-3 border border-border text-foreground hover:bg-secondary/60 hover:border-foreground/40 transition-all"
                 style={{ borderRadius: 'var(--radius)' }}
               >
-                <img src="/apple-logo.png" alt="" aria-hidden="true" style={{ height: 22, width: 'auto', display: 'block' }} />
+                <img src="/apple-logo.png" alt="" aria-hidden="true" style={{ height: 26, width: 'auto', display: 'block' }} />
                 <span className="text-xs font-semibold tracking-wide">Test on iPhone — TestFlight</span>
               </a>
             </div>
@@ -886,7 +896,7 @@ export default function Auth() {
               className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors btn-press disabled:opacity-50"
               style={{ borderRadius: 'var(--radius)' }}
             >
-              <img src="/apple-logo.png" alt="" aria-hidden="true" style={{ height: 16, width: 'auto', display: 'block' }} />
+              <img src="/apple-logo.png" alt="" aria-hidden="true" style={{ height: 20, width: 'auto', display: 'block' }} />
               Continue with Apple
             </button>
           </div>
