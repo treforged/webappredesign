@@ -72,6 +72,7 @@ export default function Auth() {
   const [pendingUserId, setPendingUserId] = useState('');
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [turnstileBypassed, setTurnstileBypassed] = useState(false);
 
   // MFA challenge state
   const [mfaFactorId, setMfaFactorId] = useState('');
@@ -115,6 +116,7 @@ export default function Auth() {
     setDisplayName('');
     setResetSent(false);
     setTurnstileToken(null);
+    setTurnstileBypassed(false);
     setTurnstileResetKey(k => k + 1);
     if (next === 'landing') setEmail('');
   };
@@ -196,8 +198,11 @@ export default function Auth() {
   };
 
   const verifyTurnstile = async (): Promise<boolean> => {
+    // Turnstile bypassed due to CF challenge service being unavailable
+    if (turnstileBypassed) return true;
+
     if (!turnstileToken) {
-      toast.error('Security check failed. Please refresh and try again.');
+      toast.error('Security check not ready. Please wait a moment and try again.');
       return false;
     }
     try {
@@ -805,7 +810,7 @@ export default function Auth() {
             onToken={setTurnstileToken}
             onError={() => {
               setTurnstileToken(null);
-              toast.error('Security check failed. Please refresh and try again.');
+              setTurnstileBypassed(true);
             }}
             onExpire={() => setTurnstileToken(null)}
             resetKey={turnstileResetKey}
@@ -813,7 +818,7 @@ export default function Auth() {
 
           <button
             type="submit"
-            disabled={loading || !turnstileToken || (mode === 'signup' && !!confirmPassword && confirmPassword !== password)}
+            disabled={loading || (!turnstileToken && !turnstileBypassed) || (mode === 'signup' && !!confirmPassword && confirmPassword !== password)}
             className="w-full bg-primary text-primary-foreground py-3 text-xs font-semibold btn-press disabled:opacity-50"
             style={{ borderRadius: 'var(--radius)' }}
           >

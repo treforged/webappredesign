@@ -36,19 +36,19 @@ export default function Sidebar() {
     <aside
       className={cn(
         "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border h-screen sticky top-0 transition-all duration-200",
-        collapsed ? "w-16" : "w-48"
+        collapsed ? "w-16" : "w-52"
       )}
     >
       <div className="flex items-center justify-between px-3 h-14 border-b border-sidebar-border">
         {!collapsed && (
-          <Link to={brandTo} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0">
+          <Link to={brandTo} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
             <img
               src="/logo-transparent.png"
               alt="Forgenta"
-              style={{ height: 28, width: 28, objectFit: 'contain', flexShrink: 0 }}
+              style={{ height: 28, width: 28, objectFit: 'contain' }}
               draggable={false}
             />
-            <span className="font-display font-bold text-sm tracking-tight text-primary truncate">FORGENTA</span>
+            <span className="font-display font-bold text-sm tracking-tight text-primary">FORGENTA</span>
             {isDemo && (
               <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1 py-0.5 rounded shrink-0">Demo</span>
             )}
