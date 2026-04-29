@@ -9,15 +9,20 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo-512.png",
-      "sizes": "any",
+      "src": "/forgentalogoLG.png",
+      "sizes": "1024x1024",
       "type": "image/png"
     },
     {
-      "src": "/logo-512.png",
+      "src": "/forgentalogoLG.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/forgentalogoLG.png",
+      "sizes": "192x192",
+      "type": "image/png"
     }
   ]
 }
