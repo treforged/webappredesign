@@ -682,7 +682,13 @@ export default function Auth() {
 
   // ── Sign in / Sign up / Request reset ────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div
+      className="min-h-screen bg-background flex items-center justify-center px-4"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+      }}
+    >
       <div className="w-full max-w-sm">
         <div className="mb-6">
           <button
