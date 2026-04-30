@@ -16,7 +16,7 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getClientIp, rateLimitedResponse } from "../_shared/rate-limit.ts";
 
 const RATE_LIMIT = { windowMs: 60_000, max: 5 };
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash-preview-05-20";
 
 interface DebtDetail {
   name: string;
@@ -195,8 +195,12 @@ Deno.serve(async (req) => {
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      console.error("ai-advisor: Gemini error", geminiRes.status, errText.slice(0, 300));
-      return new Response(JSON.stringify({ error: "AI request failed. Please try again." }), {
+      console.error("ai-advisor: Gemini error", geminiRes.status, errText.slice(0, 500));
+      let geminiMsg = "";
+      try { geminiMsg = (JSON.parse(errText) as any)?.error?.message ?? ""; } catch { /* ignore */ }
+      return new Response(JSON.stringify({
+        error: `AI request failed (${geminiRes.status})${geminiMsg ? ": " + geminiMsg.slice(0, 120) : ""}`,
+      }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
