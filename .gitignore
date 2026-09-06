@@ -11,6 +11,7 @@ scripts/reddit-scout.log
 
 # Forgenta Backup Sync — local state and logs
 scripts/backup-drive-sync.log
+scripts/backup-sync.log
 scripts/graph-sync.log
 
 # Local pre-edit snapshots. Untracked from the repo 2026-07-18: the archives are
