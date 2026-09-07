@@ -75,6 +75,31 @@ in the same commit.
 ⚠️ **NOT VERIFIED IN A BROWSER.** Tre is signed out at the console, so nothing could render today.
 jsdom is legitimate here (text and presence, no geometry) but a rendered frame is still owed.
 
+## ✅ SHIPPED 2026-09-06 — a tap selected nothing on FIVE charts, and the fix existed in a sixth.
+
+`origin/main` 0/0, verified by CONTENTS across 9 files. `test:tz` **3932 passed / 1 skipped**.
+
+`selectPointOnTouch` was written for `LiabilityTrajectoryChart` and lived there alone. The credit
+card engine, net-worth trend, forecast chart, loan card and savings-goal projection each render a
+recharts Tooltip and **none could be tapped.** Now `src/lib/chart-touch.ts`, applied to all six.
+
+⚠️ **A SECOND COPY WOULD HAVE BEEN DANGEROUS, NOT UNTIDY.** Safari has the `TouchEvent` interface
+but no constructor, so `new TouchEvent(...)` throws `Illegal constructor`, the ErrorBoundary catches
+it, and **the chart vanishes** — on iOS a tap did not fail to select, it DELETED THE GRAPH. Five
+copies would have been five chances to reintroduce that.
+
+⚠️ **THE TEST THAT MATTERS IS THE SOURCE SWEEP, and it generalises past charts.** The helper was
+correct for weeks while five surfaces lacked it — **a unit test on the helper stays green through
+exactly that failure.** So the suite walks `src/components` and `src/pages`, selects every file
+rendering a chart WITH a Tooltip, and asserts each passes `onTouchStart`; it also asserts it found
+at least 5 files, so an empty sweep cannot pass silently. **Reach for this shape whenever a fix has
+to be applied at N call sites** — the unit test proves the helper, the sweep proves the wiring.
+`InstructionsModal`, `MetricCard` and `Onboarding` are deliberately out of scope: decorative charts,
+no Tooltip, nothing to select — which is why the sweep keys on the Tooltip, not the chart.
+
+⚠️ **NOT VERIFIED ON A PHONE.** jsdom cannot exercise recharts point selection at all, and the
+Safari path is simulated by stubbing a throwing constructor because jsdom implements the real one.
+
 ## ✅ SHIPPED 2026-09-06 — the monthly surplus swept into goals and loans was invisible in the ledger.
 
 `origin/main` 0/0, verified by CONTENTS. `npm run test:tz` **3922 passed / 1 skipped**, three zones.
@@ -1575,37 +1600,29 @@ probe ran as `postgres` and proved nothing, because a SECURITY DEFINER trigger h
 <!-- AUTO-SNAPSHOT:BEGIN - machine-written, replaced each compaction -->
 ## Auto-snapshot
 
-_Written 2026-09-06 11:11 by handoff_hook. Everything below this heading is
+_Written 2026-09-06 19:03 by handoff_hook. Everything below this heading is
 machine-generated and replaced each time; put durable notes above it._
 
 - **Branch:** `main`
-- **vs upstream:** 0 ahead, 0 behind
+- **vs upstream:** 1 ahead, 0 behind  <- UNPUSHED
 
-- **Uncommitted (9 file(s)):**
+- **Uncommitted (1 file(s)):**
 
 ```
-M src/App.tsx
- M src/hooks/useBudgetMonthTotals.ts
- M src/pages/Transactions.tsx
- M src/pages/__tests__/Transactions.matchedOccurrence.test.tsx
- M src/pages/__tests__/Transactions.mergedTab.test.tsx
- M src/pages/__tests__/Transactions.projectedRows.test.tsx
- M src/pages/__tests__/Transactions.repeat.test.tsx
-?? src/lib/__tests__/goal-transfer-rules.test.ts
-?? src/lib/goal-transfer-rules.ts
+M handoff.md
 ```
 
 - **Recent commits:**
 
 ```
+fee8a637 fix(backup): a line on every run, and a real exit code
+12008673 docs(handoff): the three real holes were all the same shape, on one surface
+ef4ceee9 [transactions]: the surplus swept into goals and loans every month was invisible in the ledger
+f58cb594 docs(handoff): the last two open asks are closed, and one was never a code defect
+eef7dadd [transactions]: a savings goal moved money every month and the ledger never said so
+ef2bb1b1 [mobile]: the app lock was built, exported, documented - and mounted by nothing
 e93a5e22 docs(handoff): six of eight open asks were already shipped
 f795773a [dashboard]: the categories behind "4 more" could not actually be seen
-650e361a [auth]: a device in DAILY USE went untrusted at 30 days and nobody was told
-5069c716 docs(handoff): the second half shipped, and 'fifteen sites' was wrong
-46c338d9 [cards]: a card can be OPEN and owe nothing yet - the minimum now waits for the first bill
-8fff6ab9 fix(tasks): Graph Sync is REFUSED by the scheduler - it is not a logging bug
-aec77eb0 docs(handoff): the src hold is over, and the first-due-date slice is half of what it looks like
-26781c63 [cards]: a new card's first payment is not on its steady due day
 ```
 
 <!-- AUTO-SNAPSHOT:END -->
