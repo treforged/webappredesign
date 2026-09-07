@@ -619,10 +619,16 @@ surfaces with 73 labels lifted to the `text-xs` floor; the Security tab's three 
 **OPEN, AND HONEST ABOUT IT:**
 - The RevenueCat fix is **not proven on a device.** It has unit and behavioural cover; it has not
   been pressed on a phone. Do that before drawing conclusions from the customer ratio.
-- **`logIn()` is never called** — only `configure({ appUserID })` and `logOut()`. So a purchase
-  made while unidentified does NOT alias to the account on sign-in; the anonymous customer is
-  abandoned. Nothing is stranded today because nothing is paid, but it is a real money-path
-  defect the moment someone buys before signing in.
+- ✅ **CLOSED 2026-09-06 — `logIn()` is never called, and that is CORRECT. The premise was false.**
+  Checked against the code rather than re-derived: `configure` is only ever reached with a real
+  `userId` (from `AuthContext` on `SIGNED_IN || INITIAL_SESSION`), and `getOfferings`,
+  `purchasePackage` and `restorePurchases` all return null while `configuredUserId === null` — so a
+  purchase CANNOT be made before identification and there is no anonymous customer to alias.
+  `logIn` is for apps that configure anonymously and identify later; this one identifies first.
+  **Recorded as a comment in `purchases.ts` so nobody "fixes" it.**
+  ⚠️ **What IS still unexplained is a DATA question:** the 172 customers keyed `$RCAnonymousID:`.
+  Nothing in that file can produce one. Likely pre-dating the `INITIAL_SESSION` fix, or the native
+  SDK self-initialising outside the JS path — **a guess, to be MEASURED before anyone acts on it.**
 - The chart touch fix is **not verified by a real finger on a real phone.** jsdom cannot exercise
   recharts point selection at all — not even a mouse — so no test in this repo can close that.
 - `CreditCardEngine.tsx`'s chart has the **identical** recharts touch gap, untouched.

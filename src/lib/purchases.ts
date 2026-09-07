@@ -65,6 +65,29 @@ export async function initRevenueCat(userId: string): Promise<void> {
   configuredUserId = userId;
 }
 
+/**
+ * ⚠️ `Purchases.logIn()` IS DELIBERATELY NEVER CALLED, AND ADDING IT IS NOT A FIX.
+ *
+ * A previous handoff recorded "logIn() is never called" as a money-path defect — that a purchase
+ * made while unidentified would not alias to the account on sign-in, abandoning the anonymous
+ * customer. Checked 2026-09-06 against the code rather than re-derived, and the premise is FALSE:
+ *
+ *  - `configure` above is only ever reached with a real `userId`, from `AuthContext` on
+ *    `SIGNED_IN || INITIAL_SESSION`. The SDK is never configured anonymously by this app.
+ *  - Every purchase entry point — `getOfferings`, `purchasePackage`, `restorePurchases` — returns
+ *    null while `configuredUserId === null`. So a purchase CANNOT be made before identification.
+ *
+ * `logIn` exists for apps that configure anonymously and identify later. This one identifies
+ * first, so passing `appUserID` to `configure` is the correct pattern and `logIn` would be a no-op
+ * at best. Do not "fix" this.
+ *
+ * ⚠️ WHAT IS STILL UNEXPLAINED, and it is a DATA question, not a code one: the 2026-09-05 baseline
+ * found 172 RevenueCat customers overwhelmingly keyed `$RCAnonymousID:`. Nothing above can produce
+ * one. The likely sources are customers created before the `INITIAL_SESSION` fix, or the native SDK
+ * self-initialising outside this JS path — but that is a guess and should be MEASURED before anyone
+ * acts on it. Do not conclude from that ratio that the code here is wrong.
+ */
+
 export async function getOfferings(): Promise<PurchasesOfferings | null> {
   if (!isNative() || configuredUserId === null) return null;
   const { Purchases } = await import('@revenuecat/purchases-capacitor');
