@@ -37,6 +37,7 @@ import MonthlyBreakdownTable from '@/components/forecast/MonthlyBreakdownTable';
 import { isManualCashFloor } from '@/lib/cash-floor';
 import ReceiptsDisclosure from '@/components/forecast/ReceiptsDisclosure';
 import { toLocalDateStr } from '@/lib/scheduling';
+import { selectPointOnTouch } from '@/lib/chart-touch';
 
 const RETIRE_TYPES_FORECAST = ['401k', 'roth_ira', 'ira', 'brokerage', 'hsa'];
 
@@ -582,7 +583,7 @@ export default function Forecast() {
                   <Line {...CHART_DRAW} type="monotone" dataKey="endingCash" name="Ending Cash" stroke="hsl(199, 89%, 48%)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" strokeOpacity={isVisible('endingCash') ? 1 : 0} />
                 </ComposedChart>
               ) : (
-                <LineChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <LineChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }} onTouchStart={selectPointOnTouch}>
                   <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ ...tickStyle, textAnchor: 'end' }} angle={-45} height={50} interval={xInterval} />
                   <YAxis tick={tickStyle} tickFormatter={formatYAxisTick} />

@@ -53,6 +53,7 @@ import { displayedManualCashFloor, isManualCashFloor } from '@/lib/cash-floor';
 import { automaticFloorComponents } from '@/lib/auto-cash-floor';
 import { toLocalDateStr } from '@/lib/scheduling';
 import { buildCashFloorWarning } from '@/lib/cash-floor-warning';
+import { selectPointOnTouch } from '@/lib/chart-touch';
 
 const LIQUID_ACCOUNT_TYPES = FUNDING_ACCOUNT_TYPES;
 
@@ -1356,7 +1357,7 @@ export default function CreditCardEngine({ accounts, transactions, rules, debts,
               </div>
             </div>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={visibleChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <LineChart data={visibleChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }} onTouchStart={selectPointOnTouch}>
                 <CartesianGrid stroke="hsl(0, 0%, 18%)" strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(240, 4%, 50%)', textAnchor: 'end' }} angle={-45} height={50} interval={chartTickInterval} />
                 <YAxis tick={{ fontSize: 10, fill: 'hsl(240, 4%, 50%)' }} tickFormatter={formatYAxisTick} />

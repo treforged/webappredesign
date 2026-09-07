@@ -28,6 +28,7 @@ import { IRA_ANNUAL_LIMIT } from '@/lib/retirement-contribution-cap';
 import GoalStopsEditor, { newStopDraft, stopDraftsFrom, stopsToStages, type StopDraft } from '@/components/savings/GoalStopsEditor';
 import { filterProfanity, LIMITS } from '@/lib/content-filter';
 import { toast } from 'sonner';
+import { selectPointOnTouch } from '@/lib/chart-touch';
 
 const CHART_COLORS = ['hsl(43, 56%, 52%)', 'hsl(142, 50%, 40%)', 'hsl(200, 60%, 50%)', 'hsl(280, 50%, 50%)'];
 const GOAL_TYPES = ['Emergency Fund', 'Vacation', 'Down Payment', 'Retirement', 'Custom'];
@@ -372,7 +373,7 @@ function SavingsGrowthChart({ goals, extraByGoal, essentialMonthlyExpenses }: {
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Savings Growth Projection</h3>
       <p className="text-[10px] text-muted-foreground mb-3 sm:mb-5">Next 5 years — includes interest, planned contributions, and future start dates. Contributions stop once a goal hits its target; interest keeps compounding. A stop you marked as spent drops out of the line on its date.</p>
       <ResponsiveContainer width="100%" height={isMobile ? 200 : 260}>
-        <LineChart data={chartData} margin={{ left: 0, right: 0, top: 5, bottom: 5 }}>
+        <LineChart data={chartData} margin={{ left: 0, right: 0, top: 5, bottom: 5 }} onTouchStart={selectPointOnTouch}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 15%)" />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(240, 4%, 46%)', textAnchor: 'end' }} angle={-45} height={50} axisLine={false} tickLine={false} interval={tickInterval} />
           <YAxis tick={{ fontSize: 11, fill: 'hsl(240, 4%, 46%)' }} axisLine={false} tickLine={false} tickFormatter={formatYAxisTick} />

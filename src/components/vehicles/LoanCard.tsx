@@ -9,6 +9,7 @@ import { useCardProjectionContext } from '@/contexts/CardProjectionContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { CarFund } from '@/lib/types';
 import LumpSumPanel from './LumpSumPanel';
+import { selectPointOnTouch } from '@/lib/chart-touch';
 
 /**
  * The loan-phase card: real terms, the amortization to payoff, and the payoff date the money he
@@ -252,7 +253,7 @@ export default function LoanCard({ cf, onEdit, onDelete, onUndo, deleteConfirm, 
 
       {chartData.length > 1 && (
         <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={chartData} margin={{ left: 0, right: 12, top: 8, bottom: 28 }}>
+          <LineChart data={chartData} margin={{ left: 0, right: 12, top: 8, bottom: 28 }} onTouchStart={selectPointOnTouch}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,15%)" />
             {yearTicks.slice(1).map(t => (
               <ReferenceLine key={t} x={t} stroke="hsl(0,0%,22%)" strokeDasharray="2 4" />

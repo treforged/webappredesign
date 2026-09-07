@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tool
 import { ArrowUpRight, Wallet } from 'lucide-react';
 import { formatCurrency, formatYAxisTick } from '@/lib/calculations';
 import { buildNetWorthTrend, monthlyNetWorthChange, type TrendSnapshotRow } from '@/lib/net-worth-trend';
+import { selectPointOnTouch } from '@/lib/chart-touch';
 
 interface NWTooltipProps {
   active?: boolean;
@@ -94,7 +95,7 @@ export default function NetWorthTrendCard({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={140}>
-            <LineChart data={trend} margin={{ left: 0, right: 8, top: 5, bottom: 4 }}>
+            <LineChart data={trend} margin={{ left: 0, right: 8, top: 5, bottom: 4 }} onTouchStart={selectPointOnTouch}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 15%)" />
               <XAxis
                 dataKey="month"
