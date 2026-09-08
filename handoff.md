@@ -75,6 +75,31 @@ in the same commit.
 ⚠️ **NOT VERIFIED IN A BROWSER.** Tre is signed out at the console, so nothing could render today.
 jsdom is legitimate here (text and presence, no geometry) but a rendered frame is still owed.
 
+## ✅ SHIPPED 2026-09-07 — notifications: the deep link, and one event becoming several.
+
+Two commits, `test:tz` 3938 then **3940 passed**, three zones, `origin/main` 0/0 verified by contents.
+
+**THE DEEP LINK WAS NEVER WIRED, NOT BROKEN — and it is the aim-at-the-wrong-object shape again.**
+`PushTapHandler` listened only to `pushNotificationActionPerformed` on the REMOTE plugin, which has
+**never fired once** (`push_sends` zero rows, zero iOS tokens), while every notification this app
+shows is LOCAL and raises `localNotificationActionPerformed` on a different plugin nobody watched.
+Both halves were missing, which is why neither looked wrong alone: the schedule also carried no
+`extra`, so a correct listener would have had no key to route on. Both fixed; routing lifted into
+one `handleTap` so the two channels cannot disagree.
+⚠️ **The component had NO test at all** — the routing lib under it was tested and passed throughout,
+because the lib was never the broken part. That is the gap to look for elsewhere.
+
+**SEVEN NOTIFICATIONS FOR ONE EVENT — every gate was reading a history written too late.**
+`MIN_HOURS_BETWEEN` 16h, `MAX_PER_WEEK` 5 and the per-kind caps all compute FROM stored history, so
+**all of them are defeated at once** by the check-then-act race: `runNotificationCheck` read history,
+then awaited `ensurePermission()` — an OS dialog open for as long as the person takes — and only
+recorded the send at the end. Checks are now serialised through one promise chain. **Not one gate
+wrong; every gate asked too early.**
+
+⚠️ **NEITHER IS DEVICE-VERIFIED, and both need it.** A mocked `addListener` proves wiring, not that
+Capacitor delivers the event — the testing rules name that exact mock shape as a way a green lies.
+The cold-start tap path and the real trigger for the seven are both inferred, not observed.
+
 ## ✅ SHIPPED 2026-09-06 — a tap selected nothing on FIVE charts, and the fix existed in a sixth.
 
 `origin/main` 0/0, verified by CONTENTS across 9 files. `test:tz` **3932 passed / 1 skipped**.
@@ -1606,11 +1631,11 @@ probe ran as `postgres` and proved nothing, because a SECURITY DEFINER trigger h
 <!-- AUTO-SNAPSHOT:BEGIN - machine-written, replaced each compaction -->
 ## Auto-snapshot
 
-_Written 2026-09-06 19:03 by handoff_hook. Everything below this heading is
+_Written 2026-09-07 21:40 by handoff_hook. Everything below this heading is
 machine-generated and replaced each time; put durable notes above it._
 
 - **Branch:** `main`
-- **vs upstream:** 1 ahead, 0 behind  <- UNPUSHED
+- **vs upstream:** 0 ahead, 0 behind
 
 - **Uncommitted (1 file(s)):**
 
@@ -1621,14 +1646,14 @@ M handoff.md
 - **Recent commits:**
 
 ```
+1d9d27e2 [notifications]: the tap handler watched a channel that has never fired once
+1e7fecd9 docs(plaid): re-measured a day on - the ledger placeholder is now stale, not just approximate
+d9a79e44 [purchases]: "logIn() is never called" was recorded as a defect and is correct behaviour
+787b9749 docs(handoff): the source-sweep test shape, which generalises past charts
+cbbd489f [charts]: a tap selected nothing on five charts, and the fix existed in a sixth
 fee8a637 fix(backup): a line on every run, and a real exit code
 12008673 docs(handoff): the three real holes were all the same shape, on one surface
 ef4ceee9 [transactions]: the surplus swept into goals and loans every month was invisible in the ledger
-f58cb594 docs(handoff): the last two open asks are closed, and one was never a code defect
-eef7dadd [transactions]: a savings goal moved money every month and the ledger never said so
-ef2bb1b1 [mobile]: the app lock was built, exported, documented - and mounted by nothing
-e93a5e22 docs(handoff): six of eight open asks were already shipped
-f795773a [dashboard]: the categories behind "4 more" could not actually be seen
 ```
 
 <!-- AUTO-SNAPSHOT:END -->
