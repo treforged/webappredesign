@@ -136,3 +136,45 @@ August that was zero of four.
 Every figure above was read on 2026-09-06 from live Stripe or from Supabase SQL, and the n is
 stated on each. Where a column could not be trusted, it is named and excluded rather than quoted —
 see the warning under the funnel table.
+
+---
+
+## Addendum, 2026-09-07 — a multi-page paywall tactic, and why it is PARKED not rejected
+
+Ruby routed a competitor teardown here because the paywall is this repo's surface: split the
+paywall into **three pages** — core value, then build it out, then price — on the principle that
+"each screen one job", because one page asking somebody to understand value, answer objections and
+pay all at once exceeds what a person processes in a screen. Cited as **12.4% conversion multi-page
+against 9% single-page**, which is the "37% better" headline restated, over a study of 40M+ views.
+Teardown with timestamps: `tre-forged-marketing/docs/evidence/2026-09-07_paywall-reel-teardown.md`.
+
+**It is a good tactic and it is the wrong work today, for a reason this document already measured.**
+
+**3 people have EVER seen the $89.99 price. 5 external people have ever opened a checkout at all,
+and the last checkout session of any kind was 2026-05-18 — 111 days ago.**
+
+At those volumes the two rates are indistinguishable:
+
+| | 9% (single-page) | 12.4% (multi-page) |
+| --- | --- | --- |
+| Expected conversions from our 3 lifetime price views | **0** | **0** |
+| Views needed before the FIRST conversion is even likely | ~11 | ~8 |
+| Views needed to tell the two rates apart with any confidence | **thousands per arm** | |
+
+**Improving the conversion rate of a page nobody reaches multiplies zero.** The measured constraint
+is upstream and this document names it: 29 of 31 accounts were asked to pay $89.99 for bank linking
+they had never seen work. The first free bank link (`0eaedbef`) is the change aimed at that
+constraint, and `free_bank_link_grants` still holds **zero rows**, so even that is unexercised.
+
+⚠️ **AND THE FIGURES THEMSELVES ARE NOT A BENCHMARK.** Ruby was explicit and it must not be lost in
+transit: the 40M-view study is **named but not cited**, and nothing outside the reel was checked.
+That the creator really says "37%" is a different claim from the number being TRUE. Treat it as a
+hypothesis to test on our own funnel, never as a target to design against.
+
+**THE TRIGGER FOR REVISITING THIS, so it is a decision and not a maybe:** when checkout views reach
+roughly **100 in a month** from people who are not Tre. Below that, the paywall's shape is not what
+is stopping anyone, and any before/after we measured would be noise we would then act on.
+
+**One part IS worth taking early, because it costs nothing and does not depend on volume:** the
+"each screen one job" ordering — showing what the product does before naming a price — is a
+sequencing choice, not an experiment, and it can ride along whenever the paywall is next touched.
