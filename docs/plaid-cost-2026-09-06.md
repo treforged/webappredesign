@@ -75,3 +75,39 @@ accepted knowingly, and the reason to keep the number visible rather than to arg
 **The cheapest lever if it does run away** is not re-gating the first link — that would undo the
 whole point — but reducing per-item call volume: sync frequency, and which Plaid products each
 Item is enrolled in.
+
+---
+
+## Update, 2026-09-07 — re-measured against live data, one day on
+
+Everything above was verified rather than assumed. The rule is still there and still active
+(`0171408d-b4d9-4652-b3f0-5a02bd544272`, `Plaid`, $11.90, monthly, Subscriptions). Three things
+have moved or are worth stating outright.
+
+**THE ITEM COUNT HAS GROWN AND THE PLACEHOLDER NOW UNDERSTATES.**
+
+| Measured | July 2026 | 2026-09-07 |
+| --- | --- | --- |
+| Live Plaid items | 6 | **8** |
+| At the observed ≈$1.98/item/month | $11.90 (actual charge) | **≈$15.84 expected** |
+
+So the $11.90 in his ledger is not merely a placeholder now, it is a **stale** one — about 33%
+low, purely because two more items exist. It is still the only *sourced* figure available from
+this desk, so it stays rather than being replaced by arithmetic, but the gap is the reason to
+overwrite it from the dashboard rather than leave it drifting.
+
+**THE FREE-LINK PATH HAS NEVER RUN. `free_bank_link_grants` holds ZERO rows.** Nobody has used
+the free first link since it shipped, which means two things at once: the cost model above is
+entirely untested in production, and the unmet acceptance recorded in `handoff.md` — a non-premium
+account completing a real link — is still genuinely unmet rather than merely unverified.
+
+**THE "AVERAGE ITEMS PER USER" NUMBER IS A TRAP, so do not build on it.** The 8 items belong to
+just **2 accounts of 31 (6.5%)**, and one account holds **7 of the 8**. The mean of 4 describes
+nobody: the real distribution is 7 and 1. Any per-user cost projection built on that mean would be
+wrong in both directions.
+
+⚠️ **AND THE 6.5% LINK RATE IS NOT PREDICTIVE OF WHAT THE FREE LINK WILL DO.** Every one of those
+31 accounts was asked to pay $89.99 to link a bank they had never seen work
+(`docs/checkout-funnel-2026-09-06.md`). The historical rate measures a paywall, not demand. The
+100-signup row above remains the number to watch, and it deliberately assumes every signup links —
+which is the honest worst case, because the free grant caps each account at exactly one item.
