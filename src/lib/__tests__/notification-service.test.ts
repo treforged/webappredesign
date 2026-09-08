@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const prefs = new Map<string, string>();
 type ScheduleArg = {
-  notifications: { id: number; title: string; body: string; schedule: { at: Date } }[];
+  notifications: { id: number; title: string; body: string; schedule: { at: Date }; extra?: { key?: string } }[];
 };
 const schedule = vi.fn(async (_opts: ScheduleArg): Promise<void> => undefined);
 const checkPermissions = vi.fn(async () => ({ display: 'granted' as string }));
@@ -164,6 +164,12 @@ describe('notification service — runNotificationCheck', () => {
     expect(n.body).toContain('$1,915');
     expect(n.id).toBe(notificationId(out?.key ?? ''));
     expect(n.schedule.at.getTime()).toBeGreaterThan(signals().now.getTime());
+
+    // ⚠️ WITHOUT `extra.key` A TAP HAS NOTHING TO ROUTE ON and the notification simply
+    // foregrounds the app wherever the person left it — which is exactly why the lesson deep
+    // link "did not open". `PushTapHandler` reads this field and hands it to
+    // `routeForNotificationKey`; the remote path carries the identical key in `data`.
+    expect(n.extra?.key).toBe(out?.key);
 
     // The same call again is silent: the record it just wrote suppresses the repeat.
     schedule.mockClear();

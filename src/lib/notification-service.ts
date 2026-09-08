@@ -109,7 +109,13 @@ export async function runNotificationCheck(signals: NotificationSignals): Promis
         id,
         title: decision.title,
         body: decision.body,
-        schedule: { at: now }
+        schedule: { at: now },
+        // ⚠️ WITHOUT THIS A TAP HAS NOTHING TO ROUTE ON, and the notification just foregrounds the
+        // app wherever the person left it. `PushTapHandler` reads `extra.key` and hands it to
+        // `routeForNotificationKey`; the remote path carries the identical key in `data`, so the
+        // two channels reach the same destination. This is the half of the lesson deep link that
+        // was missing on the SENDING side — the listening side was watching the wrong plugin.
+        extra: { key: decision.key },
       }]
     });
     await recordSent({ kind: decision.kind, key: decision.key, sentAt: signals.now.toISOString() });

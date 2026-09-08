@@ -57,7 +57,24 @@ export default function PushTapHandler() {
     if (!Capacitor.isNativePlatform()) return;
 
     let disposed = false;
-    let remove: (() => void) | null = null;
+    const removers: (() => void)[] = [];
+
+    // Both plugins end here, so a tap behaves identically however it arrived. Two copies of this
+    // would be two chances for the local path and the remote path to disagree about where a key goes.
+    const handleTap = (key: string | null, source: string) => {
+      const route = routeForNotificationKey(key);
+      if (!route.recognised) {
+        // ⚠️ NOT SILENT. A kind added to the sender without a route here shows up as a line
+        // rather than as a tap that appears to do nothing — the failure `plaid-complete`
+        // already cost this codebase once.
+        console.warn(`[${source}] unrecognised notification key, opening dashboard:`, key);
+      }
+      if (disposed) {
+        stashPending(route.path);
+        return;
+      }
+      navigate(route.path);
+    };
 
     void (async () => {
       try {
@@ -68,32 +85,47 @@ export default function PushTapHandler() {
             // The key sits beside `aps` on iOS and inside `data` on Android; `data` is where
             // Capacitor surfaces both.
             const data = (action?.notification?.data ?? {}) as Record<string, unknown>;
-            const key = typeof data.key === 'string' ? data.key : null;
-            const route = routeForNotificationKey(key);
-
-            if (!route.recognised) {
-              // ⚠️ NOT SILENT. A kind added to the sender without a route here shows up as a line
-              // rather than as a tap that appears to do nothing — the failure `plaid-complete`
-              // already cost this codebase once.
-              console.warn('[push] unrecognised notification key, opening dashboard:', key);
-            }
-
-            if (disposed) {
-              stashPending(route.path);
-              return;
-            }
-            navigate(route.path);
+            handleTap(typeof data.key === 'string' ? data.key : null, 'push');
           },
         );
         if (disposed) void handle.remove();
-        else remove = () => void handle.remove();
+        else removers.push(() => void handle.remove());
       } catch {
         // The plugin missing is not a reason to break the app; it only means taps do nothing,
         // which is the behaviour that existed before this component.
       }
     })();
 
-    return () => { disposed = true; remove?.(); };
+    // ⚠️ THE LISTENER ABOVE HAS NEVER FIRED ONCE, AND THAT IS WHY THE LESSON LINK "DID NOT OPEN".
+    //
+    // `pushNotificationActionPerformed` belongs to the REMOTE push plugin. As of 2026-09-07
+    // `push_sends` holds zero rows across all users and there are zero iOS tokens on the system,
+    // so no remote notification has ever been delivered — while EVERY notification this app
+    // actually shows is a LOCAL one scheduled by `notification-service.ts`. A local tap raises
+    // `localNotificationActionPerformed` on a DIFFERENT plugin, which nothing was listening to.
+    //
+    // So the handler was aimed at the wrong object: correct code, watching a channel that is
+    // silent, beside a channel nobody watched. Registering both is the fix, and it is why the
+    // routing above was lifted into `handleTap` rather than copied.
+    void (async () => {
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const handle = await LocalNotifications.addListener(
+          'localNotificationActionPerformed',
+          (action) => {
+            // LocalNotifications surfaces what was scheduled in `extra`, not `data`.
+            const extra = (action?.notification?.extra ?? {}) as Record<string, unknown>;
+            handleTap(typeof extra.key === 'string' ? extra.key : null, 'local-notification');
+          },
+        );
+        if (disposed) void handle.remove();
+        else removers.push(() => void handle.remove());
+      } catch {
+        // Same reasoning as above: a missing plugin means taps do nothing, never a broken app.
+      }
+    })();
+
+    return () => { disposed = true; removers.forEach(r => r()); };
   }, [navigate]);
 
   return null;
