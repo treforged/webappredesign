@@ -75,6 +75,28 @@ in the same commit.
 ⚠️ **NOT VERIFIED IN A BROWSER.** Tre is signed out at the console, so nothing could render today.
 jsdom is legitimate here (text and presence, no geometry) but a rendered frame is still owed.
 
+## ⛔ FIVE OF THE ITEMS I TOOK THIS SESSION WERE ALREADY BUILT. GREP BEFORE YOU BUILD.
+
+Counted 2026-09-07, and it is now the single highest-yield habit at this desk. Each was found by
+ONE grep for the caller before writing a line, and each would otherwise have been rebuilt on top of
+itself — with the rebuild passing its own tests, which is what makes this expensive rather than merely
+wasteful.
+
+| The record said | What was actually there |
+| --- | --- |
+| Transfer rules must show in Transactions | Already shipped — `pay-schedule.ts:1436`. Only the GOAL half was real |
+| /debt student-loans chart breaks on mobile | Fixed in `1d4fd3bd` |
+| Four charts lack an `ErrorBoundary` | All five are wrapped — `DebtPayoff.tsx:480,499,539,651,724` |
+| Plaid cost tracking, both halves | Rule live in his ledger + `docs/plaid-cost-2026-09-06.md` |
+| `otherDebtPayment` is a scalar that never stops | Month-indexed and gated — `non-cc-liabilities.ts:398`, `isOtherDebtPaymentOwed:348` |
+
+And one in the OTHER direction, which is the same failure wearing a different coat: **"`logIn()` is
+never called" was recorded as a money-path defect and is CORRECT behaviour** — building it would have
+changed a working money path on a false premise. **Test the premise, not just the presence.**
+
+**The habit, in one line:** before the first edit, `grep -rn "<symbol>" src/ | grep -v export`, and
+search for the name the CODE has rather than the name the ask uses (`monthly_fee`, not `payOverTime`).
+
 ## ✅ SHIPPED 2026-09-07 — notifications: the deep link, and one event becoming several.
 
 Two commits, `test:tz` 3938 then **3940 passed**, three zones, `origin/main` 0/0 verified by contents.
@@ -1631,29 +1653,25 @@ probe ran as `postgres` and proved nothing, because a SECURITY DEFINER trigger h
 <!-- AUTO-SNAPSHOT:BEGIN - machine-written, replaced each compaction -->
 ## Auto-snapshot
 
-_Written 2026-09-07 21:40 by handoff_hook. Everything below this heading is
+_Written 2026-09-07 22:42 by handoff_hook. Everything below this heading is
 machine-generated and replaced each time; put durable notes above it._
 
 - **Branch:** `main`
 - **vs upstream:** 0 ahead, 0 behind
 
-- **Uncommitted (1 file(s)):**
-
-```
-M handoff.md
-```
+- **Working tree:** clean
 
 - **Recent commits:**
 
 ```
+46ab5ac5 docs(handoff): both notification defects, and the two shapes worth carrying
+e912e509 [notifications]: one event could become several, because every gate reads a history written too late
 1d9d27e2 [notifications]: the tap handler watched a channel that has never fired once
 1e7fecd9 docs(plaid): re-measured a day on - the ledger placeholder is now stale, not just approximate
 d9a79e44 [purchases]: "logIn() is never called" was recorded as a defect and is correct behaviour
 787b9749 docs(handoff): the source-sweep test shape, which generalises past charts
 cbbd489f [charts]: a tap selected nothing on five charts, and the fix existed in a sixth
 fee8a637 fix(backup): a line on every run, and a real exit code
-12008673 docs(handoff): the three real holes were all the same shape, on one surface
-ef4ceee9 [transactions]: the surplus swept into goals and loans every month was invisible in the ledger
 ```
 
 <!-- AUTO-SNAPSHOT:END -->
