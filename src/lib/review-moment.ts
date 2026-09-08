@@ -64,6 +64,34 @@ const PRIORITY: readonly ValueEvent[] = [
  * Add it with the code that can actually detect it.
  */
 
+/*
+ * ── EVALUATED 2026-09-07 AGAINST A COMPETITOR TACTIC, AND THIS FILE ALREADY WINS ────────────────
+ *
+ * Ruby routed a teardown recommending the review prompt move OUT of onboarding and into the end of
+ * the activation flow, so it is asked once the user has seen real value from their own data.
+ * Teardown: `tre-forged-marketing/docs/evidence/2026-09-07_app-store-reviews-reel-teardown.md`.
+ *
+ * That is exactly what the three events above already are, and by construction rather than by
+ * placement: `goal_reached` and `debt_cleared` are banked facts, and `first_positive_projection`
+ * needs linked accounts plus a computed forecast. **None of them is reachable during onboarding**,
+ * so there is nothing to move.
+ *
+ * Two of the teardown's supporting details are NOT applicable, and it is worth saying why so the
+ * next reader does not try:
+ *  - **Extra animation and haptics to interrupt the reflex "Not now" tap** cannot be done. This
+ *    calls `InAppReview.requestReview()`, the OS dialog. Neither platform lets an app decorate,
+ *    delay or detect it — that advice applies to a CUSTOM pre-prompt, not to the system one.
+ *  - **Its Apple-policy claim** ("prompts in onboarding are no longer allowed") was explicitly
+ *    unverified by Ruby, and it does not matter here either way, because we never prompt there.
+ *
+ * ⚠️ **THE ONE GENUINELY ADDITIVE IDEA, DELIBERATELY NOT BUILT: a custom pre-prompt.** Asking
+ * "enjoying Forgenta?" first, and only calling `requestReview()` on a yes, would protect the
+ * one-shot this file exists to ration — a user who would have left three stars never spends it.
+ * That is a real gain and it is not an A/B optimisation, so low traffic is not an argument against
+ * it. It is unbuilt because it is speculative product work with 2 users active in 7 days, not
+ * because it is wrong. Build it when there is traffic to spend the prompt on.
+ */
+
 /** Runtime list of the valid events. Separate from the type on purpose — a union has no runtime
  *  form, so anything validating parsed input has to check against a real array. */
 const ALL_EVENTS: readonly string[] = PRIORITY;
