@@ -235,3 +235,52 @@ describe('notification service — notificationId', () => {
     expect(notificationId('weekly_checkin:2026-09-06')).not.toBe(notificationId('weekly_checkin:2026-09-13'));
   });
 });
+
+// ── ONE EVENT MUST NOT BECOME SEVEN NOTIFICATIONS ───────────────────────────────────────────────
+//
+// Tre reported seven notifications for one event. The policy's own gates make that impossible on
+// paper — MIN_HOURS_BETWEEN is 16 hours, MAX_PER_WEEK is 5, and every kind has its own cap — but
+// all of them are computed FROM the stored history, so all of them are defeated at once by reading
+// that history before the previous send has been written to it.
+//
+// That window is real and it is wide: `runNotificationCheck` reads history, decides, and records
+// only at the END, with `ensurePermission()` in between. On a first run that await is an OS
+// permission dialog held open for as long as the person takes to answer. Any check starting inside
+// it sees a history without the pending send and schedules again.
+//
+// The fix serialises checks through one promise chain, so a later check evaluates against the
+// history the earlier one WROTE. These tests make the window wide on purpose and then prove that
+// concurrent callers still produce exactly one notification.
+describe('concurrent checks cannot produce duplicate notifications', () => {
+  it('schedules ONCE when several checks start at the same moment', async () => {
+    // A slow permission check is exactly the real race window, held open deliberately.
+    checkPermissions.mockImplementationOnce(
+      () => new Promise(resolve => setTimeout(() => resolve({ display: 'granted' }), 20)),
+    );
+
+    const results = await Promise.all([
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+      runNotificationCheck(signals()),
+    ]);
+
+    // Seven callers, one notification — the number in the bug report, and the number that matters.
+    expect(schedule).toHaveBeenCalledTimes(1);
+    expect(results.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('lets a later check proceed after an earlier one THROWS, rather than wedging the chain', async () => {
+    // A failed check must not silence the app for ever. Both arms of the chain re-enter the check.
+    checkPermissions.mockImplementationOnce(() => Promise.reject(new Error('plugin exploded')));
+    await runNotificationCheck(signals());
+    expect(schedule).not.toHaveBeenCalled();
+
+    const out = await runNotificationCheck(signals());
+    expect(out).not.toBeNull();
+    expect(schedule).toHaveBeenCalledTimes(1);
+  });
+});

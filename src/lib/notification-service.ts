@@ -85,8 +85,36 @@ export async function ensurePermission(): Promise<boolean> {
   }
 }
 
-export async function runNotificationCheck(signals: NotificationSignals): Promise<NotificationDecision | null> {
-  if (!Capacitor.isNativePlatform()) return null;
+/**
+ * Checks are SERIALISED, and that is what stops one event becoming several notifications.
+ *
+ * ⚠️ THE BUG: `runNotificationCheck` reads history, decides, and only records the send at the very
+ * END — with two awaits in between, one of which is `ensurePermission()`. On a first run that await
+ * is an OS permission dialog sitting open for as long as the person takes to answer it. Any second
+ * check starting inside that window reads a history that does not yet contain the pending send,
+ * decides afresh, and schedules again. It is a plain check-then-act race, and it is the only
+ * mechanism the policy's own gates leave open: `MIN_HOURS_BETWEEN` (16h), `MAX_PER_WEEK` (5) and
+ * the per-kind caps are all computed FROM that history, so every one of them is defeated by
+ * reading it before the previous send is written rather than by being wrong.
+ *
+ * Chaining every call through one promise means the second check evaluates against the history the
+ * first WROTE, not the one it read, and correctly decides nothing.
+ *
+ * ⚠️ A hung check blocks the ones behind it, deliberately. The realistic way to hang here is an
+ * unanswered permission dialog — and somebody who has not answered it is precisely who should not
+ * be sent a second notification.
+ */
+let checkChain: Promise<unknown> = Promise.resolve();
+
+export function runNotificationCheck(signals: NotificationSignals): Promise<NotificationDecision | null> {
+  if (!Capacitor.isNativePlatform()) return Promise.resolve(null);
+  // Both arms run the check: a previous failure must not stop the next one from being considered.
+  const run = checkChain.then(() => performCheck(signals), () => performCheck(signals));
+  checkChain = run.catch(() => undefined);
+  return run;
+}
+
+async function performCheck(signals: NotificationSignals): Promise<NotificationDecision | null> {
   try {
     if (!(await isEnabled())) return null;
     // The per-category opt-outs travel with the decision rather than being checked afterwards:
